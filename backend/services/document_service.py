@@ -13,6 +13,8 @@ import docx
 from agents.document_intelligence_agent import DocumentIntelligenceAgent
 from models.task import Task
 from database.db import db
+from services.telemetry_service import TelemetryService
+import time
 
 class DocumentService:
 
@@ -24,6 +26,7 @@ class DocumentService:
         text = ""
 
         try:
+            t0 = time.time()
             if filename.endswith(".pdf"):
                 reader = pypdf.PdfReader(file)
                 for page in reader.pages:
@@ -73,6 +76,13 @@ class DocumentService:
                 db.session.add_all(inserted_tasks)
             
             db.session.commit()
+            
+            try:
+                confidence = intelligence.get("confidence", 85)
+                TelemetryService.log_execution("Document Intelligence", "Extraction", "success", t0, confidence)
+            except Exception as t_err:
+                import logging
+                logging.getLogger(__name__).error(f"Telemetry logging failed for Document Intelligence: {t_err}")
             
             # Form final result
             return {

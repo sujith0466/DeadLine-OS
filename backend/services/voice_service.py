@@ -11,12 +11,15 @@ from agents.rescue_agent import RescueAgent
 from agents.digital_twin_agent import DigitalTwinAgent
 from agents.priority_agent import PriorityAgent
 from services.goal_service import GoalService
+from services.telemetry_service import TelemetryService
+import time
 
 class VoiceService:
 
     @classmethod
     def process_voice_command(cls, transcript: str, gemini_service) -> Dict[str, Any]:
         """Parses the transcript, executes the required action, and returns results."""
+        t0 = time.time()
         
         # 1. NLU Parsing
         agent = VoiceCopilotAgent(gemini_service)
@@ -90,6 +93,13 @@ class VoiceService:
             # For query intents (analytics, calendar, habit), we just return a success state
             execution_data = {"status": "Query processed", "intent": intent}
             OrchestratorService.add_event("Voice Copilot", "Processed Voice Query", "success", {"intent": intent})
+
+        try:
+            confidence = nlu_result.get("confidence", 90)
+            TelemetryService.log_execution("Voice Copilot", "Intent Processing", "success", t0, confidence)
+        except Exception as t_err:
+            import logging
+            logging.getLogger(__name__).error(f"Telemetry logging failed for Voice Copilot: {t_err}")
 
         return {
             "transcript": transcript,
