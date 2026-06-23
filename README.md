@@ -86,7 +86,7 @@ Create a `.env` file in the `backend/` directory:
 ```env
 FLASK_APP=app.py
 FLASK_ENV=development
-DATABASE_URL=postgresql://user:password@endpoint.neon.tech/dbname?sslmode=require
+DATABASE_URL=your_postgresql_key
 GEMINI_API_KEY=your_gemini_api_key
 ```
 
