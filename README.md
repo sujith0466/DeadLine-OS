@@ -39,56 +39,69 @@ DeadlineOS is an advanced, fully integrated executive intelligence platform. Des
 * Digital Twin Agent
 * Intervention Engine
 
-## Features
+## System Modules
 
-## Executive Dashboard
+### Executive Dashboard
+[![Executive Dashboard](docs/screenshots/dashboard.png)](docs/screenshots/dashboard.png)
 
-![Dashboard](docs/screenshots/dashboard.png)
-
-## AI Command Center
-
-![Command Center](docs/screenshots/command-center.png)
-
-## AI Planner
-
-![Planner](docs/screenshots/planner.png)
-
-## Rescue Operations Center
-
-![Rescue](docs/screenshots/rescue.png)
-
-## Goals & Habits Intelligence
-
-![Goals](docs/screenshots/goals.png)
-
-## Digital Twin Laboratory
-
-![Digital Twin](docs/screenshots/digital-twin.png)
-
-## Executive Calendar Intelligence
-
-![Calendar](docs/screenshots/calendar.png)
-
-## Active Interventions
-
-![Interventions](docs/screenshots/interventions.png)
-
-## Executive Intelligence Observatory
-
-![Analytics](docs/screenshots/analytics.png)
-
-## Document Intelligence
-
-![Documents](docs/screenshots/documents.png)
-
-## Vision Intelligence
-
-![Vision](docs/screenshots/vision.png)
-
-## Voice Copilot
-
-![Voice](docs/screenshots/voice.png)
-
+<table width="100%">
+  <tr>
+    <td width="50%" align="center">
+      <b>AI Command Center</b><br><br>
+      <a href="docs/screenshots/command-center.png"><img src="docs/screenshots/command-center.png" alt="Command Center"/></a>
+    </td>
+    <td width="50%" align="center">
+      <b>AI Planner</b><br><br>
+      <a href="docs/screenshots/planner.png"><img src="docs/screenshots/planner.png" alt="Planner"/></a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <b>Rescue Operations Center</b><br><br>
+      <a href="docs/screenshots/rescue.png"><img src="docs/screenshots/rescue.png" alt="Rescue Center"/></a>
+    </td>
+    <td width="50%" align="center">
+      <b>Active Interventions</b><br><br>
+      <a href="docs/screenshots/interventions.png"><img src="docs/screenshots/interventions.png" alt="Active Interventions"/></a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <b>Digital Twin Laboratory</b><br><br>
+      <a href="docs/screenshots/digital-twin.png"><img src="docs/screenshots/digital-twin.png" alt="Digital Twin"/></a>
+    </td>
+    <td width="50%" align="center">
+      <b>Goals & Habits Intelligence</b><br><br>
+      <a href="docs/screenshots/goals.png"><img src="docs/screenshots/goals.png" alt="Goals"/></a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <b>Executive Calendar Intelligence</b><br><br>
+      <a href="docs/screenshots/calendar.png"><img src="docs/screenshots/calendar.png" alt="Calendar"/></a>
+    </td>
+    <td width="50%" align="center">
+      <b>Executive Intelligence Observatory</b><br><br>
+      <a href="docs/screenshots/analytics.png"><img src="docs/screenshots/analytics.png" alt="Analytics"/></a>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center">
+      <b>Document Intelligence</b><br><br>
+      <a href="docs/screenshots/documents.png"><img src="docs/screenshots/documents.png" alt="Documents"/></a>
+    </td>
+    <td width="50%" align="center">
+      <b>Vision Intelligence</b><br><br>
+      <a href="docs/screenshots/vision.png"><img src="docs/screenshots/vision.png" alt="Vision"/></a>
+    </td>
+  </tr>
+  <tr>
+    <td width="100%" colspan="2" align="center">
+      <b>Voice Copilot</b><br><br>
+      <a href="docs/screenshots/voice.png"><img src="docs/screenshots/voice.png" alt="Voice" width="50%"/></a>
+    </td>
+  </tr>
+</table>
 ## System Flow
 
 **Document:**
