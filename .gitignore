@@ -61,3 +61,9 @@ PHASE_*.md
 *_CERTIFICATION.md
 *_AUDIT.md
 *_VALIDATION.md
+
+# Temporary Testing & Audit Scripts
+backend/run_audit.py
+backend/test_smoke.py
+frontend/strip_mock.py
+backend/audit_results.json
