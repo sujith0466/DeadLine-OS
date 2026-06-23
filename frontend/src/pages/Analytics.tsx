@@ -75,16 +75,6 @@ export const Analytics: React.FC = () => {
     fetchData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20 h-full">
-        <ActivitySquare className="w-12 h-12 text-primary animate-pulse mb-4" />
-        <h2 className="text-xl font-bold text-white">Initializing Observatory...</h2>
-        <p className="text-gray-400 mt-2">Aggregating telemetry from all operational agents</p>
-      </div>
-    );
-  }
-
   const evaluateScore = React.useCallback((val: number, isRisk = false) => {
     if (isRisk) {
       if (val < 30) return { text: "Excellent", color: "text-success" };
@@ -95,6 +85,16 @@ export const Analytics: React.FC = () => {
     if (val > 50) return { text: "Stable", color: "text-blue-400" };
     return { text: "Needs Attention", color: "text-warning" };
   }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 h-full">
+        <ActivitySquare className="w-12 h-12 text-primary animate-pulse mb-4" />
+        <h2 className="text-xl font-bold text-white">Initializing Observatory...</h2>
+        <p className="text-gray-400 mt-2">Aggregating telemetry from all operational agents</p>
+      </div>
+    );
+  }
 
   const renderAgentCard = (name: string, data: any, icon: React.ReactNode) => {
     if (!data) return null;

@@ -40,19 +40,54 @@ DeadlineOS is an advanced, fully integrated executive intelligence platform. Des
 * Intervention Engine
 
 ## Features
-| Feature | Visual |
-| --- | --- |
-| **Dashboard** | ![Dashboard Placeholder](/assets/dashboard.png) |
-| **Command Center** | ![Command Center Placeholder](/assets/command_center.png) |
-| **Planner** | ![Planner Placeholder](/assets/planner.png) |
-| **Rescue Center** | ![Rescue Center Placeholder](/assets/rescue.png) |
-| **Goals & Habits** | ![Goals Placeholder](/assets/goals.png) |
-| **Digital Twin** | ![Digital Twin Placeholder](/assets/digital_twin.png) |
-| **Calendar** | ![Calendar Placeholder](/assets/calendar.png) |
-| **Analytics** | ![Analytics Placeholder](/assets/analytics.png) |
-| **Document Intelligence**| ![Document Placeholder](/assets/document.png) |
-| **Vision Intelligence** | ![Vision Placeholder](/assets/vision.png) |
-| **Voice Copilot** | ![Voice Placeholder](/assets/voice.png) |
+
+## Executive Dashboard
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+## AI Command Center
+
+![Command Center](docs/screenshots/command-center.png)
+
+## AI Planner
+
+![Planner](docs/screenshots/planner.png)
+
+## Rescue Operations Center
+
+![Rescue](docs/screenshots/rescue.png)
+
+## Goals & Habits Intelligence
+
+![Goals](docs/screenshots/goals.png)
+
+## Digital Twin Laboratory
+
+![Digital Twin](docs/screenshots/digital-twin.png)
+
+## Executive Calendar Intelligence
+
+![Calendar](docs/screenshots/calendar.png)
+
+## Active Interventions
+
+![Interventions](docs/screenshots/interventions.png)
+
+## Executive Intelligence Observatory
+
+![Analytics](docs/screenshots/analytics.png)
+
+## Document Intelligence
+
+![Documents](docs/screenshots/documents.png)
+
+## Vision Intelligence
+
+![Vision](docs/screenshots/vision.png)
+
+## Voice Copilot
+
+![Voice](docs/screenshots/voice.png)
 
 ## System Flow
 
