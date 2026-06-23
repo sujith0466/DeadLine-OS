@@ -1,0 +1,50 @@
+# ============================================================
+#  DeadlineOS — Backend Dependencies
+#  Python 3.13 | Windows + Linux compatible
+#
+#  Install (no compilation needed):
+#    pip install -r requirements.txt --only-binary :all:
+#
+#  Note: gunicorn is Linux-only (for Render deployment).
+#        Use waitress for Windows local development.
+# ============================================================
+
+# --- Core Framework ---
+flask==3.0.3
+flask-cors==4.0.1
+flask-socketio==5.3.6
+
+# --- Database ---
+flask-sqlalchemy==3.1.1
+sqlalchemy==2.0.30
+psycopg2-binary==2.9.10
+
+# --- Background Jobs ---
+apscheduler>=3.10.0
+
+# --- Google AI ---
+google-generativeai==0.7.2
+
+# --- Document Intelligence ---
+pypdf==4.2.0
+python-docx==1.1.2
+
+# --- Async / Concurrency (pre-built wheels) ---
+eventlet>=0.33.3
+greenlet>=3.1.1
+
+# --- Utilities ---
+python-dotenv==1.0.1
+cachetools==5.3.3
+
+# --- Vision / Image Processing (pre-built wheel) ---
+pillow>=10.0.0
+
+# --- Production WSGI ---
+# Windows dev / CI:
+waitress>=3.0.0
+
+
+# Linux / Render deployment (uncomment on server):
+gunicorn==22.0.0
+reportlab>=4.3.1 

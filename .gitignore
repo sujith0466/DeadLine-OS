@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment Variables
+.env
+.env.*
+backend/.env
+frontend/.env
+
+# Flask
+instance/
+*.db
+*.sqlite
+*.sqlite3
+
+# Node / React / Vite
+node_modules/
+dist/
+build/
+.vite/
+vite.svg
+
+# Logs
+logs/
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Deployment Artifacts
+.vercel
+.render
+coverage/
+tmp/
+temp/
+
+# Generated Reports
+PHASE_*.md
+*_REPORT.md
+*_CERTIFICATION.md
+*_AUDIT.md
+*_VALIDATION.md
