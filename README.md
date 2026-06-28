@@ -55,34 +55,19 @@ Engineered for high-performance individuals, students, founders, and professiona
 
 ## 4. Screenshots
 
-<details open>
-<summary><b>Click to expand the Gallery</b></summary>
-<br>
-
-**Landing & Authentication**
+**Landing Page**
 <img src="docs/screenshots/Landing_page.png" alt="Landing Page">
 
-**Dashboards**
-<img src="docs/screenshots/dashboard.png" alt="Dashboard">
+<details open>
+<summary><b>Click to expand the Full Gallery</b></summary>
+<br>
 
-**Planning Matrix**
-<img src="docs/screenshots/planner.png" alt="Planner">
-<img src="docs/screenshots/calendar.png" alt="Calendar">
-<img src="docs/screenshots/goals.png" alt="Goals">
-
-**Intelligence Inputs**
-<img src="docs/screenshots/voice.png" alt="Voice Intelligence">
-<img src="docs/screenshots/vision.png" alt="Vision Intelligence">
-<img src="docs/screenshots/documents.png" alt="Document Intelligence">
-<img src="docs/screenshots/command-center.png" alt="Command Center">
-
-**Executive Defense Operations**
-<img src="docs/screenshots/digital-twin.png" alt="Digital Twin">
-<img src="docs/screenshots/rescue.png" alt="Rescue Center">
-<img src="docs/screenshots/interventions.png" alt="Interventions">
-
-**Observability & Settings**
-<img src="docs/screenshots/analytics.png" alt="Analytics">
+| Dashboards & Observability | Planning & Scheduling | AI Intelligence Inputs |
+| :---: | :---: | :---: |
+| <img src="docs/screenshots/dashboard.png" width="100%" alt="Dashboard"> <br> **Dashboard** | <img src="docs/screenshots/planner.png" width="100%" alt="Planner"> <br> **Planner** | <img src="docs/screenshots/command-center.png" width="100%" alt="Command Center"> <br> **Command Center** |
+| <img src="docs/screenshots/analytics.png" width="100%" alt="Analytics"> <br> **Analytics** | <img src="docs/screenshots/calendar.png" width="100%" alt="Calendar"> <br> **Calendar** | <img src="docs/screenshots/voice.png" width="100%" alt="Voice"> <br> **Voice Copilot** |
+| <img src="docs/screenshots/goals.png" width="100%" alt="Goals"> <br> **Goals** | <img src="docs/screenshots/rescue.png" width="100%" alt="Rescue"> <br> **Rescue Center** | <img src="docs/screenshots/vision.png" width="100%" alt="Vision"> <br> **Vision Analysis** |
+| <img src="docs/screenshots/digital-twin.png" width="100%" alt="Digital Twin"> <br> **Digital Twin** | <img src="docs/screenshots/interventions.png" width="100%" alt="Interventions"> <br> **Interventions** | <img src="docs/screenshots/documents.png" width="100%" alt="Documents"> <br> **Document Extraction** |
 
 *(Missing visual representations: Settings, Profile, Notifications due to PII isolation)*
 </details>
