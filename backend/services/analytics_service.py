@@ -54,7 +54,7 @@ class AnalyticsService:
         """Returns time-series data for area/line charts from DB."""
         from flask import g
         uid = user_id or getattr(g, "user_id", None)
-        metrics = AccountabilityMetrics.query.filter_by(user_id=uid).order_by(AccountabilityMetrics.created_at.desc()).limit(7).all()
+        metrics = AccountabilityMetrics.query.filter_by(user_id=uid).order_by(AccountabilityMetrics.created_at.desc()).limit(30).all()
         metrics.reverse()
         return [
             {
@@ -192,37 +192,104 @@ class AnalyticsService:
     @classmethod
     def get_insights(cls, user_id: str = None) -> Dict[str, Any]:
         """Returns telemetry-driven Insights Engine data."""
+        import logging
+        import traceback
         from flask import g
+        
+        logger = logging.getLogger(__name__)
         uid = user_id or getattr(g, "user_id", None)
-        latest_acc = AccountabilityMetrics.query.filter_by(user_id=uid).order_by(AccountabilityMetrics.created_at.desc()).first()
-        top_risk = "N/A"
-        top_opportunity = "N/A"
-        if latest_acc and latest_acc.key_findings:
-            findings = latest_acc.key_findings
-            top_risk = findings[0] if len(findings) > 0 else "N/A"
-            top_opportunity = findings[1] if len(findings) > 1 else "N/A"
+        
+        logger.info(f"[AnalyticsService] Starting get_insights for user_id={uid}")
+        
+        try:
+            logger.info(f"[AnalyticsService] Fetching AccountabilityMetrics for user_id={uid}")
+            latest_acc = AccountabilityMetrics.query.filter_by(user_id=uid).order_by(AccountabilityMetrics.created_at.desc()).first()
             
-        counts = db.session.query(
-            AgentExecutionLog.agent_name, 
-            func.count(AgentExecutionLog.id).label('total'),
-            func.avg(AgentExecutionLog.confidence).label('avg_conf')
-        ).filter_by(user_id=uid).group_by(AgentExecutionLog.agent_name).all()
-        
-        most_used_agent = max(counts, key=lambda x: x.total)[0] if counts else "N/A"
-        most_accurate_agent = max(counts, key=lambda x: x.avg_conf)[0] if counts else "N/A"
-        
-        interventions = Intervention.query.filter_by(user_id=uid, resolved=True).all()
-        least_effective = min(interventions, key=lambda x: x.confidence_score).type if interventions else "N/A"
-        
-        focus = "Review active interventions" if interventions else "Define new goals"
-        if latest_acc and latest_acc.recommendations:
-            focus = latest_acc.recommendations[0]
+            top_risk = "N/A"
+            top_opportunity = "N/A"
+            if latest_acc and latest_acc.key_findings and isinstance(latest_acc.key_findings, list):
+                findings = latest_acc.key_findings
+                top_risk = findings[0] if len(findings) > 0 else "N/A"
+                top_opportunity = findings[1] if len(findings) > 1 else "N/A"
             
-        return {
-            "top_risk": top_risk,
-            "top_opportunity": top_opportunity,
-            "most_used_agent": most_used_agent,
-            "most_accurate_agent": most_accurate_agent,
-            "least_effective_intervention": least_effective,
-            "recommended_focus_area": focus
-        }
+            logger.info(f"[AnalyticsService] Fetching AgentExecutionLog metrics for user_id={uid}")
+            counts = db.session.query(
+                AgentExecutionLog.agent_name, 
+                func.count(AgentExecutionLog.id).label('total'),
+                func.avg(AgentExecutionLog.confidence).label('avg_conf')
+            ).filter_by(user_id=uid).group_by(AgentExecutionLog.agent_name).all()
+            
+            most_used_agent = "N/A"
+            most_accurate_agent = "N/A"
+            
+            if counts:
+                # Safe aggregation avoiding None comparisons
+                most_used = max(counts, key=lambda x: x.total if x.total is not None else 0)
+                most_used_agent = most_used.agent_name if most_used.total else "N/A"
+                
+                most_accurate = max(counts, key=lambda x: x.avg_conf if x.avg_conf is not None else 0)
+                most_accurate_agent = most_accurate.agent_name if most_accurate.avg_conf else "N/A"
+            
+            logger.info(f"[AnalyticsService] Fetching Interventions for user_id={uid}")
+            interventions = Intervention.query.filter_by(user_id=uid, resolved=True).all()
+            least_effective = "N/A"
+            
+            if interventions:
+                # Filter out None scores before taking min
+                valid_interventions = [i for i in interventions if i.confidence_score is not None]
+                if valid_interventions:
+                    least_effective_intervention = min(valid_interventions, key=lambda x: x.confidence_score)
+                    least_effective = least_effective_intervention.type or "N/A"
+            
+            focus = "Review active interventions" if interventions else "Define new goals"
+            if latest_acc and latest_acc.recommendations and isinstance(latest_acc.recommendations, list):
+                if len(latest_acc.recommendations) > 0:
+                    focus = latest_acc.recommendations[0]
+                
+            response_data = {
+                "top_risk": top_risk,
+                "top_opportunity": top_opportunity,
+                "most_used_agent": most_used_agent,
+                "most_accurate_agent": most_accurate_agent,
+                "least_effective_intervention": least_effective,
+                "recommended_focus_area": focus,
+                
+                # Merging requested fallback schema to satisfy external client requirements
+                "productivity": [],
+                "completion_velocity": [],
+                "habit_consistency": [],
+                "intervention_metrics": {},
+                "agent_metrics": {},
+                "summary": {
+                    "productivity_score": latest_acc.productivity_score if latest_acc and latest_acc.productivity_score else 0,
+                    "success_probability": 0,
+                    "future_risk": "LOW"
+                }
+            }
+            
+            logger.info(f"[AnalyticsService] get_insights completed successfully for user_id={uid}")
+            return response_data
+            
+        except Exception as e:
+            logger.error(f"[AnalyticsService] Critical error in get_insights for user_id={uid}: {str(e)}")
+            logger.error(traceback.format_exc())
+            
+            # Return sensible defaults rather than throwing HTTP 500
+            return {
+                "top_risk": "N/A",
+                "top_opportunity": "N/A",
+                "most_used_agent": "N/A",
+                "most_accurate_agent": "N/A",
+                "least_effective_intervention": "N/A",
+                "recommended_focus_area": "Define new goals",
+                "productivity": [],
+                "completion_velocity": [],
+                "habit_consistency": [],
+                "intervention_metrics": {},
+                "agent_metrics": {},
+                "summary": {
+                    "productivity_score": 0,
+                    "success_probability": 0,
+                    "future_risk": "LOW"
+                }
+            }

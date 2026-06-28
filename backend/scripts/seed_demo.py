@@ -93,23 +93,15 @@ def seed_demo_data():
                 log_date = (now - timedelta(days=i)).strftime("%Y-%m-%d")
                 db.session.add(HabitLog(user_id=uid, habit_id=h.id, date=log_date, completed=True))
 
-        # 4. CALENDAR EVENTS (Tasks across week)
-        tasks_data = [
-            ("React Component Development", "pending", 2),
-            ("Team Sync", "pending", 1),
-            ("Resume Update", "done", 1),
-            ("Workout Leg Day", "done", 2),
-            ("AI Agent Research", "pending", 3),
-            ("Write API Specs", "done", 2),
-            ("Review PRs", "pending", 1),
-            ("Recovery Break", "pending", 1),
-            ("Draft Next Week Goals", "pending", 1),
-            ("Fix Production Bug", "done", 2)
-        ]
-        for i, (title, status, est) in enumerate(tasks_data):
-            deadline = now + timedelta(hours=i*4 - 24)
-            db.session.add(Task(user_id=uid, title=title, deadline=deadline, estimated_hours=est,
-                                category="Work", status=status, source="manual"))
+        # 4. CALENDAR EVENTS & TASKS (30 days historical)
+        for i in range(30):
+            day_offset = 30 - i
+            t_date = now - timedelta(days=day_offset)
+            db.session.add(Task(user_id=uid, title=f"Daily Sync Day {i}", deadline=t_date, estimated_hours=1.0,
+                                category="Work", status="done", source="manual"))
+            if i % 3 == 0:
+                db.session.add(Task(user_id=uid, title=f"Deep Work Sprint {i}", deadline=t_date, estimated_hours=3.0,
+                                    category="Project", status="done", source="manual"))
 
         # 5. DOCUMENT / VISION INTELLIGENCE TASKS
         db.session.add(Task(user_id=uid, title="Read Processed System Architecture PDF", deadline=now + timedelta(days=2),
@@ -118,11 +110,9 @@ def seed_demo_data():
                             estimated_hours=3.0, category="Work", status="pending", source="document", source_file="API_Specs.pdf"))
         db.session.add(Task(user_id=uid, title="Transcribe Whiteboard Brainstorming", deadline=now + timedelta(days=1),
                             estimated_hours=1.0, category="Project", status="pending", source="vision", source_file="whiteboard_session.jpg"))
-        db.session.add(Task(user_id=uid, title="Implement UI Mockup from Sketch", deadline=now + timedelta(days=2),
-                            estimated_hours=4.0, category="Work", status="done", source="vision", source_file="ui_sketch.png"))
 
-        # 6. PLANNER SESSIONS (Schedules)
-        for i in range(4):
+        # 6. PLANNER SESSIONS (30 days of schedules)
+        for i in range(30):
             target = (now - timedelta(days=i)).strftime("%Y-%m-%d")
             s = Schedule(user_id=uid, target_date=target, confidence_score=random.randint(70, 95),
                          sys_confidence=random.randint(75, 99), daily_summary=f"Optimized schedule for {target}",
@@ -132,37 +122,63 @@ def seed_demo_data():
             db.session.add(ScheduleSlot(user_id=uid, schedule_id=s.id, task_title="Morning Deep Work",
                                         start_time="09:00", end_time="11:00", focus_block=True))
 
-        # 7. RESCUE EVENTS
-        db.session.add(Intervention(user_id=uid, type="rescue", severity="High", trigger_source="Context Switch Overload",
-                                    message="Detected excessive context switching across projects. Suggesting a 15min break.",
-                                    recommended_action={"action": "break", "duration": 15}, resolved=True,
-                                    created_at=now - timedelta(days=1)))
-        db.session.add(Intervention(user_id=uid, type="rescue", severity="Critical", trigger_source="Deadline Approaching",
-                                    message="Major deadline in 2 days but 60% of milestone incomplete. Recommended rescheduling non-essentials.",
-                                    recommended_action={"action": "reschedule"}, resolved=True,
-                                    created_at=now - timedelta(days=3)))
+        # 7. RESCUE EVENTS (Historical Interventions)
+        for i in [28, 21, 14, 7, 2]:
+            db.session.add(Intervention(user_id=uid, type="rescue", severity="High", trigger_source="Context Switch Overload",
+                                        message="Detected excessive context switching. Suggested 15min break.",
+                                        recommended_action={"action": "break", "duration": 15}, resolved=True,
+                                        created_at=now - timedelta(days=i)))
 
-        # 8. DIGITAL TWIN SIMULATIONS
+        # 8. DIGITAL TWIN SIMULATIONS (15 over 30 days)
         sims = ["Delay task", "Increase deep work", "Miss one day", "Extend deadline", "Complete milestone early"]
-        for i, s in enumerate(sims):
+        for i in range(15):
+            s = random.choice(sims)
             db.session.add(TwinSimulationLog(user_id=uid, scenario_type=s,
                                              scenario_payload={"action": s},
                                              simulation_result={"outcome": f"Simulated outcome if you {s.lower()}."},
                                              capacity_impact=random.randint(-15, 20),
-                                             created_at=now - timedelta(days=i)))
+                                             created_at=now - timedelta(days=i * 2)))
 
-        # 9. ANALYTICS
-        db.session.add(AccountabilityMetrics(user_id=uid, completion_rate=78.5, consistency_score=82.0,
-                                             procrastination_score=15.0, productivity_score=85.0, risk_profile="Low",
-                                             key_findings={"insight": "Consistent habit execution has boosted daily throughput."}))
+        # 9. ANALYTICS (30-day realistic progressive trend)
+        base_completion = 48.0
+        base_consistency = 52.0
+        base_prod = 50.0
 
-        # 10. AI ACTIVITY TIMELINE & COMMAND CENTER (Agent Execution Logs)
+        for i in range(30):
+            day_offset = 30 - i
+            
+            # Trend upward with ±4% noise
+            comp = base_completion + (i * 1.5) + random.uniform(-4, 4)
+            cons = base_consistency + (i * 1.2) + random.uniform(-4, 4)
+            prod = base_prod + (i * 1.4) + random.uniform(-4, 4)
+            
+            # Bound values between 0 and 100
+            comp = min(100.0, max(0.0, comp))
+            cons = min(100.0, max(0.0, cons))
+            prod = min(100.0, max(0.0, prod))
+            
+            procrastination = max(5.0, 30.0 - (i * 0.8) + random.uniform(-3, 3))
+            
+            findings = ["Burnout Risk Elevated", "High Context Switching"] if i < 15 else ["Consistent Output", "Deep Work Optimized"]
+            
+            db.session.add(AccountabilityMetrics(
+                user_id=uid, 
+                completion_rate=comp, 
+                consistency_score=cons,
+                procrastination_score=procrastination, 
+                productivity_score=prod, 
+                risk_profile="Low" if i >= 15 else "High",
+                key_findings=findings,
+                created_at=now - timedelta(days=day_offset)
+            ))
+
+        # 10. AI ACTIVITY TIMELINE & COMMAND CENTER (Agent Execution Logs - 60 over 30 days)
         agents = ["Planning Agent", "Vision Agent", "Digital Twin Agent", "Rescue Agent", "Orchestrator"]
         actions = ["Generated optimal schedule", "Extracted text from image", "Forecasted schedule delay", "Detected high cognitive load", "Dispatched tasks successfully"]
-        for i in range(15):
+        for i in range(60):
             agent = random.choice(agents)
             action_desc = random.choice(actions)
-            t = now - timedelta(hours=i*3)
+            t = now - timedelta(hours=i * 12)
             db.session.add(AgentExecutionLog(user_id=uid, agent_name=agent, action=action_desc,
                                              execution_time_ms=random.randint(800, 2500), confidence=random.randint(85, 99),
                                              status="success", created_at=t))
