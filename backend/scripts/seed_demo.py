@@ -123,13 +123,40 @@ def seed_demo_data():
                                         start_time="09:00", end_time="11:00", focus_block=True))
 
         # 7. RESCUE EVENTS (Historical Interventions)
-        for i in [28, 21, 14, 7, 2]:
-            db.session.add(Intervention(user_id=uid, type="rescue", severity="High", trigger_source="Context Switch Overload",
-                                        message="Detected excessive context switching. Suggested 15min break.",
-                                        recommended_action={"action": "break", "duration": 15}, resolved=True,
-                                        created_at=now - timedelta(days=i)))
+        intervention_scenarios = [
+            ("rescue", "High", "Context Switch Overload", "Detected excessive context switching. Suggesting a 15min break.", {"action": "break", "duration": 15}),
+            ("twin_forecast", "Critical", "Deadline Approaching", "Major deadline in 2 days but 60% of milestone incomplete. Recommended rescheduling non-essentials.", {"action": "reschedule"}),
+            ("procrastination", "Medium", "Accountability Analytics", "You have delayed the 'DSA Practice' habit for 3 consecutive days. Time blocking suggested.", {"action": "block_time"}),
+            ("calendar_overload", "High", "Orchestrator", "Schedule density is at 95% today. Burnout risk elevated. Consider dropping low-priority tasks.", {"action": "drop_tasks"}),
+            ("accountability", "Low", "End of Week Review", "Momentum is slowing down slightly compared to last week. Let's regain focus.", {"action": "review"}),
+            ("rescue", "Critical", "Continuous Work Session", "You've been working for 4 hours straight without a break. Cognitive fatigue imminent.", {"action": "mandatory_break"}),
+            ("twin_forecast", "High", "Schedule Slippage", "Projected 35% chance of missing 'DeadlineOS V1 Launch' if velocity doesn't increase.", {"action": "increase_velocity"}),
+        ]
+        
+        # Add 12 resolved historical interventions
+        for i in range(1, 13):
+            days_ago = i * 2 + random.randint(0, 1)
+            t_type, sev, src, msg, act = random.choice(intervention_scenarios)
+            db.session.add(Intervention(
+                user_id=uid, type=t_type, severity=sev, priority_score=random.randint(60, 95),
+                confidence_score=random.randint(75, 99), trigger_source=src, message=msg,
+                recommended_action=act, resolved=True,
+                created_at=now - timedelta(days=days_ago),
+                resolved_at=now - timedelta(days=days_ago) + timedelta(hours=random.randint(1, 4))
+            ))
 
-        # 8. DIGITAL TWIN SIMULATIONS (15 over 30 days)
+        # Add 2 currently ACTIVE interventions for the dashboard
+        active_scenarios = [
+            ("calendar_overload", "Critical", "Real-Time Telemetry", "Today's schedule has 0 buffer time. One slip will cascade through the entire day. Please review.", {"action": "rebalance"}),
+            ("procrastination", "Medium", "Digital Twin Forecast", "You are trending towards skipping your workout again today based on current trajectory.", {"action": "commit"})
+        ]
+        for idx, (t_type, sev, src, msg, act) in enumerate(active_scenarios):
+            db.session.add(Intervention(
+                user_id=uid, type=t_type, severity=sev, priority_score=random.randint(85, 99),
+                confidence_score=random.randint(85, 99), trigger_source=src, message=msg,
+                recommended_action=act, resolved=False,
+                created_at=now - timedelta(hours=idx * 3 + 1)
+            ))
         sims = ["Delay task", "Increase deep work", "Miss one day", "Extend deadline", "Complete milestone early"]
         for i in range(15):
             s = random.choice(sims)
