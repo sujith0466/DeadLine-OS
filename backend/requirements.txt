@@ -1,59 +1,56 @@
 # ============================================================
-#  DeadlineOS — Backend Dependencies
-#  Python 3.13 | Windows + Linux compatible
-#
-#  Install (no compilation needed):
-#    pip install -r requirements.txt --only-binary :all:
-#
-#  Note: gunicorn is Linux-only (for Render deployment).
-#        Use waitress for Windows local development.
+# DeadlineOS Backend
+# Python 3.13
+# Production Requirements (Render + Windows)
 # ============================================================
 
-# --- Core Framework ---
-flask==3.1.3
-flask-cors==6.0.0
-flask-socketio==5.3.6
-flask-limiter==3.8.0
-
-# --- Database ---
+# ---------------- Core ----------------
+Flask==3.1.3
+Flask-Cors==6.0.0
+Flask-Limiter==3.8.0
 Flask-SQLAlchemy==3.1.1
-sqlalchemy==2.0.51
+
+# ---------------- Database ----------------
+SQLAlchemy==2.0.51
 psycopg2-binary==2.9.10
 
-# --- Background Jobs ---
-apscheduler>=3.10.0
+# ---------------- Authentication ----------------
+PyJWT[crypto]>=2.12.0
+cryptography>=42.0.8,<46
 
-# --- Google AI ---
+# ---------------- Validation ----------------
+marshmallow==3.21.3
+
+# ---------------- Utilities ----------------
+python-dotenv==1.2.2
+requests==2.32.3
+cachetools==5.3.3
+python-dateutil==2.9.0.post0
+
+# ---------------- AI ----------------
 google-generativeai==0.7.2
 
-# --- Document Intelligence ---
+# ---------------- Document Intelligence ----------------
 pypdf==6.13.3
 python-docx==1.1.2
+reportlab==4.3.1
 
-# --- Async / Concurrency (pre-built wheels) ---
-eventlet>=0.41.0
-greenlet>=3.5.2
+# ---------------- Vision Intelligence ----------------
+Pillow>=10.0.0
+opencv-python-headless==4.12.0.88
+easyocr==1.7.2
+numpy==2.2.6
+dateparser==1.2.2
+pillow-heif==1.1.1
+rapidfuzz==3.14.1
 
-# --- Utilities ---
-python-dotenv==1.2.2
-cachetools==5.3.3
+# ---------------- Async ----------------
+eventlet==0.41.0
+greenlet==3.5.2
+
+# ---------------- Monitoring ----------------
 sentry-sdk[flask]==2.13.0
 
-# --- Vision / Image Processing (pre-built wheel) ---
-pillow>=10.0.0
-easyocr>=1.7.0
-opencv-python-headless
-numpy
-dateparser
-pillow-heif
-rapidfuzz
-python-dateutil
-
-# --- Production WSGI ---
-# Windows dev / CI:
-waitress>=3.0.0
-
-
-# Linux / Render deployment (uncomment on server):
+# ---------------- Production ----------------
 gunicorn==22.0.0
-reportlab>=4.3.1 
+waitress==3.0.2
