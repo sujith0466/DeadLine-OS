@@ -5,11 +5,10 @@ services:
     region: ohio
     buildCommand: "pip install -r requirements.txt"
     startCommand: "gunicorn 'app:create_app()' --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT"
+    pythonVersion: 3.13.0
     envVars:
       - key: FLASK_ENV
         value: production
-      - key: PYTHON_VERSION
-        value: 3.13.0
       - key: CORS_ORIGINS
         value: "https://deadlineos.vercel.app"
       - key: DATABASE_URL
