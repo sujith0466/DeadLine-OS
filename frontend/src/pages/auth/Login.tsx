@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { usePageMeta } from '../../hooks/usePageMeta';
-
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { Lock, Mail, ArrowRight, ShieldCheck, Zap, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'framer-motion';
-import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
 import { Background } from '../../components/Landing/Background';
+import { useDemoLogin } from '../../hooks/useDemoLogin';
 
 export const Login: React.FC = () => {
   usePageMeta('Login');
@@ -18,6 +17,9 @@ export const Login: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { handleDemoLogin, loading: demoLoading, error: demoError } = useDemoLogin();
+  const isLoading = loading || demoLoading;
+  const displayError = error || demoError;
 
   React.useEffect(() => {
     if (user) {
@@ -43,36 +45,6 @@ export const Login: React.FC = () => {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/demo/start`);
-      const { access_token, refresh_token } = response.data;
-      
-      if (!access_token || !refresh_token) {
-        throw new Error('Invalid demo session returned from server');
-      }
-
-      const { error } = await supabase.auth.setSession({
-        access_token,
-        refresh_token,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      navigate('/dashboard');
-    } catch (err: any) {
-      if (err.code === 'ERR_NETWORK' || err.code === 'ECONNREFUSED' || !err.response) {
-        setError('Demo service is temporarily unavailable. Please try again in a few minutes.');
-      } else {
-        setError('Failed to authenticate demo user: ' + (err.response?.data?.error || err.message));
-      }
-      setLoading(false);
-    }
-  };
 return (
     <div className="min-h-screen bg-[#020617] flex items-center justify-center p-4 relative overflow-hidden">
       <Background />
@@ -96,9 +68,9 @@ return (
             <h2 className="text-3xl font-bold text-center text-slate-100 mb-2">Welcome Back</h2>
             <p className="text-center text-slate-400 mb-8">Sign in to access your DeadlineOS Dashboard</p>
 
-            {error && (
+            {displayError && (
               <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-sm p-3 rounded-lg mb-6 text-center">
-                {error}
+                {displayError}
               </div>
             )}
 
@@ -147,7 +119,7 @@ return (
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={isLoading}
                   className="w-full flex items-center justify-center py-3 px-4 border border-transparent rounded-xl shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 focus:ring-offset-slate-900 disabled:opacity-50 disabled:cursor-not-allowed transition-all group"
                 >
                   {loading ? 'Authenticating...' : 'Sign In'}
@@ -160,11 +132,11 @@ return (
               <button
                 onClick={handleDemoLogin}
                 type="button"
-                disabled={loading}
-                className="w-full flex items-center justify-center py-3 px-4 border border-slate-700 rounded-xl shadow-sm text-sm font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 focus:ring-offset-slate-900 transition-all"
+                disabled={isLoading}
+                className="w-full flex items-center justify-center py-3 px-4 border border-slate-700 rounded-xl shadow-sm text-sm font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 focus:ring-offset-slate-900 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Zap className="mr-2 w-4 h-4 text-yellow-400" />
-                Quick Access (Demo Account)
+                {demoLoading ? 'Launching Demo...' : 'Quick Access (Demo Account)'}
               </button>
             </div>
 

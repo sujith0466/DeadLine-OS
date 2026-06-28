@@ -6,7 +6,7 @@ into an intelligent visual execution layer.
 """
 
 from typing import Dict, Any, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from models.task import Task
 from models.intelligence import AccountabilityMetrics
 
@@ -19,7 +19,7 @@ class CalendarService:
         return Task.query.filter_by(user_id=uid).count() == 0
 
     @classmethod
-    def get_events(cls, user_id: str = None, start_date: str = None, end_date: str = None) -> List[Dict[str, Any]]:
+    def get_events(cls, start_date: str = None, end_date: str = None, user_id: str = None) -> List[Dict[str, Any]]:
         """Returns mapped calendar events filtered by date range."""
         from flask import g
         uid = user_id or getattr(g, "user_id", None)
@@ -163,13 +163,23 @@ class CalendarService:
         }
 
     @classmethod
-    def reschedule_event(cls, user_id: str = None, event_id: str = None, new_start: str = None, new_end: str = None) -> bool:
+    def reschedule_event(cls, event_id: str = None, new_start: str = None, new_end: str = None, user_id: str = None) -> bool:
         """Handles drag-and-drop updates."""
         from flask import g
+        from database.db import db
         uid = user_id or getattr(g, "user_id", None)
         task = Task.query.filter_by(user_id=uid, id=event_id).first()
         if not task: return False
-        # Update logic goes here if implemented
-        return True
+        
+        target_date_str = new_end if new_end else new_start
+        if not target_date_str: return False
+        
+        try:
+            task.deadline = datetime.fromisoformat(target_date_str.replace('Z', '+00:00'))
+            task.updated_at = datetime.now(timezone.utc)
+            db.session.commit()
+            return True
+        except Exception:
+            return False
 
 
