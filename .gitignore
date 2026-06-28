@@ -1,13 +1,37 @@
-# Python
+# ==============================================================================
+# DeadlineOS — Global .gitignore
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. Environment & Secrets (NEVER COMMIT)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# ------------------------------------------------------------------------------
+# 2. Python & Backend
+# ------------------------------------------------------------------------------
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
+*$py.class
 *.so
 .pytest_cache/
 .mypy_cache/
 .coverage
 htmlcov/
+coverage.xml
+backend/instance/
+*.db
+*.sqlite
+*.sqlite3
 
 # Virtual Environments
 .venv/
@@ -15,55 +39,62 @@ venv/
 env/
 ENV/
 
-# Environment Variables
-.env
-.env.*
-backend/.env
-frontend/.env
-
-# Flask
-instance/
-*.db
-*.sqlite
-*.sqlite3
-
-# Node / React / Vite
+# ------------------------------------------------------------------------------
+# 3. Node, React & Frontend
+# ------------------------------------------------------------------------------
 node_modules/
 dist/
 build/
 .vite/
 vite.svg
+coverage/
 
-# Logs
+# ------------------------------------------------------------------------------
+# 4. Logs & Caches
+# ------------------------------------------------------------------------------
 logs/
 *.log
+*.stackdump
+.cache/
+backend/audit_results.json
+runtime_cache/
+tmp/
+temp/
 
-# IDE
+# ------------------------------------------------------------------------------
+# 5. OS & IDE
+# ------------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
 .vscode/
 .idea/
 *.swp
 *.swo
+*.bak
 
-# OS Files
-.DS_Store
-Thumbs.db
-
-# Deployment Artifacts
-.vercel
-.render
-coverage/
-tmp/
-temp/
-
-# Generated Reports
+# ------------------------------------------------------------------------------
+# 6. Temporary / Obsolete Historical Reports
+# ------------------------------------------------------------------------------
+# Ignore historical phase markdown files scattered in root
 PHASE_*.md
 *_REPORT.md
 *_CERTIFICATION.md
 *_AUDIT.md
 *_VALIDATION.md
+!DEPLOYMENT_AUDIT_REPORT.md
+docs/verification/
 
-# Temporary Testing & Audit Scripts
+# ------------------------------------------------------------------------------
+# 7. Deployment / Services Artifacts
+# ------------------------------------------------------------------------------
+.vercel
+.render
+puppeteer/
+.puppeteerrc.cjs
+verify_browser.*
+
+# Ignore temporary testing scripts
 backend/run_audit.py
 backend/test_smoke.py
 frontend/strip_mock.py
-backend/audit_results.json
+frontend/audit_console.cjs

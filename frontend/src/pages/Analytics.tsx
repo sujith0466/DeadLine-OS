@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { TrendingUp, BrainCircuit, ActivitySquare, ShieldAlert, Cpu, Bot, Mic, Image, FileText, AlertTriangle, Target, Award, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { GlassCard } from '../components/UI/GlassCard';
@@ -39,6 +39,8 @@ export const Analytics: React.FC = () => {
   const [voiceAgent, setVoiceAgent] = useState<any>(null);
   const [visionAgent, setVisionAgent] = useState<any>(null);
   const [docsAgent, setDocsAgent] = useState<any>(null);
+  
+  const fetched = useRef(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -72,6 +74,8 @@ export const Analytics: React.FC = () => {
         setLoading(false);
       }
     };
+    if (fetched.current) return;
+    fetched.current = true;
     fetchData();
   }, []);
 
@@ -220,8 +224,8 @@ export const Analytics: React.FC = () => {
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-success" /> Productivity Intelligence
           </h2>
-          <div className="h-[300px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-[300px] w-full" style={{ width: '100%', height: '300px' }}>
+            <ResponsiveContainer width="99%" height="100%">
               <AreaChart data={productivity} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorProd" x1="0" y1="0" x2="0" y2="1">

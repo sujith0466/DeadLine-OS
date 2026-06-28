@@ -29,9 +29,10 @@ class VoiceCopilotAgent:
         - goal_query
         - habit_query
         - intervention_query
+        - unknown
 
-        Extract any relevant entities (e.g. task names, deadlines).
-        Generate a 'voice_response' that the system will speak back to the user (keep it concise, professional, and agentic).
+        Extract any relevant entities (e.g. target_name, target_date).
+        Generate a 'voice_response' that the system will speak back to the user (keep it concise, professional, and agentic). If the intent is unknown, suggest a valid action.
         Estimate your confidence in this intent detection (0-100).
         Identify which backend agents need to be invoked to fulfill this request.
         """

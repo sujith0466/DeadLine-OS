@@ -1,33 +1,38 @@
 import React from 'react';
-import { Background } from '../components/Landing/Background';
-import { Navbar } from '../components/Landing/Navbar';
+import { LandingNavigation } from '../components/Landing/LandingNavigation';
 import { HeroSection } from '../components/Landing/HeroSection';
-import { MetricsSection } from '../components/Landing/MetricsSection';
-import { FeatureGrid } from '../components/Landing/FeatureGrid';
-import { AgentEcosystem } from '../components/Landing/AgentEcosystem';
-import { WorkflowTimeline } from '../components/Landing/WorkflowTimeline';
+import { TrustedMetrics } from '../components/Landing/TrustedMetrics';
+import { ProductShowcase } from '../components/Landing/ProductShowcase';
+import { InteractiveWorkflow } from '../components/Landing/InteractiveWorkflow';
+import { HowItThinks } from '../components/Landing/HowItThinks';
+import { AgentsSection } from '../components/Landing/AgentsSection';
 import { WhyDeadlineOS } from '../components/Landing/WhyDeadlineOS';
-import { FinalCTA } from '../components/Landing/FinalCTA';
-import { Footer } from '../components/Landing/Footer';
+import { InteractivePreview } from '../components/Landing/InteractivePreview';
+import { Testimonials } from '../components/Landing/Testimonials';
+import { FAQSection } from '../components/Landing/FAQSection';
+import { CTASection } from '../components/Landing/CTASection';
+import { LandingFooter } from '../components/Landing/LandingFooter';
+import { Background } from '../components/Landing/Background';
 
 export const Landing: React.FC = () => {
   return (
-    <div className="min-h-screen flex flex-col relative overflow-hidden bg-[#020617] selection:bg-primary/30 text-white font-sans">
+    <div className="bg-[#020617] min-h-screen text-gray-50 font-sans selection:bg-indigo-500/30 relative">
       <Background />
-      <Navbar />
-      
-      <main className="flex-1 flex flex-col w-full z-10">
+      <LandingNavigation />
+      <main>
         <HeroSection />
-        <MetricsSection />
-        <FeatureGrid />
-        <AgentEcosystem />
-        <WorkflowTimeline />
+        <TrustedMetrics />
+        <ProductShowcase />
+        <InteractiveWorkflow />
+        <HowItThinks />
+        <AgentsSection />
         <WhyDeadlineOS />
-        <FinalCTA />
+        <InteractivePreview />
+        <Testimonials />
+        <FAQSection />
+        <CTASection />
       </main>
-      
-      <Footer />
+      <LandingFooter />
     </div>
   );
 };
-

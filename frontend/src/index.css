@@ -20,7 +20,56 @@
     font-family: sans-serif;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
-    background-image: radial-gradient(circle at 50% -20%, rgba(14, 165, 233, 0.15), rgba(15, 23, 42, 1) 50%);
+    background-image: radial-gradient(circle at 50% -20%, rgba(var(--color-primary-rgb), 0.15), var(--color-background) 50%);
+  }
+
+  /* Light Theme Overrides */
+  html.light {
+    --color-background: #f8fafc;
+    --color-surface: rgba(0, 0, 0, 0.05);
+    --color-surface-hover: rgba(0, 0, 0, 0.1);
+  }
+  html.light body {
+    color: #0f172a;
+    background-image: none;
+  }
+  
+  /* Accent Colors */
+  html[data-accent="emerald"] {
+    --color-primary: #10b981;
+    --color-primary-rgb: 16, 185, 129;
+    --color-secondary: #059669;
+  }
+  html[data-accent="rose"] {
+    --color-primary: #f43f5e;
+    --color-primary-rgb: 244, 63, 94;
+    --color-secondary: #e11d48;
+  }
+  html[data-accent="amber"] {
+    --color-primary: #f59e0b;
+    --color-primary-rgb: 245, 158, 11;
+    --color-secondary: #d97706;
+  }
+  html[data-accent="indigo"] {
+    --color-primary: #0ea5e9;
+    --color-primary-rgb: 14, 165, 233;
+    --color-secondary: #a855f7;
+  }
+
+  /* Compact Mode Overrides */
+  html.compact-mode body {
+    font-size: 14px;
+  }
+  html.compact-mode .glass-input {
+    padding: 0.25rem 0.75rem;
+  }
+  
+  /* Reduced Motion */
+  html.reduced-motion * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

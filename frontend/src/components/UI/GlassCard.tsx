@@ -7,7 +7,7 @@ interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   gradient?: boolean;
 }
 
-export const GlassCard: React.FC<GlassCardProps> = ({ children, className, gradient, ...props }) => {
+export const GlassCard: React.FC<GlassCardProps> = React.memo(({ children, className, gradient, ...props }) => {
   return (
     <div
       className={twMerge(
@@ -20,4 +20,6 @@ export const GlassCard: React.FC<GlassCardProps> = ({ children, className, gradi
       {children}
     </div>
   );
-};
+});
+
+GlassCard.displayName = 'GlassCard';

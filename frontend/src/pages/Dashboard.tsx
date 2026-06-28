@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { usePageMeta } from '../hooks/usePageMeta';
 import { motion } from 'framer-motion';
 import { Target, Activity, ShieldAlert, Cpu, Brain, CheckCircle2, Clock, Box } from 'lucide-react';
 import { GlassCard } from '../components/UI/GlassCard';
@@ -25,8 +26,7 @@ const getAgentColor = (agentName: string) => {
 const AnimatedKpi = ({ value, suffix = '', label, icon: Icon, delay = 0, colorClass = "text-white" }: any) => {
   const isNumber = typeof value === 'number';
   const count = useCountUp(isNumber ? value : 0, 1.5);
-  
-  return (
+return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
@@ -51,6 +51,7 @@ const AnimatedKpi = ({ value, suffix = '', label, icon: Icon, delay = 0, colorCl
 };
 
 export const Dashboard: React.FC = () => {
+  usePageMeta('Dashboard');
   const [tasks, setTasks] = useState<any[]>([]);
   const [analytics, setAnalytics] = useState<any>(null);
   const [feed, setFeed] = useState<any[]>([]);
@@ -58,30 +59,40 @@ export const Dashboard: React.FC = () => {
   const [agentStatus, setAgentStatus] = useState<any>({ active_agents: 0, online_agents: 12 });
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [tasksRes, analyticsRes, feedRes, briefingRes, agentRes] = await Promise.all([
-          DeadlineOSApi.getTasks(),
-          DeadlineOSApi.getAnalyticsOverview(),
-          DeadlineOSApi.getOrchestrationFeed(),
-          DeadlineOSApi.getAnalyticsBriefing(),
-          DeadlineOSApi.getAgentStatus()
+          DeadlineOSApi.getTasks().catch(() => ({ tasks: [] })),
+          DeadlineOSApi.getAnalyticsOverview().catch(() => ({ data: null })),
+          DeadlineOSApi.getOrchestrationFeed().catch(() => ({ feed: [] })),
+          DeadlineOSApi.getAnalyticsBriefing().catch(() => ({ data: 'System operations are currently offline.' })),
+          DeadlineOSApi.getAgentStatus().catch(() => ({ data: { active_agents: 0, online_agents: 0 } }))
         ]);
-        setTasks(tasksRes.tasks || []);
-        setAnalytics(analyticsRes.data || {
-          productivity_score: 87,
-          deadline_success_rate: 88,
-          current_risk_level: "Medium",
-          future_risk_forecast: "Low",
-          ai_confidence_score: 94
+        
+        setTasks(tasksRes?.tasks || []);
+        setAnalytics(analyticsRes?.data || {
+          productivity_score: 0,
+          deadline_success_rate: 0,
+          current_risk_level: "Unknown",
+          future_risk_forecast: "Unknown",
+          ai_confidence_score: 0
         });
-        setFeed(feedRes.feed || []);
-        setBriefing(briefingRes.data || 'System operations are optimal. Future risk is Low.');
-        setAgentStatus(agentRes.data || { active_agents: 0, online_agents: 12 });
+        setFeed(feedRes?.feed || []);
+        setBriefing(briefingRes?.data || 'System operations are optimal. Future risk is Low.');
+        setAgentStatus(agentRes?.data || { active_agents: 0, online_agents: 0 });
       } catch (err) {
         console.error("Failed to load dashboard data", err);
+        setError("Failed to synchronize with DeadlineOS. Displaying offline metrics.");
+        setAnalytics({
+          productivity_score: 0,
+          deadline_success_rate: 0,
+          current_risk_level: "Unknown",
+          future_risk_forecast: "Unknown",
+          ai_confidence_score: 0
+        });
       } finally {
         setLoading(false);
       }
@@ -121,6 +132,18 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8 pb-12">
       
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <ShieldAlert className="w-5 h-5" />
+            <span className="font-semibold">{error}</span>
+          </div>
+          <button onClick={() => window.location.reload()} className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-sm font-bold transition-colors">
+            Retry Connection
+          </button>
+        </div>
+      )}
+
       {/* 1. Header & AI Chief-of-Staff Briefing */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -155,11 +178,11 @@ export const Dashboard: React.FC = () => {
 
       {/* 2. Executive Intelligence Cards (5 KPIs) */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <AnimatedKpi value={analytics.productivity_score} suffix="%" label="Productivity Score" icon={Activity} delay={0.1} colorClass="text-emerald-400" />
-        <AnimatedKpi value={analytics.deadline_success_rate} suffix="%" label="Success Probability" icon={Target} delay={0.2} colorClass="text-primary" />
-        <AnimatedKpi value={analytics.future_risk_forecast || "Low"} label="Future Risk" icon={ShieldAlert} delay={0.3} colorClass={analytics.future_risk_forecast === 'High' ? 'text-rose-400' : 'text-emerald-400'} />
-        <AnimatedKpi value={analytics.ai_confidence_score} suffix="%" label="AI Confidence" icon={Brain} delay={0.4} colorClass="text-indigo-400" />
-        <AnimatedKpi value={agentStatus.active_agents} suffix={`/${agentStatus.online_agents}`} label="Active Agents" icon={Cpu} delay={0.5} colorClass="text-white" />
+        <AnimatedKpi value={analytics?.productivity_score ?? 0} suffix="%" label="Productivity Score" icon={Activity} delay={0.1} colorClass="text-emerald-400" />
+        <AnimatedKpi value={analytics?.deadline_success_rate ?? 0} suffix="%" label="Success Probability" icon={Target} delay={0.2} colorClass="text-primary" />
+        <AnimatedKpi value={analytics?.future_risk_forecast || "Unknown"} label="Future Risk" icon={ShieldAlert} delay={0.3} colorClass={analytics?.future_risk_forecast === 'High' ? 'text-rose-400' : 'text-emerald-400'} />
+        <AnimatedKpi value={analytics?.ai_confidence_score ?? 0} suffix="%" label="AI Confidence" icon={Brain} delay={0.4} colorClass="text-indigo-400" />
+        <AnimatedKpi value={agentStatus?.active_agents ?? 0} suffix={`/${agentStatus?.online_agents ?? 0}`} label="Active Agents" icon={Cpu} delay={0.5} colorClass="text-white" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -173,8 +196,8 @@ export const Dashboard: React.FC = () => {
               <Target className="w-5 h-5 text-primary" /> Today's Execution Radar
             </h3>
             <div className="space-y-3">
-              {tasks.length > 0 ? tasks.map((task, i) => (
-                <GlassCard key={task.id || i} className="p-4 hover:bg-white/5 transition-colors border-l-4" style={{ borderLeftColor: task.priority_score > 80 ? '#f43f5e' : '#38bdf8' }}>
+              {(tasks || []).length > 0 ? (tasks || []).map((task, i) => (
+                <GlassCard key={task?.id || i} className="p-4 hover:bg-white/5 transition-colors border-l-4" style={{ borderLeftColor: (task?.priority_score || 0) > 80 ? '#f43f5e' : '#38bdf8' }}>
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-1">
@@ -219,8 +242,8 @@ export const Dashboard: React.FC = () => {
             </h3>
             <GlassCard className="p-6">
               <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-white/10 before:to-transparent">
-                {feed.slice(0, 5).map((event, i) => {
-                  const colors = getAgentColor(event.agent);
+                {((feed || []).slice(0, 5)).map((event, i) => {
+                  const colors = getAgentColor(event?.agent || 'unknown');
                   return (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
@@ -236,7 +259,6 @@ export const Dashboard: React.FC = () => {
                       <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-white/5 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors shadow-lg">
                         <div className="flex items-center justify-between mb-1">
                           <span className={`text-xs font-bold uppercase tracking-wider ${colors.split(' ')[0]}`}>{event.agent}</span>
-                          <time className="text-[10px] text-gray-500 font-medium">{new Date(event.timestamp).toLocaleTimeString()}</time>
                         </div>
                         <p className="text-sm text-gray-300">{event.action}</p>
                       </div>

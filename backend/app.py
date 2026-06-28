@@ -22,9 +22,19 @@ import logging
 import logging.config
 import os
 import sys
+import warnings
 
-from flask import Flask, jsonify, request
+# Suppress known vendor noise
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="cryptography")
+warnings.filterwarnings("ignore", module="pypdf")
+warnings.filterwarnings("ignore", message=".*urllib3.*")
+warnings.filterwarnings("ignore", message=".*chardet.*")
+
+from flask import Flask, jsonify, request, g
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import uuid
 
 # ── Local imports ──────────────────────────────────────────────────────────────
 from config import get_config
@@ -71,16 +81,38 @@ def create_app(config_override=None) -> Flask:
     -------
     Flask : Fully configured Flask application.
     """
+    # Environment validation
+    required_vars = ["DATABASE_URL", "SUPABASE_JWT_SECRET", "GEMINI_API_KEY"]
+    missing_vars = [var for var in required_vars if not os.getenv(var)]
+    if missing_vars:
+        logging.error(f"[STARTUP FAILED] Missing required environment variables: {', '.join(missing_vars)}")
+        import sys
+        sys.exit(1)
+
     app = Flask(__name__)
 
     # ── 1. Load configuration ──────────────────────────────────────────────────
     cfg = config_override or get_config()
     app.config.from_object(cfg)
+    
+    # ── 1.5 Initialize Sentry (if configured) ──────────────────────────────────
+    sentry_dsn = os.getenv("SENTRY_DSN")
+    if sentry_dsn:
+        import sentry_sdk
+        from sentry_sdk.integrations.flask import FlaskIntegration
+        sentry_sdk.init(
+            dsn=sentry_dsn,
+            integrations=[FlaskIntegration()],
+            traces_sample_rate=1.0,
+            profiles_sample_rate=1.0,
+        )
 
     # ── 2. Configure logging & Env Validation ──────────────────────────────────
     _configure_logging(cfg)
     logger = logging.getLogger(__name__)
-    logger.info("[START] DeadlineOS starting | env=%s", os.getenv("FLASK_ENV", "development"))
+    is_dev = os.getenv("FLASK_ENV", "development") == "development"
+    if not is_dev:
+        logger.info("[START] DeadlineOS starting | env=%s", os.getenv("FLASK_ENV", "development"))
 
     missing_envs = []
     if not os.getenv("GEMINI_API_KEY"): missing_envs.append("GEMINI_API_KEY")
@@ -96,22 +128,15 @@ def create_app(config_override=None) -> Flask:
 
     # ── 3. Initialise SQLAlchemy ───────────────────────────────────────────────
     db.init_app(app)
-    logger.info("[DB] Database: %s", app.config["SQLALCHEMY_DATABASE_URI"])
+    if not is_dev: logger.info("[DB] Database: %s", app.config["SQLALCHEMY_DATABASE_URI"])
 
     # ── 4. Create database tables (idempotent) ─────────────────────────────────
     with app.app_context():
         # Import all models so their metadata is registered before create_all()
         import models  # noqa: F401
         db.create_all()
-        logger.info("[DB] Database tables ensured.")
+        if not is_dev: logger.info("[DB] Database tables ensured.")
 
-    # ── 5. Configure CORS ─────────────────────────────────────────────────────
-    CORS(
-        app,
-        resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}},
-        supports_credentials=True,
-    )
-    logger.info("[CORS] Enabled for origins: %s", app.config["CORS_ORIGINS"])
 
     # ── 6. Initialise Gemini Service ───────────────────────────────────────────
     if app.config.get("GEMINI_API_KEY"):
@@ -126,7 +151,7 @@ def create_app(config_override=None) -> Flask:
         )
         # Store on app.extensions so blueprints can access via current_app.extensions
         app.extensions["gemini_service"] = gemini
-        logger.info("[GEMINI] GeminiService initialised | model=%s", app.config["GEMINI_MODEL"])
+        if not is_dev: logger.info("[GEMINI] GeminiService initialised | model=%s", app.config["GEMINI_MODEL"])
     else:
         logger.warning(
             "[GEMINI] GEMINI_API_KEY not set. GeminiService disabled. "
@@ -136,8 +161,50 @@ def create_app(config_override=None) -> Flask:
     # ── 7. Register Blueprints ─────────────────────────────────────────────────
     _register_blueprints(app)
 
-    # ── 8. Register Error Handlers ─────────────────────────────────────────────
-    _register_error_handlers(app)
+    # ── 7.5 Configure CORS ─────────────────────────────────────────────────────
+    CORS(
+        app,
+        resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", "*")}},
+        supports_credentials=True,
+        allow_headers=["Content-Type", "Authorization", "apikey", "X-Correlation-ID"],
+        expose_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"]
+    )
+    if not is_dev: logger.info("[CORS] Enabled for origins: %s", app.config["CORS_ORIGINS"])
+
+    # ── 8. Global Error Handlers & Security Headers ────────────────────────────
+    @app.after_request
+    def add_security_headers(response):
+        """Add enterprise security headers to every response."""
+        # HTTP Strict Transport Security (HSTS)
+        response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+        
+        # Content Security Policy (CSP)
+        # Note: Frontend handles its own CSP, but we restrict API responses.
+        response.headers['Content-Security-Policy'] = "default-src 'none'; frame-ancestors 'none'"
+        
+        # Prevent MIME type sniffing
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        
+        # Prevent Clickjacking
+        response.headers['X-Frame-Options'] = 'DENY'
+        
+        # XSS Protection (Legacy but good practice)
+        response.headers['X-XSS-Protection'] = '1; mode=block'
+        
+        return response
+
+    from utils.errors import register_global_errors
+    register_global_errors(app)
+
+    # ── 8.5 Configure Rate Limiting ────────────────────────────────────────────
+    limiter = Limiter(
+        get_remote_address,
+        app=app,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://" # Can be replaced with Redis later
+    )
+    app.extensions['limiter'] = limiter
 
     # ── 9. Register Request Hooks ──────────────────────────────────────────────
     _register_request_hooks(app)
@@ -151,7 +218,7 @@ def create_app(config_override=None) -> Flask:
             "version": "1.0.0"
         })
 
-    logger.info("[OK] DeadlineOS backend ready.")
+    if not is_dev: logger.info("[OK] DeadlineOS backend ready.")
     return app
 
 
@@ -169,6 +236,9 @@ def _register_blueprints(app: Flask) -> None:
     from api.voice import voice_bp
     from api.notifications import notifications_bp
     from api.reports import reports_bp
+    from api.users import users_bp
+    from api.demo import demo_bp
+    from api.settings import settings_bp
 
     app.register_blueprint(health_bp, url_prefix="/api")
     app.register_blueprint(tasks_bp, url_prefix="/api")
@@ -182,91 +252,18 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(voice_bp, url_prefix="/api")
     app.register_blueprint(notifications_bp, url_prefix="/api")
     app.register_blueprint(reports_bp, url_prefix="/api")
+    app.register_blueprint(users_bp, url_prefix="/api")
+    app.register_blueprint(demo_bp, url_prefix="/api")
+    app.register_blueprint(settings_bp, url_prefix="/api")
 
-    logging.getLogger(__name__).info(
-        "[ROUTES] Blueprints registered: health, tasks, agents, orchestration, analytics, calendar, interventions, goals, documents, voice, notifications, reports"
-    )
+    is_dev = os.getenv("FLASK_ENV", "development") == "development"
+    if not is_dev:
+        logging.getLogger(__name__).info(
+            "[ROUTES] Blueprints registered: health, tasks, agents, orchestration, analytics, calendar, interventions, goals, documents, voice, notifications, reports, users, demo"
+        )
 
 
-def _register_error_handlers(app: Flask) -> None:
-    """
-    Register global error handlers that return consistent JSON error responses.
 
-    All errors follow the shape:
-        { "error": "<message>", "status": <http_code> }
-    """
-    logger = logging.getLogger(__name__)
-
-    @app.errorhandler(400)
-    def bad_request(exc):
-        logger.warning("400 Bad Request: %s | path=%s", exc.description, request.path)
-        return jsonify({"error": str(exc.description), "status": 400}), 400
-
-    @app.errorhandler(404)
-    def not_found(exc):
-        logger.info("404 Not Found: %s", request.path)
-        return jsonify(
-            {
-                "error": str(exc.description) if exc.description else "Resource not found.",
-                "status": 404,
-            }
-        ), 404
-
-    @app.errorhandler(405)
-    def method_not_allowed(exc):
-        return jsonify(
-            {"error": f"Method '{request.method}' not allowed on this endpoint.", "status": 405}
-        ), 405
-
-    @app.errorhandler(422)
-    def unprocessable(exc):
-        return jsonify({"error": str(exc.description), "status": 422}), 422
-
-    @app.errorhandler(500)
-    def internal_error(exc):
-        logger.exception("500 Internal Server Error: %s", exc)
-        return jsonify(
-            {
-                "error": "An unexpected server error occurred. Please try again.",
-                "status": 500,
-            }
-        ), 500
-
-    @app.errorhandler(503)
-    def service_unavailable(exc):
-        return jsonify({"error": str(exc.description), "status": 503}), 503
-
-    # Catch-all for unhandled exceptions (Flask debug=False mode)
-    @app.errorhandler(Exception)
-    def handle_exception(exc):
-        # Re-raise HTTP exceptions so Flask handles them normally
-        from werkzeug.exceptions import HTTPException
-        if isinstance(exc, HTTPException):
-            return exc
-            
-        from sqlalchemy.exc import SQLAlchemyError
-        if isinstance(exc, SQLAlchemyError):
-            db.session.rollback()
-            logger.error("Database Transaction Failed (Neon Resilience): %s", exc)
-            return jsonify({
-                "error": "Database Service Unavailable",
-                "status": 503,
-            }), 503
-            
-        if "GeminiServiceError" in type(exc).__name__ or "gemini" in str(exc).lower() or "generativeai" in str(type(exc)).lower():
-            logger.error("AI Service Error (Gemini Resilience): %s", exc)
-            return jsonify({
-                "error": "AI Service Temporarily Unavailable: " + str(exc),
-                "status": 503,
-            }), 503
-            
-        logger.exception("Unhandled exception: %s", exc)
-        return jsonify(
-            {
-                "error": "An unexpected error occurred.",
-                "status": 500,
-            }
-        ), 500
 
 
 def _register_request_hooks(app: Flask) -> None:
@@ -275,12 +272,16 @@ def _register_request_hooks(app: Flask) -> None:
 
     @app.before_request
     def log_request():
-        """Log every incoming API request."""
+        """Log every incoming API request and inject Correlation ID."""
+        request_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+        g.request_id = request_id
+        
         if request.path.startswith("/api"):
             logger.debug(
-                "→ %s %s | content_type=%s | content_length=%s",
+                "→ %s %s | req_id=%s | content_type=%s | content_length=%s",
                 request.method,
                 request.path,
+                request_id,
                 request.content_type,
                 request.content_length,
             )
@@ -299,6 +300,14 @@ def _register_request_hooks(app: Flask) -> None:
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["X-XSS-Protection"] = "1; mode=block"
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        response.headers["Content-Security-Policy"] = "default-src 'self'"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        
+        request_id = getattr(g, "request_id", None)
+        if request_id:
+            response.headers["X-Correlation-ID"] = request_id
+            
         return response
 
 
@@ -308,7 +317,23 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     debug = os.getenv("FLASK_ENV", "development") == "development"
 
-    logging.getLogger(__name__).info(
-        "[SERVER] Dev server running at http://localhost:%d", port
-    )
-    flask_app.run(host="0.0.0.0", port=port, debug=debug)
+    if debug and os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+        # Clean Startup Banner
+        print("\n" + "="*50)
+        print("DEADLINEOS BACKEND")
+        print("==================\n")
+        print(f"Environment: {os.getenv('FLASK_ENV', 'development').capitalize()}")
+        print("Database: Connected")
+        print(f"Gemini: {'Connected' if flask_app.extensions.get('gemini_service') else 'Disconnected'}")
+        print("SocketIO: Ready\n")
+        print("Modules:")
+        print("✓ Planning Agent\n✓ Rescue Agent\n✓ Digital Twin\n✓ Document Intelligence")
+        print("✓ Voice Copilot\n✓ Vision Intelligence\n✓ Analytics\n")
+        print("Server:")
+        print(f"http://localhost:{port}")
+        print("="*50 + "\n")
+    else:
+        logging.getLogger(__name__).info(
+            "[SERVER] Dev server running at http://localhost:%d", port
+        )
+    flask_app.run(host="0.0.0.0", port=port, debug=debug) # nosec B104

@@ -21,7 +21,8 @@ GET  /api/agents/status              →  Running agent status overview
 import logging
 from datetime import datetime, timezone
 
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request, current_app, g
+from utils.auth import require_auth
 
 from agents.priority_agent import PriorityAgent
 from agents.planning_agent import PlanningAgent
@@ -32,8 +33,12 @@ from agents.accountability_agent import AccountabilityAgent
 from agents.coach_agent import CoachAgent
 from agents.reflection_agent import ReflectionAgent
 from models.task import Task
+from models.schedule import Schedule, ScheduleSlot
 import time
+from database.db import db
 from services.telemetry_service import TelemetryService
+from services.intervention_engine import InterventionEngine
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +55,7 @@ _agent_status: dict = {
     "twin": {"state": "idle", "last_run": None},
     "vision": {"state": "idle", "last_run": None},
     "reflection": {"state": "idle", "last_run": None},
+    "intervention": {"state": "idle", "last_run": None},
 }
 
 
@@ -58,6 +64,8 @@ def _now_iso() -> str:
 
 
 def _set_agent_state(agent: str, state: str) -> None:
+    if agent not in _agent_status:
+        _agent_status[agent] = {"state": "idle", "last_run": None}
     _agent_status[agent]["state"] = state
     if state == "done":
         _agent_status[agent]["last_run"] = _now_iso()
@@ -114,6 +122,7 @@ def agent_status():
 
 
 @agents_bp.route("/agents/prioritize", methods=["POST"])
+@require_auth
 def run_priority_agent():
     """
     Trigger the Priority Agent for one or more tasks.
@@ -138,7 +147,7 @@ def run_priority_agent():
         return jsonify({"error": "GeminiService not available"}), 503
 
     priority_agent = PriorityAgent(gemini)
-    active_tasks_count = Task.query.filter(Task.status != "done").count()
+    active_tasks_count = Task.query.filter(Task.user_id == g.user_id, Task.status != "done").count()
 
     # Handle direct ad-hoc task input (e.g. from frontend form or test)
     if "title" in data and "deadline" in data:
@@ -159,9 +168,9 @@ def run_priority_agent():
     _set_agent_state("priority", "running")
 
     if not task_ids:
-        tasks = Task.query.filter(Task.status != "done").all()
+        tasks = Task.query.filter(Task.user_id == g.user_id, Task.status != "done").all()
     else:
-        tasks = Task.query.filter(Task.id.in_(task_ids)).all()
+        tasks = Task.query.filter(Task.user_id == g.user_id, Task.id.in_(task_ids)).all()
 
     results = []
     for task in tasks:
@@ -192,8 +201,16 @@ def run_priority_agent():
         "timestamp": _now_iso(),
     }), 200
 
+@agents_bp.route("/agents/plan/latest", methods=["GET"])
+@require_auth
+def get_latest_plan():
+    latest = Schedule.query.filter_by(user_id=g.user_id).order_by(Schedule.created_at.desc()).first()
+    if latest:
+        return jsonify({"status": "success", "data": latest.to_dict()}), 200
+    return jsonify({"status": "success", "data": None}), 200
 
 @agents_bp.route("/agents/plan", methods=["POST"])
+@require_auth
 def run_planning_agent():
     """
     Trigger the Planning Agent to generate a daily schedule.
@@ -239,8 +256,52 @@ def run_planning_agent():
         _set_agent_state("planning", "running")
         logger.info("Planning Agent triggered with %d tasks", len(tasks))
         result = planning_agent.generate_plan(tasks, availability)
+        
+        # Persist schedule
+        try:
+            new_schedule = Schedule(
+                user_id=g.user_id,
+                target_date=result.get("schedule", [{}])[0].get("date", datetime.now().strftime("%Y-%m-%d")) if result.get("schedule") else datetime.now().strftime("%Y-%m-%d"),
+                confidence_score=result.get("confidence_score", 100),
+                sys_confidence=result.get("_system_confidence", 100),
+                daily_summary=result.get("daily_summary", ""),
+                strategy=availability.get("strategy", "Balanced"),
+                available_hours=availability.get("daily_available_hours", 8),
+                generated_by=result.get("_inference_source", "local"),
+                planning_brief=json.dumps(result.get("planning_brief", [])),
+                twin_simulation=json.dumps(result.get("twin_simulation", None)),
+                backlog=json.dumps(result.get("backlog", []))
+            )
+            
+            for slot_data in result.get("schedule", []):
+                slot = ScheduleSlot(
+                    user_id=g.user_id,
+                    task_id=slot_data.get("task_id"),
+                    task_title=slot_data.get("task", "Untitled"),
+                    start_time=slot_data.get("start_time", "00:00"),
+                    end_time=slot_data.get("end_time", "00:00"),
+                    focus_block=slot_data.get("focus_block", False),
+                    is_break="break" in slot_data.get("task", "").lower()
+                )
+                new_schedule.slots.append(slot)
+                
+            db.session.add(new_schedule)
+            db.session.commit()
+            
+            # Re-fetch from DB to guarantee it matches format
+            result = new_schedule.to_dict()
+            
+        except Exception as db_err:
+            import traceback
+            err_str = traceback.format_exc()
+            logger.error("Failed to persist schedule: %s\n%s", db_err, err_str)
+            db.session.rollback()
+            return jsonify({"error": "Failed to persist schedule to database", "details": err_str, "status": 500}), 500
+
         TelemetryService.log_execution("Planning Agent", "Generate Plan", "success", t0, 85)
         _set_agent_state("planning", "done")
+        
+        InterventionEngine.trigger_evaluation()
         
         return jsonify({
             "agent": "planning",
@@ -255,6 +316,7 @@ def run_planning_agent():
 
 
 @agents_bp.route("/agents/rescue", methods=["POST"])
+@require_auth
 def run_rescue_agent_general():
     """
     Trigger Rescue Mode for a set of tasks based on a JSON payload.
@@ -297,6 +359,19 @@ def run_rescue_agent_general():
         TelemetryService.log_execution("Rescue Agent", "Recovery Plan", "success", t0, 92)
         _set_agent_state("rescue", "done")
         
+        # Phase 6C: Persist Rescue Plan
+        from models.intervention import RescuePlan
+        from database.db import db
+        plan = RescuePlan(
+            user_id=g.user_id,
+            success_rate=result.get("success_probability", 0),
+            intervention=result.get("recovery_plan", [])
+        )
+        db.session.add(plan)
+        db.session.commit()
+        
+        result["plan_id"] = plan.id
+        
         return jsonify({
             "agent": "rescue",
             "status": "success",
@@ -309,26 +384,40 @@ def run_rescue_agent_general():
         return jsonify({"error": "AI Service Temporarily Unavailable: " + str(e), "status": 503}), 503
 
 
-@agents_bp.route("/agents/rescue/<task_id>", methods=["POST"])
-def run_rescue_agent_by_id(task_id: str):
-    """
-    Trigger Rescue Mode for a specific at-risk task.
-    """
-    logger.warning("🚨 Rescue Agent triggered | task_id=%s", task_id)
-    _set_agent_state("rescue", "queued")
+@agents_bp.route("/agents/rescue/execute", methods=["POST"])
+@require_auth
+def execute_rescue_plan():
+    from models.intervention import RescueExecution
+    from database.db import db
+    data = request.json or {}
+    plan_id = data.get("plan_id")
+    action = data.get("action")
+    
+    # 1. Log Execution
+    execution = RescueExecution(
+        user_id=g.user_id,
+        plan_id=plan_id,
+        user_response="ACCEPTED",
+        outcome=f"Executed {action}"
+    )
+    db.session.add(execution)
+    db.session.commit()
+    return jsonify({"status": "success"})
 
-    return jsonify(
-        {
-            "agent": "rescue",
-            "status": "queued",
-            "task_id": task_id,
-            "message": "Rescue Agent by ID will use DB logic.",
-            "timestamp": _now_iso(),
-        }
-    ), 202
+
+@agents_bp.route("/agents/rescue/history", methods=["GET"])
+@require_auth
+def get_rescue_history():
+    from models.intervention import RescuePlan
+    plans = RescuePlan.query.filter_by(user_id=g.user_id).order_by(RescuePlan.timestamp.desc()).limit(10).all()
+    return jsonify({
+        "status": "success",
+        "data": [p.to_dict() for p in plans]
+    })
 
 
 @agents_bp.route("/agents/digital-twin", methods=["POST"])
+@require_auth
 def run_digital_twin():
     """
     Trigger the Digital Twin Agent to simulate future workload outcomes
@@ -348,7 +437,7 @@ def run_digital_twin():
     twin_agent = DigitalTwinAgent(gemini)
 
     # 1. Fetch Real Context
-    tasks = [t.to_dict() for t in Task.query.filter(Task.status != 'done').all()]
+    tasks = [t.to_dict() for t in Task.query.filter(Task.user_id == g.user_id, Task.status != 'done').all()]
     availability = AvailabilityService.get_current_availability()
     scenario = data.get("scenario", {})
 
@@ -367,6 +456,7 @@ def run_digital_twin():
         
         # 3. Persist Log
         log = TwinSimulationLog(
+            user_id=g.user_id,
             scenario_type=scenario.get("action"),
             current_success_probability=result.get("current_state", {}).get("success_probability"),
             projected_success_probability=result.get("success_probability"),
@@ -394,7 +484,19 @@ def run_digital_twin():
         return jsonify({"error": "AI Service Temporarily Unavailable: " + str(e), "status": 503}), 503
 
 
+@agents_bp.route("/agents/twin/history", methods=["GET"])
+@require_auth
+def get_digital_twin_history():
+    from models.telemetry import TwinSimulationLog
+    logs = TwinSimulationLog.query.filter_by(user_id=g.user_id).order_by(TwinSimulationLog.created_at.desc()).limit(10).all()
+    return jsonify({
+        "status": "success",
+        "data": [l.to_dict() for l in logs]
+    }), 200
+
+
 @agents_bp.route("/agents/vision", methods=["POST"])
+@require_auth
 def run_vision_agent():
     """
     Trigger the Vision Agent to extract tasks from an uploaded image.
@@ -428,33 +530,86 @@ def run_vision_agent():
 
     try:
         t0 = time.time()
-        image_bytes = file.read()
+        raw_image_bytes = file.read()
         vision_agent = VisionAgent(gemini)
 
         _set_agent_state("vision", "running")
         logger.info("Vision Agent triggered for image upload (%s)", mime_type)
         
-        result = vision_agent.extract_tasks_from_image(image_bytes, mime_type)
+        # Preprocess
+        image_bytes = vision_agent.preprocess_image(raw_image_bytes)
         
-        TelemetryService.log_execution("Vision Agent", "Image Upload Extraction", "success", t0, 95)
+        # Local OCR attempt
+        ocr_result, ocr_conf = vision_agent.extract_tasks_via_ocr(image_bytes)
+        raw_text = ocr_result.get("raw_text", "")
         
-        # PERSISTENCE
+        # Pass OCR output directly to Execution Engine
+        from services.local_intelligence.execution_engine import ExecutionEngine
+        
+        # Only fallback immediately if completely illegible, otherwise ExecutionEngine handles it
+        if ocr_conf < 0.2 and not raw_text.strip():
+            logger.info("Local OCR failed entirely, passing raw image to Gemini Vision")
+            gemini_res = vision_agent.extract_tasks_from_image(raw_image_bytes, mime_type)
+            raw_text = gemini_res.get("summary", "Extracted via Gemini Vision")
+            
+        execution = ExecutionEngine.execute(
+            source="vision",
+            transcript=raw_text,
+            gemini_service=gemini,
+            user_id=getattr(g, "user_id", None)
+        )
+            
+        # Telemetry for Initial Processing
+        TelemetryService.log_execution("Vision Agent", "OCR & Execution", "success", t0, int(ocr_conf * 100))
+        logger.info("Vision Agent processed image. Confidence: %.2f", ocr_conf)
+
+        _set_agent_state("vision", "done")
+        
+        # Return structured ExecutionEngine output
+        return jsonify({
+            "agent": "vision",
+            "status": execution.get("status", "success"),
+            "raw_text": raw_text,
+            "confidence": execution.get("confidence", 0),
+            "summary": execution.get("message", ""),
+            "tasks": execution.get("entities", {}).get("tasks", []),
+            "action_items": execution.get("entities", {}).get("action_items", []),
+            "inserted_task_ids": execution.get("data", {}).get("inserted_ids", []),
+            "structured_result": execution,
+            "timestamp": _now_iso(),
+        }), 200
+    except Exception as e:
+        logger.error("Vision Agent failed: %s", e, exc_info=True)
+        _set_agent_state("vision", "idle")
+        return jsonify({"error": "AI Service Temporarily Unavailable: " + str(e), "status": 503}), 503
+
+@agents_bp.route("/agents/vision/confirm", methods=["POST"])
+@require_auth
+def run_vision_agent_confirm():
+    """
+    HITL Confirm Endpoint: Persists the user-reviewed OCR structured data.
+    """
+    data = request.get_json(silent=True) or {}
+    
+    try:
+        t0 = time.time()
+        _set_agent_state("vision", "running")
+        
         from models.task import Task
         from database.db import db
         from services.orchestrator import OrchestratorService
         from datetime import datetime, timezone, timedelta
         
-        inserted_tasks = []
-        extracted_tasks = result.get("tasks", [])
+        # We trust the user-confirmed tasks, events, notes payload.
+        confirmed_tasks = data.get("confirmed_tasks", [])
         
-        # 1. Gather all titles to pre-fetch duplicates
-        titles = [t_data.get("title", "Vision Extracted Task") for t_data in extracted_tasks]
-        existing_tasks_records = Task.query.filter(Task.title.in_(titles)).all()
+        inserted_tasks = []
+        titles = [t_data.get("title", "Vision Extracted Task") for t_data in confirmed_tasks]
+        existing_tasks_records = Task.query.filter(Task.user_id == g.user_id, Task.title.in_(titles)).all()
         existing_titles = {t.title for t in existing_tasks_records}
 
-        for t_data in extracted_tasks:
+        for t_data in confirmed_tasks:
             task_title = t_data.get("title", "Vision Extracted Task")
-            # Duplicate check using pre-fetched set
             if task_title in existing_titles:
                 continue
                 
@@ -467,12 +622,13 @@ def run_vision_agent():
             priority = t_data.get("priority", "Medium")
             
             t = Task(
+                user_id=g.user_id,
                 title=task_title,
                 deadline=deadline,
-                description=f"Priority: {priority} (Extracted by Vision Agent)",
+                description=f"Priority: {priority} (Confirmed via Vision Workspace)",
                 source="vision",
                 status="pending",
-                ai_confidence=95 # Default vision extraction confidence
+                ai_confidence=100  # 100% since it's human-confirmed
             )
             inserted_tasks.append(t)
             
@@ -480,25 +636,27 @@ def run_vision_agent():
             db.session.add_all(inserted_tasks)
             
         db.session.commit()
-        result["inserted_task_ids"] = [t.id for t in inserted_tasks]
         
-        OrchestratorService.add_event("Vision Agent", "Extracted and saved tasks", "success", {"count": len(inserted_tasks)})
+        # Telemetry
+        TelemetryService.log_execution("Vision Agent", "User Confirmation", "success", t0, 100)
+        OrchestratorService.add_event("Vision Agent", "User confirmed and saved tasks", "success", {"count": len(inserted_tasks)})
 
         _set_agent_state("vision", "done")
         
         return jsonify({
-            "agent": "vision",
-            "status": "success",
-            "data": result,
-            "timestamp": _now_iso(),
+            "success": True,
+            "inserted_task_ids": [t.id for t in inserted_tasks]
         }), 200
+        
     except Exception as e:
-        logger.error("Vision Agent failed: %s", e, exc_info=True)
+        logger.error("Vision Agent confirm failed: %s", e, exc_info=True)
         _set_agent_state("vision", "idle")
-        return jsonify({"error": "AI Service Temporarily Unavailable: " + str(e), "status": 503}), 503
+        db.session.rollback()
+        return jsonify({"error": "Failed to save: " + str(e), "status": 500}), 500
 
 
 @agents_bp.route("/agents/accountability", methods=["POST"])
+@require_auth
 def run_accountability():
     """Trigger the Accountability Agent."""
     _set_agent_state("accountability", "running")
@@ -522,6 +680,7 @@ def run_accountability():
 
 
 @agents_bp.route("/agents/coach", methods=["POST"])
+@require_auth
 def run_coach():
     """Trigger the Coach Agent."""
     _set_agent_state("coach", "running")
@@ -544,6 +703,7 @@ def run_coach():
 
 
 @agents_bp.route("/agents/reflection", methods=["POST"])
+@require_auth
 def run_reflection():
     """Trigger the Reflection Agent."""
     _set_agent_state("reflection", "running")

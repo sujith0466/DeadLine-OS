@@ -1,11 +1,13 @@
 import logging
 from flask import Blueprint, jsonify, request, current_app
 from services.orchestrator import OrchestratorService
+from utils.auth import require_auth
 
 logger = logging.getLogger(__name__)
 orchestration_bp = Blueprint("orchestration", __name__)
 
 @orchestration_bp.route("/orchestration/feed", methods=["GET"])
+@require_auth
 def get_activity_feed():
     """Returns the global AI Activity feed."""
     return jsonify({
@@ -14,6 +16,7 @@ def get_activity_feed():
     }), 200
 
 @orchestration_bp.route("/orchestration/pipeline", methods=["POST"])
+@require_auth
 def run_pipeline():
     """
     Triggers the full multi-agent orchestration pipeline starting with an image.
@@ -48,4 +51,24 @@ def run_pipeline():
         
     except Exception as e:
         logger.error("Orchestration pipeline failed: %s", e)
+        return jsonify({"error": str(e)}), 500
+
+@orchestration_bp.route("/orchestration/execute", methods=["POST"])
+@require_auth
+def execute_system_state():
+    """
+    Evaluates current system state using existing active database records.
+    Does not require file uploads.
+    """
+    gemini = current_app.extensions.get("gemini_service")
+    if not gemini:
+        return jsonify({"error": "GeminiService not available"}), 503
+
+    try:
+        orchestrator = OrchestratorService(gemini)
+        result = orchestrator.evaluate_system_state()
+        return jsonify(result), 200
+        
+    except Exception as e:
+        logger.error("System Orchestration Evaluation failed: %s", e)
         return jsonify({"error": str(e)}), 500

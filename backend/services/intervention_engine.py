@@ -1,9 +1,8 @@
 """
-DeadlineOS — Intervention Engine
-================================
+DeadlineOS — Intervention Engine (Threat Detection)
+=================================================
 Proactively monitors all intelligence streams (Analytics, Calendar, Twin, Coach, Rescue)
-to identify impending failures and generate actionable interventions.
-Designed for future expansion: Voice Copilot, Meeting Automation, Calendar AI.
+to identify impending failures and generate actionable threats.
 """
 
 import os
@@ -11,140 +10,151 @@ from typing import Dict, Any, List
 from datetime import datetime, timezone
 import uuid
 from database.db import db
-from models.intervention import Intervention
+from models.intervention import Threat
 
 class InterventionEngine:
 
     @classmethod
-    def run_engine(cls) -> List[Dict[str, Any]]:
+    def run_engine(cls, user_id: str = None) -> List[Dict[str, Any]]:
         """
-        Aggregates data across the system and evaluates conditions to spawn interventions.
+        Aggregates data across the system and evaluates conditions to spawn Threats.
         """
         from models.task import Task
         from services.availability_service import AvailabilityService
         from services.telemetry_service import TelemetryService
         import time
+        from flask import g
         
         t0 = time.time()
+        uid = user_id or getattr(g, "user_id", None)
+        if not uid: return []
         
         # 1. Detect Overdue Tasks
         now = datetime.now(timezone.utc)
-        overdue_tasks = Task.query.filter(Task.status == 'pending', Task.deadline < now).all()
+        overdue_tasks = Task.query.filter(Task.user_id == uid, Task.status == 'pending', Task.deadline < now).all()
         
-        # Pre-fetch all active interventions to prevent N+1 duplicate checks
-        active_interventions = Intervention.query.filter_by(resolved=False).all()
-        active_messages = [inv.message for inv in active_interventions if inv.message]
-        active_types = {inv.type for inv in active_interventions}
+        # Pre-fetch all active threats to prevent N+1 duplicate checks
+        active_threats = Threat.query.filter_by(user_id=uid, status="active").all()
+        active_messages = [t.message for t in active_threats if t.message]
+        active_types = {t.type for t in active_threats}
 
-        new_interventions = []
+        new_threats = []
 
         for task in overdue_tasks:
-            # Check if an active intervention already exists for this task in memory
+            # Check if an active threat already exists for this task
             if not any(task.title in msg for msg in active_messages):
-                inv = Intervention(
-                    type="overdue_task",
+                inv = Threat(
+                    user_id=uid,
+                    type="deadline_collision",
                     severity="Critical",
-                    priority_score=95,
-                    confidence_score=100,
-                    trigger_source="Intervention Engine",
-                    message=f"Task '{task.title}' is overdue. Immediate rescheduling required.",
-                    recommended_action={
-                        "action_type": "calendar_reschedule",
-                        "target_task_id": task.id,
-                        "target_task": task.title,
-                        "voice_prompt_ready": f"Would you like me to move '{task.title}' to your next available block?"
-                    }
+                    source="Planner",
+                    message=f"Task '{task.title}' is overdue.",
+                    details={"task_id": task.id}
                 )
-                new_interventions.append(inv)
+                new_threats.append(inv)
                 active_messages.append(inv.message)
                 
         # 2. Detect Workload Overload / Burnout
         avail = AvailabilityService.get_current_availability()
         if avail.get("utilization_percentage", 0) > 95:
-             if "workload_overload" not in active_types:
-                 inv = Intervention(
-                    type="workload_overload",
+             if "capacity_overload" not in active_types:
+                 inv = Threat(
+                    user_id=uid,
+                    type="capacity_overload",
                     severity="High",
-                    priority_score=90,
-                    confidence_score=90,
-                    trigger_source="Availability Engine",
+                    source="Planner",
                     message=f"Workload capacity is at {avail['utilization_percentage']}%. Burnout risk is extremely high.",
-                    recommended_action={
-                        "action_type": "focus_block_injection",
-                        "voice_prompt_ready": "Your workload is critical. Shall I activate Rescue Mode and clear non-essential meetings?"
-                    }
+                    details={"utilization_percentage": avail.get("utilization_percentage")}
                  )
-                 new_interventions.append(inv)
-                 active_types.add("workload_overload")
+                 new_threats.append(inv)
+                 active_types.add("capacity_overload")
 
         # 3. Detect Goal Deviation
         from models.goal import Goal
-        at_risk_goals = Goal.query.filter_by(status='at_risk').all()
+        at_risk_goals = Goal.query.filter_by(user_id=uid, status='at_risk').all()
         for goal in at_risk_goals:
              if not any(goal.title in msg for msg in active_messages):
-                 inv = Intervention(
-                    type="goal_deviation",
+                 inv = Threat(
+                    user_id=uid,
+                    type="goal_drift",
                     severity="Medium",
-                    priority_score=70,
-                    confidence_score=85,
-                    trigger_source="Goal Tracking",
+                    source="Goals",
                     message=f"Goal '{goal.title}' is deviating from its target trajectory.",
-                    recommended_action={
-                        "action_type": "invoke_planning_agent",
-                        "target_goal_id": goal.id,
-                        "voice_prompt_ready": f"Would you like me to restructure your week to prioritize '{goal.title}'?"
-                    }
+                    details={"goal_id": goal.id}
                  )
-                 new_interventions.append(inv)
+                 new_threats.append(inv)
                  active_messages.append(inv.message)
 
         # 4. Detect Habit Degradation
         from models.goal import Habit
-        at_risk_habits = Habit.query.filter(Habit.current_streak < 1).all()
+        at_risk_habits = Habit.query.filter(Habit.user_id == uid, Habit.current_streak < 1).all()
         for habit in at_risk_habits:
              if not any(habit.name in msg for msg in active_messages):
-                 inv = Intervention(
+                 inv = Threat(
+                    user_id=uid,
                     type="habit_degradation",
                     severity="Low",
-                    priority_score=50,
-                    confidence_score=95,
-                    trigger_source="Habit Tracking",
+                    source="Habits",
                     message=f"Habit streak for '{habit.name}' has been broken.",
-                    recommended_action={
-                        "action_type": "coach_challenge",
-                        "target_habit_id": habit.id,
-                        "voice_prompt_ready": f"You've missed '{habit.name}'. Let's commit to a 10-minute session today."
-                    }
+                    details={"habit_id": habit.id}
                  )
-                 new_interventions.append(inv)
+                 new_threats.append(inv)
                  active_messages.append(inv.message)
 
-        if new_interventions:
-            db.session.add_all(new_interventions)
-        db.session.commit()
+        if new_threats:
+            db.session.add_all(new_threats)
+            db.session.commit()
+            
+            from services.notification_service import NotificationService
+            for t in new_threats:
+                NotificationService.create_notification(
+                    title=f"Threat Detected: {t.type.replace('_', ' ').title()}",
+                    description=t.message,
+                    severity=t.severity.lower(),
+                    priority="Critical" if t.severity == "Critical" else "High",
+                    module="Rescue",
+                    entity_type="threat",
+                    entity_id=t.id,
+                    action_url=f"/rescue?threat={t.id}",
+                    icon="AlertTriangle" if t.severity == "Critical" else "ShieldAlert",
+                    color="rose" if t.severity == "Critical" else "amber",
+                    category="Rescue"
+                ) # NotificationService relies on global 'g' or standard channel hooks
         
-        TelemetryService.log_execution("Intervention Engine", "Run Evaluation", "success", t0, 95)
+        TelemetryService.log_execution("Threat Detection Engine", "Run Evaluation", "success", t0, 95)
         
-        active = Intervention.query.filter_by(resolved=False).order_by(Intervention.priority_score.desc()).all()
-        return [i.to_dict() for i in active]
+        active = Threat.query.filter_by(user_id=uid, status="active").order_by(Threat.created_at.desc()).all()
+        return [t.to_dict() for t in active]
 
     @classmethod
-    def get_active_interventions(cls, page: int = 1, limit: int = 100) -> List[Dict[str, Any]]:
-        """Returns currently active interventions with pagination."""
+    def get_active_threats(cls, user_id: str = None, page: int = 1, limit: int = 100) -> List[Dict[str, Any]]:
+        """Returns currently active threats with pagination."""
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
         offset = (page - 1) * limit
-        active = Intervention.query.filter_by(resolved=False).order_by(Intervention.priority_score.desc()).offset(offset).limit(limit).all()
-        return [i.to_dict() for i in active]
+        active = Threat.query.filter_by(user_id=uid, status="active").order_by(Threat.created_at.desc()).offset(offset).limit(limit).all()
+        return [t.to_dict() for t in active]
 
     @classmethod
-    def resolve_intervention(cls, intervention_id: str) -> bool:
-        """Marks an intervention as resolved."""
-        intervention = Intervention.query.get(intervention_id)
-        if intervention:
-            intervention.resolved = True
-            intervention.resolved_at = datetime.now(timezone.utc)
+    def resolve_threat(cls, user_id: str = None, threat_id: str = None) -> bool:
+        """Marks a threat as resolved."""
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
+        threat = Threat.query.filter_by(user_id=uid, id=threat_id).first()
+        if threat:
+            threat.status = "resolved"
+            threat.resolved_at = datetime.now(timezone.utc)
             db.session.commit()
             return True
-        
         return False
+
+    @classmethod
+    def trigger_evaluation(cls, user_id: str = None):
+        """Event-driven hook to re-evaluate threats."""
+        try:
+            cls.run_engine(user_id)
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).error(f"Threat evaluation failed: {e}")
 
 

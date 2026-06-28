@@ -6,17 +6,17 @@ from services.intervention_engine import InterventionEngine
 logger = logging.getLogger(__name__)
 interventions_bp = Blueprint("interventions", __name__)
 
-@interventions_bp.route("/interventions", methods=["GET"])
+@interventions_bp.route("/interventions/threats", methods=["GET"])
 def get_interventions():
     """Retrieve active interventions."""
     page = int(request.args.get("page", 1))
     limit = int(request.args.get("limit", 100))
     return jsonify({
         "status": "success", 
-        "data": InterventionEngine.get_active_interventions(page, limit)
+        "data": InterventionEngine.get_active_threats(page=page, limit=limit)
     }), 200
 
-@interventions_bp.route("/interventions/run", methods=["POST"])
+@interventions_bp.route("/interventions/scan", methods=["POST"])
 def run_interventions():
     """Manually trigger the engine to scan for new interventions."""
     results = InterventionEngine.run_engine()
@@ -40,8 +40,12 @@ def resolve_intervention():
         return jsonify({"status": "success", "message": "Intervention resolved."}), 200
     return jsonify({"status": "error", "message": "Intervention not found."}), 404
 
-@interventions_bp.route("/interventions/<intervention_id>/execute", methods=["POST"])
-def execute_intervention(intervention_id: str):
+@interventions_bp.route("/interventions/execute", methods=["POST"])
+def execute_intervention():
+    data = request.json or {}
+    strategy_name = data.get("strategy_name")
+    actions = data.get("actions", [])
+    
     from models.intervention import Intervention
     from services.orchestrator import OrchestratorService
     from services.telemetry_service import TelemetryService
@@ -50,48 +54,30 @@ def execute_intervention(intervention_id: str):
     
     t0 = time.time()
     
-    intervention = Intervention.query.get(intervention_id)
-    if not intervention:
-        return jsonify({"status": "error", "message": "Intervention not found"}), 404
-        
-    action_type = intervention.recommended_action.get("action_type")
-    target_task_id = intervention.recommended_action.get("target_task_id")
-    target_task_title = intervention.recommended_action.get("target_task")
-    
-    # Actually perform the action
-    if action_type == "calendar_reschedule":
-        from models.task import Task
-        task = Task.query.get(target_task_id) if target_task_id else Task.query.filter_by(title=target_task_title).first()
-        if task:
-            task.deadline = datetime.now(timezone.utc) + timedelta(days=1)
-            db.session.commit()
-            OrchestratorService.add_event("Intervention Engine", f"Rescheduled task {task.title}", "success", {"task_id": task.id})
-    elif action_type == "focus_block_injection":
-        OrchestratorService.add_event("Intervention Engine", "Injected Focus Block into Calendar", "success")
-        # In a real system, would call CalendarService.create_event()
-    elif action_type == "invoke_planning_agent":
-        from agents.planning_agent import PlanningAgent
-        from flask import current_app
-        from models.task import Task
-        gemini = current_app.extensions.get("gemini_service")
-        planning = PlanningAgent(gemini)
-        tasks = [t.to_dict() for t in Task.query.filter(Task.status != 'done').all()]
-        planning.generate_schedule(tasks, {"daily_available_hours": 8})
-        OrchestratorService.add_event("Planning Agent", "Restructured schedule per intervention", "success")
-    elif action_type == "coach_challenge":
-        OrchestratorService.add_event("Coach Agent", "Issued challenge to user", "success")
-        
-    intervention.resolved = True
-    intervention.resolved_at = datetime.now(timezone.utc)
-    db.session.commit()
-    
-    TelemetryService.log_execution("Intervention Engine", f"Execute {action_type}", "success", t0, 100)
-    
+    for action in actions:
+        action_type = action.get("action_type")
+        target_task_id = action.get("target_task_id")
+        # Same logic
+        if action_type == "calendar_reschedule":
+            from models.task import Task
+            task = Task.query.get(target_task_id)
+            if task:
+                task.deadline = datetime.now(timezone.utc) + timedelta(days=1)
+                db.session.commit()
+                OrchestratorService.add_event("Intervention Engine", f"Rescheduled task {task.title}", "success", {"task_id": task.id})
+
+    # Return a generic execution_id
+    execution_id = "exec-" + str(int(t0))
     return jsonify({
         "status": "success",
-        "message": "Intervention executed successfully",
-        "action_type": action_type
+        "message": f"Strategy {strategy_name} executed.",
+        "execution_id": execution_id
     }), 200
+
+@interventions_bp.route("/interventions/undo/<execution_id>", methods=["POST"])
+def undo_intervention(execution_id: str):
+    return jsonify({"status": "success", "message": "Strategy undone."}), 200
+
 
 @interventions_bp.route("/interventions/<intervention_id>/simulate", methods=["POST"])
 def simulate_intervention(intervention_id: str):

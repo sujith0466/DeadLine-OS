@@ -1,88 +1,111 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { X, Check } from 'lucide-react';
-import { GlassCard } from '../UI/GlassCard';
+import { CheckCircle2, ListTodo, BrainCircuit, Target, Activity, ShieldAlert, HeartPulse, Play } from 'lucide-react';
+
+const reasons = [
+  "Offline-first intelligence guarantees privacy.",
+  "Deterministic local AI with Gemini fallback.",
+  "Autonomous planning reduces cognitive load.",
+  "Predictive simulation prevents burnout.",
+  "Recovery intelligence saves failing momentum.",
+  "Unified ecosystem replaces 10+ productivity apps."
+];
+
+const flowSteps = [
+  { icon: ListTodo, label: "Task", color: "text-blue-400", bg: "bg-blue-400/10", border: "border-blue-400/20" },
+  { icon: BrainCircuit, label: "Planning Agent", color: "text-purple-400", bg: "bg-purple-400/10", border: "border-purple-400/20" },
+  { icon: Target, label: "Goal Engine", color: "text-emerald-400", bg: "bg-emerald-400/10", border: "border-emerald-400/20" },
+  { icon: Activity, label: "Digital Twin", color: "text-indigo-400", bg: "bg-indigo-400/10", border: "border-indigo-400/20" },
+  { icon: ShieldAlert, label: "Risk Intelligence", color: "text-yellow-400", bg: "bg-yellow-400/10", border: "border-yellow-400/20" },
+  { icon: HeartPulse, label: "Recovery Center", color: "text-rose-400", bg: "bg-rose-400/10", border: "border-rose-400/20" },
+  { icon: Play, label: "Execution", color: "text-white", bg: "bg-white/10", border: "border-white/20" }
+];
 
 export const WhyDeadlineOS: React.FC = () => {
-  const traditional = [
-    "Track Tasks manually",
-    "Reactive to missed deadlines",
-    "Manual scheduling and planning",
-    "No awareness of future risk",
-    "Single-player checklists"
-  ];
-
-  const deadlineos = [
-    "Predicts Failure mathematically",
-    "Creates Recovery Plans autonomously",
-    "Simulates Future Outcomes instantly",
-    "Continuously Monitors Risk 24/7",
-    "Multi-Agent Intelligence acting as your Chief-of-Staff"
-  ];
-
   return (
-    <section id="why-deadlineos" className="py-32 relative z-10 bg-black/20">
-      <div className="max-w-6xl mx-auto px-6">
-        
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-5xl font-black text-white mb-6">Why DeadlineOS?</h2>
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-            Traditional tools tell you what you failed to do. DeadlineOS prevents you from failing in the first place.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <section className="py-32 bg-[#0A0A0B] relative overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="rounded-[2.5rem] bg-gradient-to-br from-indigo-900/10 to-purple-900/10 border border-white/5 p-8 md:p-16 relative overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)]">
           
-          {/* Traditional Card */}
-          <motion.div
-            initial={{ opacity: 0, x: -30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-          >
-            <GlassCard className="p-8 border-rose-500/20 bg-gradient-to-b from-rose-500/5 to-transparent h-full">
-              <h3 className="text-2xl font-bold text-gray-300 mb-8 flex items-center gap-3">
-                <X className="w-6 h-6 text-rose-500" />
-                Traditional Productivity Apps
-              </h3>
-              <ul className="space-y-6">
-                {traditional.map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-gray-400">
-                    <div className="mt-1 flex-shrink-0 w-1.5 h-1.5 rounded-full bg-rose-500/50" />
-                    <span>{item}</span>
-                  </li>
-                ))}
-              </ul>
-            </GlassCard>
-          </motion.div>
-
-          {/* DeadlineOS Card */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <GlassCard className="p-8 border-primary/40 bg-gradient-to-b from-primary/10 to-transparent shadow-[0_0_50px_rgba(56,189,248,0.1)] h-full relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+          {/* Background Elements */}
+          <div className="absolute top-0 right-0 w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+          <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[100px] -translate-x-1/3 translate-y-1/3 pointer-events-none" />
+          
+          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            
+            {/* Left Column: Copy */}
+            <div>
+              <motion.h2 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="text-4xl md:text-5xl lg:text-6xl font-black text-white mb-6 tracking-tight"
+              >
+                Why <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-purple-400">DeadlineOS?</span>
+              </motion.h2>
+              <motion.p 
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.1 }}
+                className="text-lg md:text-xl text-gray-400 mb-10 leading-relaxed font-medium"
+              >
+                Traditional productivity apps expect you to do all the heavy lifting. DeadlineOS acts as your personal Chief Operating Officer, actively managing your schedule and predicting failures before they happen.
+              </motion.p>
               
-              <h3 className="text-2xl font-bold text-white mb-8 flex items-center gap-3 relative z-10">
-                <Check className="w-6 h-6 text-primary" />
-                DeadlineOS
-              </h3>
-              <ul className="space-y-6 relative z-10">
-                {deadlineos.map((item, i) => (
-                  <li key={i} className="flex items-start gap-3 text-gray-200 font-medium">
-                    <Check className="mt-0.5 flex-shrink-0 w-5 h-5 text-primary" />
-                    <span>{item}</span>
-                  </li>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {reasons.map((reason, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.1 * idx }}
+                    className="flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors"
+                  >
+                    <CheckCircle2 className="w-6 h-6 text-indigo-400 shrink-0 mt-0.5" />
+                    <span className="text-sm font-medium text-gray-300 leading-snug">{reason}</span>
+                  </motion.div>
                 ))}
-              </ul>
-            </GlassCard>
-          </motion.div>
+              </div>
+            </div>
 
+            {/* Right Column: Architecture Flow */}
+            <div className="relative h-[600px] flex items-center justify-center">
+              <div className="absolute inset-0 flex flex-col justify-between items-center py-8">
+                {flowSteps.map((step, idx) => (
+                  <React.Fragment key={idx}>
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      whileInView={{ opacity: 1, scale: 1 }}
+                      viewport={{ once: true }}
+                      transition={{ delay: 0.2 + idx * 0.15, type: 'spring' }}
+                      className={`relative z-20 flex items-center gap-3 px-6 py-3 rounded-xl border backdrop-blur-md ${step.bg} ${step.border} w-64 shadow-lg`}
+                    >
+                      <step.icon className={`w-5 h-5 ${step.color}`} />
+                      <span className="font-bold text-sm text-white tracking-wide">{step.label}</span>
+                      
+                      {/* Pulse effect on active node */}
+                      <div className="absolute inset-0 rounded-xl bg-white/5 opacity-0 hover:opacity-100 transition-opacity" />
+                    </motion.div>
+
+                    {/* Connecting Line with animated particle */}
+                    {idx < flowSteps.length - 1 && (
+                      <div className="h-8 w-px bg-white/10 relative">
+                        <motion.div
+                          animate={{ y: [0, 32] }}
+                          transition={{ duration: 1.5, repeat: Infinity, ease: "linear", delay: idx * 0.2 }}
+                          className={`absolute top-0 left-1/2 -translate-x-1/2 w-1.5 h-3 rounded-full ${step.color.replace('text-', 'bg-')} shadow-[0_0_10px_currentColor] opacity-70`}
+                        />
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+            
+          </div>
         </div>
-
       </div>
     </section>
   );

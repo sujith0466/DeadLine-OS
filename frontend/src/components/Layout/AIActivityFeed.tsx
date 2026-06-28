@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { Activity, Cpu, ChevronDown, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
 import { DeadlineOSApi } from '../../api';
+import { useSync } from '../../hooks/useSync';
 
 interface FeedEvent {
   id: number;
@@ -14,20 +15,27 @@ export const AIActivityFeed: React.FC = () => {
   const [feed, setFeed] = useState<FeedEvent[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   
-  useEffect(() => {
-    const fetchFeed = async () => {
-      try {
-        const res = await DeadlineOSApi.getOrchestrationFeed();
-        setFeed(res.feed || []);
-      } catch (err) {
-        // silently fail for background poll
-      }
-    };
-    
-    fetchFeed();
-    const interval = setInterval(fetchFeed, 3000);
-    return () => clearInterval(interval);
+  const fetchFeed = useCallback(async () => {
+    try {
+      const res = await DeadlineOSApi.getOrchestrationFeed();
+      setFeed(res.feed || []);
+    } catch (err) {
+      // silently fail
+    }
   }, []);
+
+  useEffect(() => {
+    fetchFeed();
+  }, [fetchFeed]);
+
+  useSync([
+    'TASK_COMPLETED', 'TASK_CREATED', 'TASK_UPDATED', 'TASK_DELETED',
+    'GOAL_CREATED', 'GOAL_UPDATED', 'GOAL_COMPLETED', 'GOAL_ARCHIVED',
+    'HABIT_CREATED', 'HABIT_UPDATED', 'HABIT_CHECKIN', 'HABIT_STREAK_CHANGED',
+    'PLANNER_GENERATED', 'PLANNER_UPDATED', 'DIGITAL_TWIN_SIMULATED',
+    'THREAT_DETECTED', 'RESCUE_EXECUTED', 'RESCUE_ROLLBACK',
+    'COMMAND_CENTER_REFRESH'
+  ], fetchFeed);
 
   const activeCount = feed.filter(f => f.status === 'running').length;
   const latestEvent = feed[0];

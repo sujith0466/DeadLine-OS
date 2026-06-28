@@ -1,11 +1,13 @@
 import logging
 from flask import Blueprint, jsonify, request
 from services.document_service import DocumentService
+from utils.auth import require_auth
 
 logger = logging.getLogger(__name__)
 documents_bp = Blueprint("documents", __name__)
 
 @documents_bp.route("/documents/upload", methods=["POST"])
+@require_auth
 def upload_document():
     if 'file' not in request.files:
         return jsonify({"status": "error", "message": "No file part"}), 400

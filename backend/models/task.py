@@ -20,6 +20,7 @@ class Task(db.Model):
     Columns
     -------
     id              : UUID primary key (string)
+    user_id         : Foreign key to User (string)
     title           : Short task name (required)
     description     : Extended details (optional)
     deadline        : Absolute due datetime in UTC (required)
@@ -35,11 +36,16 @@ class Task(db.Model):
 
     __tablename__ = "tasks"
 
-    # ── Primary Key ───────────────────────────────────────────
     id = db.Column(
         db.String(36),
         primary_key=True,
         default=lambda: str(uuid.uuid4()),
+    )
+    user_id = db.Column(
+        db.String(36),
+        db.ForeignKey("users.id", name="fk_task_user"),
+        nullable=True, # Will become false after migration
+        index=True
     )
 
     # ── Core Fields ───────────────────────────────────────────
@@ -61,6 +67,10 @@ class Task(db.Model):
 
     # ── Intelligence ──────────────────────────────────────────
     ai_confidence = db.Column(db.Integer, nullable=True, default=92)
+    
+    # ── Goals ─────────────────────────────────────────────────
+    goal_id = db.Column(db.String(36), nullable=True)
+    milestone_id = db.Column(db.String(36), nullable=True)
 
     # ── Timestamps ────────────────────────────────────────────
     created_at = db.Column(
@@ -112,6 +122,7 @@ class Task(db.Model):
         """Return a JSON-serializable dictionary of this task."""
         return {
             "id": self.id,
+            "user_id": self.user_id,
             "title": self.title,
             "description": self.description,
             "deadline": self.deadline.isoformat() if self.deadline else None,
@@ -122,6 +133,8 @@ class Task(db.Model):
             "source": self.source,
             "source_file": self.source_file,
             "ai_confidence": self.ai_confidence,
+            "goal_id": self.goal_id,
+            "milestone_id": self.milestone_id,
             "is_overdue": self.is_overdue,
             "hours_until_deadline": self.hours_until_deadline,
             "completion_percentage": self.completion_percentage,

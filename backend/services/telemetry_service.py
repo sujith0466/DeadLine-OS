@@ -14,12 +14,16 @@ class TelemetryService:
         status: str, 
         start_time: float, 
         confidence: int = 0, 
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
+        user_id: str = None
     ):
         """Persists agent execution data for downstream analytics."""
         try:
+            from flask import g
+            uid = user_id or getattr(g, "user_id", None)
             duration_ms = int((time.time() - start_time) * 1000)
             log = AgentExecutionLog(
+                user_id=uid,
                 agent_name=agent_name,
                 action=action,
                 status=status,

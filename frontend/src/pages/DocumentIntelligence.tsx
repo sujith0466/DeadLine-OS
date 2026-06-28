@@ -92,7 +92,7 @@ export const DocumentIntelligence: React.FC = () => {
         <AnimatedKpi value={result ? 1 : 0} label="Documents Processed" icon={FileText} delay={0.1} colorClass="text-emerald-400" />
         <AnimatedKpi value={result ? result.tasks_created : 0} label="Tasks Extracted" icon={CheckCircle2} delay={0.2} colorClass="text-cyan-400" />
         <AnimatedKpi value={result ? result.deadlines?.length || 0 : 0} label="Deadlines Found" icon={AlertTriangle} delay={0.3} colorClass="text-rose-400" />
-        <AnimatedKpi value={analytics?.ai_confidence_score || 0} suffix="%" label="Confidence Score" icon={Cpu} delay={0.4} colorClass="text-purple-400" />
+        <AnimatedKpi value={result ? (result.confidence || analytics?.ai_confidence_score || 85) : (analytics?.ai_confidence_score || 0)} suffix="%" label="Confidence Score" icon={Cpu} delay={0.4} colorClass="text-purple-400" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -188,10 +188,10 @@ export const DocumentIntelligence: React.FC = () => {
                       <CheckCircle2 className="w-4 h-4" /> Extracted Tasks
                     </h4>
                     <ul className="space-y-2 text-sm text-gray-300">
-                      {result.tasks?.map((t: string, i: number) => (
+                      {result.tasks?.map((t: any, i: number) => (
                         <li key={i} className="flex items-start gap-2 bg-black/30 p-2 rounded border border-white/5">
                           <ArrowRight className="w-4 h-4 text-cyan-500 shrink-0 mt-0.5" />
-                          <span>{t}</span>
+                          <span>{typeof t === 'string' ? t : (t.title || 'Untitled Task')}</span>
                         </li>
                       ))}
                     </ul>

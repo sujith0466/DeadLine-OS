@@ -18,23 +18,25 @@ from models.telemetry import AgentExecutionLog, TwinSimulationLog
 class AnalyticsService:
 
     @classmethod
-    def get_overview(cls) -> Dict[str, Any]:
+    def get_overview(cls, user_id: str = None) -> Dict[str, Any]:
         """Returns the Executive Scorecard metrics dynamically."""
-        total_tasks = Task.query.count()
-        completed_tasks = Task.query.filter_by(status='done').count()
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
+        total_tasks = Task.query.filter_by(user_id=uid).count()
+        completed_tasks = Task.query.filter_by(user_id=uid, status='done').count()
         
         completion_rate = int((completed_tasks / total_tasks * 100)) if total_tasks else 0
         success_rate = completion_rate # simplified
         
-        avg_conf = db.session.query(func.avg(AgentExecutionLog.confidence)).scalar() or 0
+        avg_conf = db.session.query(func.avg(AgentExecutionLog.confidence)).filter_by(user_id=uid).scalar() or 0
         
-        latest_twin = TwinSimulationLog.query.order_by(TwinSimulationLog.created_at.desc()).first()
+        latest_twin = TwinSimulationLog.query.filter_by(user_id=uid).order_by(TwinSimulationLog.created_at.desc()).first()
         future_risk = "Low"
         if latest_twin and latest_twin.projected_risk_score:
             r = latest_twin.projected_risk_score
             future_risk = "High" if r > 70 else "Medium" if r > 40 else "Low"
             
-        latest_acc = AccountabilityMetrics.query.order_by(AccountabilityMetrics.created_at.desc()).first()
+        latest_acc = AccountabilityMetrics.query.filter_by(user_id=uid).order_by(AccountabilityMetrics.created_at.desc()).first()
         prod_score = latest_acc.productivity_score if latest_acc else 0
         risk_level = latest_acc.risk_profile if latest_acc else "Low"
 
@@ -48,9 +50,11 @@ class AnalyticsService:
         }
 
     @classmethod
-    def get_productivity_trends(cls) -> List[Dict[str, Any]]:
+    def get_productivity_trends(cls, user_id: str = None) -> List[Dict[str, Any]]:
         """Returns time-series data for area/line charts from DB."""
-        metrics = AccountabilityMetrics.query.order_by(AccountabilityMetrics.created_at.desc()).limit(7).all()
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
+        metrics = AccountabilityMetrics.query.filter_by(user_id=uid).order_by(AccountabilityMetrics.created_at.desc()).limit(7).all()
         metrics.reverse()
         return [
             {
@@ -63,16 +67,20 @@ class AnalyticsService:
         ]
 
     @classmethod
-    def get_agent_contributions(cls) -> List[Dict[str, Any]]:
+    def get_agent_contributions(cls, user_id: str = None) -> List[Dict[str, Any]]:
         """Returns analytics on how often each agent is utilized."""
-        counts = db.session.query(AgentExecutionLog.agent_name, func.count(AgentExecutionLog.id)).group_by(AgentExecutionLog.agent_name).all()
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
+        counts = db.session.query(AgentExecutionLog.agent_name, func.count(AgentExecutionLog.id)).filter_by(user_id=uid).group_by(AgentExecutionLog.agent_name).all()
         return [{"agent": agent_name, "uses": count} for agent_name, count in counts]
 
     @classmethod
-    def get_intelligence_reports(cls) -> Dict[str, Any]:
+    def get_intelligence_reports(cls, user_id: str = None) -> Dict[str, Any]:
         """Returns the latest Coach and Reflection data for text grids."""
-        coach = CoachReport.query.order_by(CoachReport.created_at.desc()).first()
-        reflection = ReflectionReport.query.order_by(ReflectionReport.created_at.desc()).first()
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
+        coach = CoachReport.query.filter_by(user_id=uid).order_by(CoachReport.created_at.desc()).first()
+        reflection = ReflectionReport.query.filter_by(user_id=uid).order_by(ReflectionReport.created_at.desc()).first()
         
         return {
             "coach": coach.to_dict() if coach else {},
@@ -80,18 +88,19 @@ class AnalyticsService:
         }
         
     @classmethod
-    def get_productivity_heatmap(cls) -> List[Dict[str, Any]]:
+    def get_productivity_heatmap(cls, user_id: str = None) -> List[Dict[str, Any]]:
         """Returns data formatted for a github-style heatmap or bar-distribution."""
         return []
 
     @classmethod
-    def generate_chief_of_staff_briefing(cls) -> str:
+    def generate_chief_of_staff_briefing(cls, user_id: str = None) -> str:
         """Generates dynamic briefing based on system telemetry."""
-        from flask import current_app
+        from flask import current_app, g
+        uid = user_id or getattr(g, "user_id", None)
         
-        overview = cls.get_overview()
-        active_goals = Task.query.filter_by(status='in_progress').count()
-        open_interventions = Intervention.query.filter_by(resolved=False).count()
+        overview = cls.get_overview(uid)
+        active_goals = Task.query.filter_by(user_id=uid, status='in_progress').count()
+        open_interventions = Intervention.query.filter_by(user_id=uid, resolved=False).count()
         
         prod_score = overview.get("productivity_score", 0)
         risk_level = overview.get("future_risk_forecast", "Unknown")
@@ -111,26 +120,28 @@ class AnalyticsService:
                 if response.text:
                     return response.text.replace("\n", " ").strip()
             except Exception as e:
-                pass # Fallback to deterministic
-                
+                import logging
+                logging.getLogger(__name__).warning(f"Failed to generate AI briefing, falling back to deterministic: {e}")
         interv_str = f" {open_interventions} open interventions require attention." if open_interventions > 0 else " No critical interventions at this time."
         return f"System operations are active with a productivity score of {prod_score}%. Future risk is currently assessed as {risk_level}.{interv_str}"
 
     @classmethod
-    def get_agent_metrics(cls, agent_name: str) -> Dict[str, Any]:
-        logs = AgentExecutionLog.query.filter_by(agent_name=agent_name).all()
+    def get_agent_metrics(cls, agent_name: str, user_id: str = None) -> Dict[str, Any]:
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
+        logs = AgentExecutionLog.query.filter_by(user_id=uid, agent_name=agent_name).all()
         successes = len([l for l in logs if l.status == 'success'])
-        avg_time = db.session.query(func.avg(AgentExecutionLog.execution_time_ms)).filter_by(agent_name=agent_name).scalar() or 0
-        avg_conf = db.session.query(func.avg(AgentExecutionLog.confidence)).filter_by(agent_name=agent_name).scalar() or 0
+        avg_time = db.session.query(func.avg(AgentExecutionLog.execution_time_ms)).filter_by(user_id=uid, agent_name=agent_name).scalar() or 0
+        avg_conf = db.session.query(func.avg(AgentExecutionLog.confidence)).filter_by(user_id=uid, agent_name=agent_name).scalar() or 0
         
-        last_log = AgentExecutionLog.query.filter_by(agent_name=agent_name).order_by(AgentExecutionLog.created_at.desc()).first()
+        last_log = AgentExecutionLog.query.filter_by(user_id=uid, agent_name=agent_name).order_by(AgentExecutionLog.created_at.desc()).first()
         last_execution_time = last_log.created_at.isoformat() if last_log else None
         
         total = len(logs)
         success_rate = int(successes / total * 100) if total else 0
         failure_rate = 100 - success_rate if total else 0
         
-        return {
+        result = {
             "total_executions": total,
             "success_rate": success_rate,
             "failure_rate": failure_rate,
@@ -139,11 +150,24 @@ class AnalyticsService:
             "last_execution_time": last_execution_time,
             "history": [l.to_dict() for l in logs[-10:]]
         }
+        
+        if agent_name == "Vision Agent":
+            ocr_count = len([l for l in logs if l.action == "OCR Extraction"])
+            gemini_count = len([l for l in logs if l.action == "Gemini Extraction" or l.action == "Image Upload Extraction"])
+            ocr_fallback_rate = int((gemini_count / total) * 100) if total else 0
+            
+            result["ocr_processed_images"] = ocr_count
+            result["gemini_processed_images"] = gemini_count
+            result["ocr_fallback_rate"] = ocr_fallback_rate
+            
+        return result
 
     @classmethod
-    def get_intervention_metrics(cls) -> Dict[str, Any]:
-        total = Intervention.query.count()
-        resolved = Intervention.query.filter_by(resolved=True).count()
+    def get_intervention_metrics(cls, user_id: str = None) -> Dict[str, Any]:
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
+        total = Intervention.query.filter_by(user_id=uid).count()
+        resolved = Intervention.query.filter_by(user_id=uid, resolved=True).count()
         return {
             "total_generated": total,
             "resolved": resolved,
@@ -152,10 +176,12 @@ class AnalyticsService:
         }
 
     @classmethod
-    def get_twin_accuracy(cls) -> Dict[str, Any]:
-        total = TwinSimulationLog.query.count()
-        avg_impact = db.session.query(func.avg(TwinSimulationLog.capacity_impact)).scalar() or 0
-        recent = TwinSimulationLog.query.order_by(TwinSimulationLog.created_at.desc()).limit(5).all()
+    def get_twin_accuracy(cls, user_id: str = None) -> Dict[str, Any]:
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
+        total = TwinSimulationLog.query.filter_by(user_id=uid).count()
+        avg_impact = db.session.query(func.avg(TwinSimulationLog.capacity_impact)).filter_by(user_id=uid).scalar() or 0
+        recent = TwinSimulationLog.query.filter_by(user_id=uid).order_by(TwinSimulationLog.created_at.desc()).limit(5).all()
         recent.reverse()
         return {
             "total_simulations": total,
@@ -164,9 +190,11 @@ class AnalyticsService:
         }
 
     @classmethod
-    def get_insights(cls) -> Dict[str, Any]:
+    def get_insights(cls, user_id: str = None) -> Dict[str, Any]:
         """Returns telemetry-driven Insights Engine data."""
-        latest_acc = AccountabilityMetrics.query.order_by(AccountabilityMetrics.created_at.desc()).first()
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
+        latest_acc = AccountabilityMetrics.query.filter_by(user_id=uid).order_by(AccountabilityMetrics.created_at.desc()).first()
         top_risk = "N/A"
         top_opportunity = "N/A"
         if latest_acc and latest_acc.key_findings:
@@ -178,12 +206,12 @@ class AnalyticsService:
             AgentExecutionLog.agent_name, 
             func.count(AgentExecutionLog.id).label('total'),
             func.avg(AgentExecutionLog.confidence).label('avg_conf')
-        ).group_by(AgentExecutionLog.agent_name).all()
+        ).filter_by(user_id=uid).group_by(AgentExecutionLog.agent_name).all()
         
         most_used_agent = max(counts, key=lambda x: x.total)[0] if counts else "N/A"
         most_accurate_agent = max(counts, key=lambda x: x.avg_conf)[0] if counts else "N/A"
         
-        interventions = Intervention.query.filter_by(resolved=True).all()
+        interventions = Intervention.query.filter_by(user_id=uid, resolved=True).all()
         least_effective = min(interventions, key=lambda x: x.confidence_score).type if interventions else "N/A"
         
         focus = "Review active interventions" if interventions else "Define new goals"

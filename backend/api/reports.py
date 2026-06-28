@@ -1,7 +1,8 @@
 import logging
 import io
-from flask import Blueprint, send_file, current_app
+from flask import Blueprint, send_file, current_app, g
 from services.analytics_service import AnalyticsService
+from utils.auth import require_auth
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 reports_bp = Blueprint("reports", __name__)
 
 @reports_bp.route("/reports/download", methods=["GET"])
+@require_auth
 def download_report():
     """Generates an Executive Intelligence PDF Report using ReportLab."""
     try:
@@ -31,13 +33,13 @@ def download_report():
         elements.append(Spacer(1, 12))
         
         # Briefing
-        briefing = AnalyticsService.generate_chief_of_staff_briefing()
+        briefing = AnalyticsService.generate_chief_of_staff_briefing(g.user_id)
         elements.append(Paragraph("AI Chief-of-Staff Briefing", h2_style))
         elements.append(Paragraph(briefing, normal_style))
         elements.append(Spacer(1, 24))
         
         # KPIs
-        overview = AnalyticsService.get_overview()
+        overview = AnalyticsService.get_overview(g.user_id)
         elements.append(Paragraph("Key Performance Indicators", h2_style))
         
         data = [

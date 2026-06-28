@@ -41,7 +41,10 @@ class CoachAgent:
         response_data = self.gemini.generate_structured(prompt, self._get_schema())
         
         try:
+            from flask import g
+            uid = getattr(g, "user_id", None)
             report = CoachReport(
+                user_id=uid,
                 strengths=response_data.get("strengths", []),
                 weaknesses=response_data.get("weaknesses", []),
                 insights=response_data.get("insights", []),

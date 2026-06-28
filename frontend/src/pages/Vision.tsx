@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Camera, UploadCloud, CheckCircle2, PlayCircle,
-  Cpu, FileSearch, ArrowRight, Save, CalendarDays, Loader2, Zap, Target
+  Cpu, FileSearch, Save, CalendarDays, Loader2, Target, Zap, ArrowRight
 } from 'lucide-react';
 import { GlassCard } from '../components/UI/GlassCard';
 import { GradientButton } from '../components/UI/GradientButton';

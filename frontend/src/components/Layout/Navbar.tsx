@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Bell, User } from 'lucide-react';
 import { NotificationDropdown } from './NotificationDropdown';
+import { ProfileDropdown } from '../Navigation/ProfileDropdown';
 import { useLocation } from 'react-router-dom';
+import { useSettings } from '../../context/SettingsContext';
 
 const getRouteDetails = (pathname: string) => {
   switch (pathname) {
@@ -23,8 +25,7 @@ const getRouteDetails = (pathname: string) => {
       return { title: 'Executive Voice Operations Center', subtitle: 'NLU Intent Parsing' };
     case '/vision':
       return { title: 'Vision Intelligence Center', subtitle: 'Visual Task Extraction' };
-    case '/interventions':
-      return { title: 'Active Interventions', subtitle: 'System & User Corrections' };
+
     case '/calendar':
       return { title: 'Executive Calendar Intelligence', subtitle: 'Schedule Orchestration' };
     case '/analytics':
@@ -36,10 +37,13 @@ const getRouteDetails = (pathname: string) => {
 
 export const Navbar: React.FC = () => {
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
+  const { settings } = useSettings();
 
   const { title, subtitle } = getRouteDetails(location.pathname);
+  const initial = settings.profile?.full_name ? settings.profile.full_name.charAt(0).toUpperCase() : 'U';
 
   return (
     <header className="h-20 border-b border-white/10 bg-background/50 backdrop-blur-xl flex items-center justify-between px-8 sticky top-0 z-10">
@@ -68,11 +72,23 @@ export const Navbar: React.FC = () => {
           setUnreadCount={setUnreadCount} 
         />
         
-        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center p-[2px] cursor-pointer hover:scale-105 transition-transform">
+        <div 
+          onClick={() => setShowProfile(!showProfile)}
+          className="w-10 h-10 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center p-[2px] cursor-pointer hover:scale-105 transition-transform"
+        >
           <div className="w-full h-full bg-background rounded-full flex items-center justify-center">
-            <User className="w-5 h-5 text-gray-300" />
+            {settings.profile?.full_name ? (
+              <span className="text-white font-bold">{initial}</span>
+            ) : (
+              <User className="w-5 h-5 text-gray-300" />
+            )}
           </div>
         </div>
+        
+        <ProfileDropdown 
+          isOpen={showProfile} 
+          onClose={() => setShowProfile(false)} 
+        />
       </div>
     </header>
   );

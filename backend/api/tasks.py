@@ -17,10 +17,13 @@ import logging
 import uuid
 from datetime import datetime, timezone
 
-from flask import Blueprint, current_app, jsonify, request
+from flask import Blueprint, current_app, jsonify, request, g
+from utils.auth import require_auth
 
 from database.db import db
 from models.task import Task
+from services.goal_service import GoalService
+from services.intervention_engine import InterventionEngine
 
 logger = logging.getLogger(__name__)
 
@@ -34,17 +37,18 @@ VALID_SOURCES = {"manual", "vision", "voice"}
 
 
 def _task_or_404(task_id: str) -> Task:
-    """Return the Task with the given id or raise a 404."""
-    task = Task.query.get(task_id)
+    """Return the Task with the given id and matching user_id or raise a 404."""
+    task = Task.query.filter_by(id=task_id, user_id=g.user_id).first()
     if task is None:
         from flask import abort
-        abort(404, description=f"Task '{task_id}' not found.")
+        abort(404, description=f"Task '{task_id}' not found or you do not have permission to view it.")
     return task
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 @tasks_bp.route("/tasks", methods=["GET"])
+@require_auth
 def list_tasks():
     """
     List all tasks.
@@ -65,7 +69,7 @@ def list_tasks():
     sort_field = request.args.get("sort", "deadline")
     order = request.args.get("order", "asc")
 
-    query = Task.query
+    query = Task.query.filter_by(user_id=g.user_id)
 
     if status_filter and status_filter in VALID_STATUSES:
         query = query.filter(Task.status == status_filter)
@@ -97,6 +101,7 @@ def list_tasks():
 
 
 @tasks_bp.route("/tasks", methods=["POST"])
+@require_auth
 def create_task():
     """
     Create a new task.
@@ -148,16 +153,20 @@ def create_task():
         status="pending",
         source=data.get("source", "manual") if data.get("source") in VALID_SOURCES else "manual",
         source_file=data.get("source_file"),
+        user_id=g.user_id
     )
 
     db.session.add(task)
     db.session.commit()
+    
+    InterventionEngine.trigger_evaluation()
 
     logger.info("Task created: id=%s title=%r", task.id, task.title)
     return jsonify({"task": task.to_dict(), "message": "Task created successfully"}), 201
 
 
 @tasks_bp.route("/tasks/<task_id>", methods=["GET"])
+@require_auth
 def get_task(task_id: str):
     """
     Get a single task by ID.
@@ -171,6 +180,7 @@ def get_task(task_id: str):
 
 
 @tasks_bp.route("/tasks/<task_id>", methods=["PUT"])
+@require_auth
 def update_task(task_id: str):
     """
     Update one or more fields of a task.
@@ -224,11 +234,20 @@ def update_task(task_id: str):
     task.updated_at = datetime.now(timezone.utc)
     db.session.commit()
 
+    if "status" in data and data["status"] == "done" and getattr(task, "milestone_id", None):
+        try:
+            GoalService.update_milestone_status(task.milestone_id, "COMPLETED")
+        except Exception as e:
+            logger.error("Failed to automatically complete milestone %s: %s", task.milestone_id, str(e))
+            
+    InterventionEngine.trigger_evaluation()
+
     logger.info("Task updated: id=%s", task_id)
     return jsonify({"task": task.to_dict(), "message": "Task updated"}), 200
 
 
 @tasks_bp.route("/tasks/<task_id>", methods=["DELETE"])
+@require_auth
 def delete_task(task_id: str):
     """
     Delete a task by ID.
@@ -240,12 +259,15 @@ def delete_task(task_id: str):
     task = _task_or_404(task_id)
     db.session.delete(task)
     db.session.commit()
+    
+    InterventionEngine.trigger_evaluation()
 
     logger.info("Task deleted: id=%s", task_id)
     return jsonify({"message": "Task deleted", "id": task_id}), 200
 
 
 @tasks_bp.route("/tasks/<task_id>/progress", methods=["POST"])
+@require_auth
 def log_progress(task_id: str):
     """
     Log a progress update for a task.
@@ -285,6 +307,8 @@ def log_progress(task_id: str):
 
     task.updated_at = datetime.now(timezone.utc)
     db.session.commit()
+    
+    InterventionEngine.trigger_evaluation()
 
     logger.info(
         "Progress logged: task_id=%s hours_added=%.2f total_hours=%.2f",

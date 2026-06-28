@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Mic, MicOff, Loader2, MessageSquare, Cpu, 
-  CheckCircle2, Network, Activity, CalendarDays, Zap, ShieldAlert
+  Mic, 
+  MicOff,
+  Activity, 
+  CheckCircle2, 
+  Cpu, 
+  Network, 
+  Zap, 
+  Loader2, 
+  MessageSquare,
+  ShieldAlert,
+  ArrowRight
 } from 'lucide-react';
 import { GlassCard } from '../components/UI/GlassCard';
 import { DeadlineOSApi } from '../api';
@@ -49,50 +58,6 @@ export const VoiceCopilot: React.FC = () => {
     DeadlineOSApi.getAnalyticsOverview().then(res => setAnalytics(res.data));
   }, []);
 
-  useEffect(() => {
-    // Initialize Web Speech API
-    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = true;
-      
-      recognitionRef.current.onresult = (event: any) => {
-        let currentTranscript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          currentTranscript += event.results[i][0].transcript;
-        }
-        setTranscript(currentTranscript);
-      };
-
-      recognitionRef.current.onend = () => {
-        setIsListening(false);
-        if (transcript) {
-          processTranscript(transcript);
-        }
-      };
-
-      recognitionRef.current.onerror = (event: any) => {
-        console.error("Speech recognition error", event.error);
-        setIsListening(false);
-      };
-    } else {
-      console.warn("Web Speech API is not supported in this browser.");
-    }
-  }, [transcript]);
-
-  const toggleListen = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-    } else {
-      setTranscript('');
-      setResult(null);
-      recognitionRef.current?.start();
-      setIsListening(true);
-    }
-  };
-
   const speakResponse = (text: string) => {
     if ('speechSynthesis' in window) {
       const utterance = new SpeechSynthesisUtterance(text);
@@ -118,6 +83,49 @@ export const VoiceCopilot: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    // Initialize Web Speech API
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (SpeechRecognition) {
+      recognitionRef.current = new SpeechRecognition();
+      recognitionRef.current.continuous = false;
+      recognitionRef.current.interimResults = true;
+      
+      recognitionRef.current.onresult = (event: any) => {
+        let currentTranscript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+          currentTranscript += event.results[i][0].transcript;
+        }
+        setTranscript(currentTranscript);
+      };
+
+      recognitionRef.current.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current.onerror = (event: any) => {
+        console.error("Speech recognition error", event.error);
+        setIsListening(false);
+      };
+    } else {
+      console.warn("Web Speech API is not supported in this browser.");
+    }
+  }, [transcript]);
+
+  const toggleListen = () => {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      setIsListening(false);
+    } else {
+      if (!transcript) {
+        setResult(null);
+      }
+      recognitionRef.current?.start();
+      setIsListening(true);
+    }
+  };
+
+
   const demoCommands = [
     "Plan my week and move my meetings.",
     "Add 'Deploy Database' to my tasks for Friday.",
@@ -125,13 +133,13 @@ export const VoiceCopilot: React.FC = () => {
     "Simulate what happens if I miss the React Architecture deadline."
   ];
 
-  const pipelineStages = [
-    { label: "Voice", icon: Mic },
-    { label: "Transcript", icon: MessageSquare },
-    { label: "Intent Detection", icon: Cpu },
-    { label: "Agent Routing", icon: Network },
-    { label: "Task Creation", icon: Zap },
-    { label: "Schedule Update", icon: CalendarDays }
+  const defaultStages = [
+    { label: "Speech Captured", icon: Mic },
+    { label: "Intent Detected", icon: Cpu },
+    { label: "Entities Found", icon: Zap },
+    { label: "Router", icon: Network },
+    { label: "Agent Execution", icon: Activity },
+    { label: "Completed", icon: CheckCircle2 }
   ];
 
   return (
@@ -146,10 +154,10 @@ export const VoiceCopilot: React.FC = () => {
 
       {/* SECTION 1: Intelligence KPI Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AnimatedKpi value={result ? 1 : 0} label="Commands Processed" icon={Activity} delay={0.1} colorClass="text-purple-400" />
+        <AnimatedKpi value={result ? result.structured_result?.execution_time_ms || 0 : 0} suffix="ms" label="Execution Time" icon={Activity} delay={0.1} colorClass="text-purple-400" />
         <AnimatedKpi value={result ? 100 : 0} suffix="%" label="Execution Success" icon={CheckCircle2} delay={0.2} colorClass="text-emerald-400" />
         <AnimatedKpi value={result ? result.nlu?.confidence || 0 : analytics?.ai_confidence_score || 0} suffix="%" label="AI Confidence" icon={Cpu} delay={0.3} colorClass="text-cyan-400" />
-        <AnimatedKpi value={result ? result.nlu?.agents_triggered?.length || 0 : 0} label="Agent Utilization" icon={Network} delay={0.4} colorClass="text-pink-400" />
+        <AnimatedKpi value={result ? (result.structured_result?.used_gemini ? "Gemini" : "Local") : "Idle"} label="Routing Engine" icon={Network} delay={0.4} colorClass="text-pink-400" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -171,8 +179,20 @@ export const VoiceCopilot: React.FC = () => {
               {isListening ? "Listening..." : "Click to Speak"}
             </p>
 
-            <div className="w-full mt-4 h-16 bg-black/40 rounded-lg p-3 overflow-hidden text-center text-sm italic text-gray-300 relative z-10 border border-white/5">
-               {transcript || "..."}
+            <div className="w-full mt-4 flex items-start gap-2 relative z-10">
+               <textarea
+                 value={transcript}
+                 onChange={(e) => setTranscript(e.target.value)}
+                 className="flex-1 h-20 bg-black/40 rounded-lg p-3 text-sm italic text-gray-200 border border-white/10 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500 resize-none"
+                 placeholder="Recognized text will appear here. You can edit before sending."
+               />
+               <button
+                 onClick={() => transcript && processTranscript(transcript)}
+                 disabled={!transcript || loading || isListening}
+                 className="h-20 px-4 bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded-lg flex items-center justify-center transition-colors shadow-lg shadow-purple-500/20"
+               >
+                 <ArrowRight className="w-6 h-6" />
+               </button>
             </div>
 
             <div className="w-full mt-6 text-left relative z-10">
@@ -197,19 +217,22 @@ export const VoiceCopilot: React.FC = () => {
               <Network className="w-4 h-4 text-pink-400" /> Live Execution Pipeline
             </h3>
             <div className="space-y-4 relative before:absolute before:inset-0 before:ml-4 before:-translate-x-px before:h-full before:w-0.5 before:bg-white/10">
-              {pipelineStages.map((stage, idx) => {
+              {(result?.structured_result?.trace || defaultStages).map((stage: any, idx: number) => {
                 const isActive = loading;
                 const isComplete = !!result;
                 const activeColor = isComplete ? 'border-purple-500 text-purple-400 shadow-[0_0_10px_rgba(168,85,247,0.3)]' : isActive ? 'border-pink-500 text-pink-400 shadow-[0_0_10px_rgba(236,72,153,0.5)] animate-pulse' : 'border-white/10 text-gray-500';
                 
+                const label = typeof stage === 'string' ? stage : stage.label;
+                const Icon = typeof stage === 'string' ? CheckCircle2 : stage.icon;
+
                 return (
                   <div key={idx} className="relative flex items-center gap-4">
                     <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center bg-black z-10 transition-all duration-500 ${activeColor}`}>
-                      <stage.icon className="w-4 h-4" />
+                      <Icon className="w-4 h-4" />
                     </div>
                     <div className="flex-1 bg-white/5 p-2 rounded-lg border border-white/5">
                       <span className={`text-[10px] font-black uppercase tracking-wider ${isComplete ? 'text-purple-400' : isActive ? 'text-pink-400' : 'text-gray-500'}`}>
-                        {stage.label}
+                        {label}
                       </span>
                     </div>
                   </div>
@@ -285,11 +308,10 @@ export const VoiceCopilot: React.FC = () => {
                       <Network className="w-4 h-4" /> Orchestrator Routing Trace
                     </h4>
                     <div className="flex flex-wrap gap-2">
-                      {result.nlu?.agents_triggered?.map((agent: string, i: number) => (
+                      {result?.structured_result?.trace?.map((step: string, i: number) => (
                         <div key={i} className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 px-3 py-2 rounded-lg">
                            <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-                           <span className="text-xs font-bold text-emerald-200">{agent}</span>
-                           <span className="text-[10px] text-emerald-500 uppercase ml-1">Executed</span>
+                           <span className="text-xs font-bold text-emerald-200">{step}</span>
                         </div>
                       ))}
                     </div>
@@ -301,7 +323,7 @@ export const VoiceCopilot: React.FC = () => {
                       <ShieldAlert className="w-4 h-4" /> Execution Result
                     </h4>
                     <pre className="text-xs text-gray-300 bg-black/50 p-4 rounded-lg overflow-x-auto border border-white/5">
-                      {JSON.stringify(result.execution, null, 2)}
+                      {JSON.stringify(result.structured_result || result.execution, null, 2)}
                     </pre>
                   </GlassCard>
 

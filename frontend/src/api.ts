@@ -1,28 +1,102 @@
 import axios from 'axios';
+import { SystemEventBus, type SystemEventPayload } from './utils/SystemEventBus';
+import { supabase } from './lib/supabase';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
+const emitEvent = (event: SystemEventPayload['event'], origin: string = 'API', data?: any) => {
+  SystemEventBus.emit({
+    event,
+    origin,
+    timestamp: new Date().toISOString(),
+    version: '1.0',
+    data
+  });
+};
+
 const apiClient = axios.create({
   baseURL: BASE_URL,
+  timeout: 15000, // 15 seconds timeout
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
+apiClient.interceptors.request.use(async (config) => {
+  if (!navigator.onLine) {
+    window.dispatchEvent(new CustomEvent('deadline_api_error', { 
+      detail: 'You are offline. Please check your network connection.' 
+    }));
+    return Promise.reject(new Error('No internet connection'));
+  }
+
+  // Inject Correlation ID
+  config.headers['X-Correlation-ID'] = crypto.randomUUID();
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (session?.access_token) {
+    config.headers.Authorization = `Bearer ${session.access_token}`;
+  }
+  return config;
+});
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
+    let errorMessage = 'Something went wrong. Please try again.';
+    
+    if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.code === 'ECONNABORTED') {
+      errorMessage = 'Unable to connect. Please check your internet connection.';
+    } else if (error.response) {
+      const status = error.response.status;
+      if (status === 401 || status === 403) {
+        errorMessage = 'Your session has expired or is invalid. Please log in again.';
+      } else if (status === 429) {
+        errorMessage = 'Too many requests. Please try again shortly.';
+      } else if (status === 400 || status === 422) {
+        // Validation errors
+        errorMessage = error.response.data?.error || 'Please check the highlighted fields.';
+      } else if (status >= 500) {
+        errorMessage = 'The service is temporarily unavailable.';
+      }
+    }
+
+    // Only log the real technical details internally
+    console.debug('[API Error Internal]:', error);
+
     window.dispatchEvent(new CustomEvent('deadline_api_error', { 
-      detail: error.response?.data?.error || error.message || 'Service Unavailable' 
+      detail: errorMessage 
     }));
-    return Promise.reject(error);
+    
+    // Pass a sanitized error object so components don't crash or display stack traces
+    const sanitizedError = new Error(errorMessage);
+    (sanitizedError as any).status = error.response?.status;
+    return Promise.reject(sanitizedError);
   }
 );
 
 export const DeadlineOSApi = {
   // ── NOTIFICATIONS ──────────────────────────────────────────────────────
-  async getNotifications() {
-    const response = await apiClient.get('/notifications');
+  async getNotifications(params?: { limit?: number, offset?: number, unread_only?: boolean, category?: string }) {
+    const response = await apiClient.get('/notifications', { params });
+    return response.data;
+  },
+
+  async markNotificationRead(id: string) {
+    const response = await apiClient.put(`/notifications/${id}/read`);
+    emitEvent('NOTIFICATION_READ');
+    return response.data;
+  },
+
+  async markAllNotificationsRead() {
+    const response = await apiClient.put('/notifications/read-all');
+    emitEvent('NOTIFICATION_READ');
+    return response.data;
+  },
+
+  async clearAllNotifications() {
+    const response = await apiClient.delete('/notifications/clear');
+    emitEvent('NOTIFICATION_READ');
     return response.data;
   },
 
@@ -45,8 +119,14 @@ export const DeadlineOSApi = {
     return response.data;
   },
 
-  async runPlanningAgent(payload: { tasks: any[], availability: any }) {
+  async runPlanningAgent(payload: { tasks: any[], availability: any }, origin: string = 'Planner') {
     const response = await apiClient.post('/agents/plan', payload);
+    emitEvent('PLANNER_GENERATED', origin);
+    return response.data;
+  },
+
+  async getLatestSchedule() {
+    const response = await apiClient.get(`/agents/plan/latest?_t=${Date.now()}`);
     return response.data;
   },
 
@@ -55,8 +135,24 @@ export const DeadlineOSApi = {
     return response.data;
   },
 
+  async getRescueHistory() {
+    const response = await apiClient.get('/agents/rescue/history');
+    return response.data;
+  },
+
+  async executeRescuePlan(payload: { plan_id: string, action: string }) {
+    const response = await apiClient.post('/agents/rescue/execute', payload);
+    emitEvent('RESCUE_EXECUTED');
+    return response.data;
+  },
+
   async runDigitalTwin(payload: { scenario: any }) {
     const response = await apiClient.post('/agents/digital-twin', payload);
+    return response.data;
+  },
+
+  async getDigitalTwinHistory() {
+    const response = await apiClient.get('/agents/twin/history');
     return response.data;
   },
 
@@ -67,6 +163,11 @@ export const DeadlineOSApi = {
     const response = await apiClient.post('/agents/vision', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
+    return response.data;
+  },
+
+  async confirmVisionAgent(data: any) {
+    const response = await apiClient.post('/agents/vision/confirm', data);
     return response.data;
   },
 
@@ -83,6 +184,12 @@ export const DeadlineOSApi = {
     const response = await apiClient.post('/orchestration/pipeline', formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     });
+    return response.data;
+  },
+
+  async executeSystemOrchestration() {
+    const response = await apiClient.post('/orchestration/execute', {});
+    emitEvent('COMMAND_CENTER_REFRESH');
     return response.data;
   },
 
@@ -172,28 +279,23 @@ export const DeadlineOSApi = {
 
   // ── INTERVENTIONS ────────────────────────────────────────────────────────
 
-  async getInterventions() {
-    const response = await apiClient.get('/interventions');
+  async getInterventionThreats() {
+    const response = await apiClient.get('/interventions/threats');
     return response.data;
   },
 
-  async runInterventionEngine() {
-    const response = await apiClient.post('/interventions/run');
+  async scanInterventions() {
+    const response = await apiClient.post('/interventions/scan');
     return response.data;
   },
 
-  async resolveIntervention(id: string) {
-    const response = await apiClient.post('/interventions/resolve', { id });
+  async executeInterventionStrategy(payload: { strategy_name: string, actions: any[] }) {
+    const response = await apiClient.post('/interventions/execute', payload);
     return response.data;
   },
 
-  async executeIntervention(id: string) {
-    const response = await apiClient.post(`/interventions/${id}/execute`);
-    return response.data;
-  },
-
-  async simulateIntervention(id: string) {
-    const response = await apiClient.post(`/interventions/${id}/simulate`);
+  async undoIntervention(executionId: string) {
+    const response = await apiClient.post(`/interventions/undo/${executionId}`);
     return response.data;
   },
 
@@ -206,6 +308,85 @@ export const DeadlineOSApi = {
 
   async getHabits() {
     const response = await apiClient.get('/habits');
+    return response.data;
+  },
+
+  async createGoal(payload: { title: string, description?: string, category?: string, target_date?: string }) {
+    const response = await apiClient.post('/goals', payload);
+    emitEvent('GOAL_CREATED');
+    return response.data;
+  },
+
+  async createHabit(payload: { name: string, category?: string, frequency?: string }) {
+    const response = await apiClient.post('/habits', payload);
+    emitEvent('HABIT_CREATED');
+    return response.data;
+  },
+
+  async editGoal(goalId: string, payload: any) {
+    const response = await apiClient.put(`/goals/${goalId}`, payload);
+    emitEvent('GOAL_UPDATED');
+    return response.data;
+  },
+
+  async archiveGoal(goalId: string) {
+    const response = await apiClient.post(`/goals/${goalId}/archive`);
+    emitEvent('GOAL_ARCHIVED');
+    return response.data;
+  },
+
+  async unarchiveGoal(goalId: string) {
+    const response = await apiClient.post(`/goals/${goalId}/unarchive`);
+    return response.data;
+  },
+
+  async pinGoal(goalId: string) {
+    const response = await apiClient.post(`/goals/${goalId}/pin`);
+    return response.data;
+  },
+
+  async deleteGoal(goalId: string) {
+    const response = await apiClient.delete(`/goals/${goalId}`);
+    emitEvent('GOAL_UPDATED');
+    return response.data;
+  },
+
+  async updateMilestoneStatus(milestoneId: string, status: string) {
+    const response = await apiClient.put(`/milestones/${milestoneId}/status`, { status });
+    emitEvent('GOAL_UPDATED');
+    return response.data;
+  },
+
+  async editHabit(habitId: string, payload: any) {
+    const response = await apiClient.put(`/habits/${habitId}`, payload);
+    emitEvent('HABIT_UPDATED');
+    return response.data;
+  },
+
+  async archiveHabit(habitId: string) {
+    const response = await apiClient.post(`/habits/${habitId}/archive`);
+    return response.data;
+  },
+
+  async unarchiveHabit(habitId: string) {
+    const response = await apiClient.post(`/habits/${habitId}/unarchive`);
+    return response.data;
+  },
+
+  async deleteHabit(habitId: string) {
+    const response = await apiClient.delete(`/habits/${habitId}`);
+    return response.data;
+  },
+
+  async setHabitStatus(habitId: string, status: string) {
+    const response = await apiClient.post(`/habits/${habitId}/status`, { status });
+    emitEvent('HABIT_UPDATED');
+    return response.data;
+  },
+
+  async checkInHabit(habitId: string) {
+    const response = await apiClient.post(`/habits/${habitId}/checkin`);
+    emitEvent('HABIT_CHECKIN');
     return response.data;
   },
 
@@ -226,6 +407,65 @@ export const DeadlineOSApi = {
 
   async processVoiceTranscript(transcript: string) {
     const response = await apiClient.post('/voice/process', { transcript });
+    return response.data;
+  },
+
+  // ── DEMO/SIMULATION ──────────────────────────────────────────────────────
+  
+  async runDigitalTwinSimulation(userId: string) {
+    const response = await apiClient.post(`/demo/simulate-twin/${userId}`, {});
+    return response.data;
+  },
+
+  // ── SETTINGS & PROFILE ───────────────────────────────────────────────────
+
+  async getProfile() {
+    const response = await apiClient.get('/settings/profile');
+    return response.data;
+  },
+
+  async updateProfile(data: any) {
+    const response = await apiClient.put('/settings/profile', data);
+    return response.data;
+  },
+
+  async getSettings(section: string) {
+    const response = await apiClient.get(`/settings/${section}`);
+    return response.data;
+  },
+
+  async updateSettings(section: string, data: any) {
+    const response = await apiClient.put(`/settings/${section}`, data);
+    return response.data;
+  },
+
+  async getSessions() {
+    const response = await apiClient.get('/settings/sessions');
+    return response.data;
+  },
+
+  async deleteSession(sessionId: string) {
+    const response = await apiClient.delete(`/settings/session/${sessionId}`);
+    return response.data;
+  },
+
+  async getConnectedAccounts() {
+    const response = await apiClient.get('/settings/accounts');
+    return response.data;
+  },
+
+  async updateConnectedAccounts(data: any) {
+    const response = await apiClient.put('/settings/accounts', data);
+    return response.data;
+  },
+
+  async exportData() {
+    const response = await apiClient.post('/settings/export', {});
+    return response.data;
+  },
+
+  async deleteAccount() {
+    const response = await apiClient.delete('/account');
     return response.data;
   }
 };

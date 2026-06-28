@@ -1,3 +1,0 @@
-"""
-DeadlineOS — Database Package
-"""

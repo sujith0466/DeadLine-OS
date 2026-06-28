@@ -19,8 +19,10 @@ import time
 class DocumentService:
 
     @classmethod
-    def process_file(cls, file: FileStorage) -> Dict[str, Any]:
+    def process_file(cls, file: FileStorage, user_id: str = None) -> Dict[str, Any]:
         """Extracts text from the file and generates intelligence."""
+        from flask import g
+        uid = user_id or getattr(g, "user_id", None)
         
         filename = file.filename.lower()
         text = ""
@@ -48,51 +50,36 @@ class DocumentService:
             if not text.strip():
                 return {"error": "Could not extract text from document."}
 
-            # Run Document Intelligence Agent
+            # Run via Local Intelligence Engine
+            from services.local_intelligence.execution_engine import ExecutionEngine
             from flask import current_app
             gemini = current_app.extensions.get("gemini_service")
-            intelligence = DocumentIntelligenceAgent(gemini).parse_document(text)
             
-            # Optional: Auto-create tasks in DB
-            # For hackathon demo, we will actually insert these so they show up in Calendar & CommandCenter
-            from datetime import datetime, timedelta
-            inserted_tasks = []
-            for task_data in intelligence.get("tasks", []):
-                title = task_data.get("title") if isinstance(task_data, dict) else str(task_data)
-                
-                deadline_val = task_data.get("deadline") if isinstance(task_data, dict) else None
-                if deadline_val:
-                    try:
-                        deadline = datetime.fromisoformat(deadline_val.replace("Z", "+00:00"))
-                    except:
-                        deadline = datetime.utcnow() + timedelta(days=1)
-                else:
-                    deadline = datetime.utcnow() + timedelta(days=1)
-                    
-                t = Task(title=title, deadline=deadline, status="Pending", estimated_hours=1)
-                inserted_tasks.append(t)
-            
-            if inserted_tasks:
-                db.session.add_all(inserted_tasks)
-            
-            db.session.commit()
+            execution = ExecutionEngine.execute(
+                source="document",
+                transcript=text[:2000], # Pass the first 2000 chars to avoid token explosion in IntentEngine fallback, normally we'd chunk this for a real system
+                gemini_service=gemini,
+                user_id=uid
+            )
             
             try:
-                confidence = intelligence.get("confidence", 85)
+                confidence = execution.get("confidence", 85)
                 TelemetryService.log_execution("Document Intelligence", "Extraction", "success", t0, confidence)
             except Exception as t_err:
                 import logging
                 logging.getLogger(__name__).error(f"Telemetry logging failed for Document Intelligence: {t_err}")
             
-            # Form final result
+            # Form final result consistent with Vision & execution schema expectations
             return {
                 "filename": filename,
-                "summary": intelligence.get("summary", ""),
-                "tasks": intelligence.get("tasks", []),
-                "deadlines": intelligence.get("deadlines", []),
-                "action_items": intelligence.get("action_items", []),
-                "owners": intelligence.get("owners", []),
-                "tasks_created": len(inserted_tasks)
+                "summary": execution.get("message", ""),
+                "tasks": execution.get("entities", {}).get("tasks", []),
+                "action_items": execution.get("entities", {}).get("action_items", []),
+                "deadlines": execution.get("entities", {}).get("deadlines", []),
+                "owners": execution.get("entities", {}).get("people", []),
+                "inserted_task_ids": execution.get("data", {}).get("inserted_ids", []),
+                "tasks_created": len(execution.get("data", {}).get("inserted_ids", [])),
+                "structured_result": execution
             }
 
         except Exception as e:

@@ -1,33 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { Calendar as BigCalendar, dateFnsLocalizer } from 'react-big-calendar';
-import { format, parse, startOfWeek, getDay, differenceInMinutes, isBefore } from 'date-fns';
-import { enUS } from 'date-fns/locale';
-
-import 'react-big-calendar/lib/css/react-big-calendar.css';
-
 import { 
-  ShieldAlert, Target, ActivitySquare, 
-  Clock, BatteryCharging, BrainCircuit, Activity, 
-  Lightbulb, CheckCircle2, TrendingUp, AlertTriangle, CalendarDays
+  format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, 
+  eachDayOfInterval, isSameMonth, isSameDay, addMonths, subMonths, 
+  addDays, addWeeks, subWeeks, isToday
+} from 'date-fns';
+import { 
+  ShieldAlert, Target, ActivitySquare, BatteryCharging, 
+  CheckCircle2, AlertTriangle, CalendarDays, ChevronLeft, ChevronRight, X
 } from 'lucide-react';
 import { GlassCard } from '../components/UI/GlassCard';
-import { Background } from '../components/Landing/Background';
 import { DeadlineOSApi } from '../api';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useCountUp } from '../hooks/useCountUp';
 import { Badge } from '../components/UI/Badge';
-
-const locales = {
-  'en-US': enUS,
-};
-
-const localizer = dateFnsLocalizer({
-  format,
-  parse,
-  startOfWeek,
-  getDay,
-  locales,
-});
 
 const AnimatedKpi = ({ value, suffix = '', label, icon: Icon, delay = 0, colorClass = "text-white" }: any) => {
   const isNumber = typeof value === 'number';
@@ -62,21 +47,19 @@ export const Calendar: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [intelligence, setIntelligence] = useState<any>(null);
   const [analytics, setAnalytics] = useState<any>(null);
-  const [heatmap, setHeatmap] = useState<any[]>([]);
-  const [tasks, setTasks] = useState<any[]>([]);
   
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [currentView, setCurrentView] = useState<any>('week');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [view, setView] = useState<'month' | 'week'>('month');
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
-        const [evRes, intRes, anRes, heatRes, tasksRes] = await Promise.all([
+        const [evRes, intRes, anRes] = await Promise.all([
           DeadlineOSApi.getCalendarEvents(),
           DeadlineOSApi.getCalendarIntelligence(),
-          DeadlineOSApi.getAnalyticsOverview(),
-          DeadlineOSApi.getAnalyticsHeatmap(),
-          DeadlineOSApi.getTasks()
+          DeadlineOSApi.getAnalyticsOverview()
         ]);
         
         const rawEvents = Array.isArray(evRes?.data) ? evRes.data : Array.isArray(evRes) ? evRes : [];
@@ -89,37 +72,8 @@ export const Calendar: React.FC = () => {
         setEvents(mappedEvents);
         setIntelligence(intRes?.data || intRes || null);
         setAnalytics(anRes?.data || anRes || null);
-        
-        const safeHeatmap = Array.isArray(heatRes?.data) ? heatRes.data : Array.isArray(heatRes) ? heatRes : [];
-        
-        let finalHeatmap = safeHeatmap;
-        if (finalHeatmap.length === 0 && mappedEvents.length > 0) {
-          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          const counts = [0, 1, 2, 3, 4, 5, 6].map(i => ({ name: days[i], focus: 0, admin: 0 }));
-          mappedEvents.forEach((e: any) => {
-            if (e.start) {
-              const dayIdx = new Date(e.start).getDay();
-              if (e.type === 'focus_block') {
-                counts[dayIdx].focus += 1;
-              } else {
-                counts[dayIdx].admin += 1;
-              }
-            }
-          });
-          finalHeatmap = counts.filter(d => d.name !== 'Sun' && d.name !== 'Sat');
-        }
-        
-        setHeatmap(finalHeatmap);
-        
-        const safeTasks = Array.isArray(tasksRes?.data) ? tasksRes.data : Array.isArray(tasksRes) ? tasksRes : [];
-        setTasks(safeTasks);
       } catch (err) {
         console.error("Failed to load calendar", err);
-        setEvents([]);
-        setIntelligence(null);
-        setAnalytics(null);
-        setHeatmap([]);
-        setTasks([]);
       } finally {
         setLoading(false);
       }
@@ -127,289 +81,260 @@ export const Calendar: React.FC = () => {
     fetchData();
   }, []);
 
-  const eventStyleGetter = (event: any) => {
-    let backgroundColor = '#0f172a';
-    let border = '1px solid #334155';
-    let color = '#f8fafc';
-
-    if (event.type === 'focus_block') {
-      backgroundColor = 'rgba(168, 85, 247, 0.2)'; // Purple
-      border = '1px solid #a855f7';
-      color = '#e9d5ff';
-    } else if (event.type === 'rescue_alert') {
-      backgroundColor = 'rgba(245, 158, 11, 0.2)'; // Yellow
-      border = '1px solid #f59e0b';
-      color = '#fde68a';
-    } else if (event.type === 'twin_warning') {
-      backgroundColor = 'rgba(244, 63, 94, 0.2)'; // Rose
-      border = '1px solid #f43f5e';
-      color = '#fecdd3';
-    } else if (event.risk_level === 'High' || event.risk_level === 'Critical') {
-      backgroundColor = 'rgba(239, 68, 68, 0.15)'; // Red
-      border = '1px solid #ef4444';
+  const changeDate = (direction: 'prev' | 'next' | 'today') => {
+    if (direction === 'today') {
+      setCurrentDate(new Date());
+    } else if (view === 'month') {
+      setCurrentDate(prev => direction === 'next' ? addMonths(prev, 1) : subMonths(prev, 1));
     } else {
-      backgroundColor = 'rgba(56, 189, 248, 0.1)'; // Sky
-      border = '1px solid #38bdf8';
+      setCurrentDate(prev => direction === 'next' ? addWeeks(prev, 1) : subWeeks(prev, 1));
     }
-
-    return {
-      style: {
-        backgroundColor,
-        border,
-        color,
-        borderRadius: '6px',
-        opacity: 0.9,
-        fontWeight: 'bold',
-        fontSize: '12px'
-      }
-    };
   };
+
+  const getDayEvents = (date: Date) => {
+    return events.filter(e => isSameDay(e.start, date));
+  };
+
+  // Render Month Grid
+  const renderMonthView = () => {
+    const monthStart = startOfMonth(currentDate);
+    const monthEnd = endOfMonth(monthStart);
+    const startDate = startOfWeek(monthStart);
+    const endDate = endOfWeek(monthEnd);
+
+    const days = eachDayOfInterval({ start: startDate, end: endDate });
+
+    return (
+      <div className="grid grid-cols-7 gap-px bg-white/10 rounded-lg overflow-hidden border border-white/10">
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+          <div key={d} className="bg-[#0B1120] p-2 text-center text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+            {d}
+          </div>
+        ))}
+        {days.map((day, i) => {
+          const dayEvents = getDayEvents(day);
+          const tasks = dayEvents.filter(e => e.type === 'task').length;
+          const deadlines = dayEvents.filter(e => e.type === 'deadline').length;
+          const goals = dayEvents.filter(e => e.type === 'goal').length;
+          const meetings = dayEvents.filter(e => e.type === 'meeting').length;
+          const alerts = dayEvents.filter(e => e.risk_level === 'High').length;
+          
+          const isCurrentMonth = isSameMonth(day, monthStart);
+          const isSelected = selectedDate && isSameDay(day, selectedDate);
+          
+          return (
+            <div 
+              key={i} 
+              onClick={() => setSelectedDate(day)}
+              className={`bg-[#020617] min-h-[100px] p-2 cursor-pointer transition-colors hover:bg-white/5 border-t border-r border-white/5 relative group
+                ${!isCurrentMonth ? 'opacity-40' : ''}
+                ${isSelected ? 'ring-2 ring-inset ring-sky-500 bg-sky-500/10' : ''}
+                ${isToday(day) ? 'bg-indigo-500/10' : ''}
+              `}
+            >
+              <div className="flex justify-between items-start">
+                <span className={`text-sm font-bold ${isToday(day) ? 'text-indigo-400 bg-indigo-500/20 px-2 rounded' : 'text-gray-300'}`}>
+                  {format(day, 'd')}
+                </span>
+                {alerts > 0 && <AlertTriangle className="w-3 h-3 text-rose-500" />}
+              </div>
+              
+              <div className="mt-2 space-y-1">
+                {deadlines > 0 && <div className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-1.5 py-0.5 rounded flex justify-between"><span>⚠ Deadlines</span><span>{deadlines}</span></div>}
+                {tasks > 0 && <div className="text-[10px] font-bold text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded flex justify-between"><span>📝 Tasks</span><span>{tasks}</span></div>}
+                {meetings > 0 && <div className="text-[10px] font-bold text-purple-400 bg-purple-500/10 px-1.5 py-0.5 rounded flex justify-between"><span>📅 Meetings</span><span>{meetings}</span></div>}
+                {goals > 0 && <div className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded flex justify-between"><span>🎯 Goals</span><span>{goals}</span></div>}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    );
+  };
+
+  const renderWeekView = () => {
+    const startDate = startOfWeek(currentDate);
+    const days = Array.from({length: 7}).map((_, i) => addDays(startDate, i));
+    const hours = Array.from({length: 15}).map((_, i) => i + 8); // 8 AM to 10 PM
+
+    return (
+      <div className="flex flex-col bg-[#020617] rounded-lg border border-white/10 overflow-hidden h-[600px] overflow-y-auto">
+        <div className="grid grid-cols-8 sticky top-0 z-20 bg-[#0B1120] border-b border-white/10 shadow-lg">
+          <div className="p-3 border-r border-white/10"></div>
+          {days.map(d => (
+            <div key={d.toString()} onClick={() => setSelectedDate(d)} className={`p-3 text-center cursor-pointer hover:bg-white/5 border-r border-white/10 ${isToday(d) ? 'bg-indigo-500/20' : ''}`}>
+              <div className="text-[10px] uppercase text-gray-400 font-bold">{format(d, 'EEE')}</div>
+              <div className={`text-lg font-black ${isToday(d) ? 'text-indigo-400' : 'text-gray-200'}`}>{format(d, 'd')}</div>
+            </div>
+          ))}
+        </div>
+        <div className="relative">
+          {hours.map(h => (
+            <div key={h} className="grid grid-cols-8 border-b border-white/5 h-16 group">
+              <div className="p-2 text-[10px] font-bold text-gray-500 text-right pr-4 border-r border-white/10">
+                {h}:00
+              </div>
+              {days.map(d => (
+                <div key={d.toString()} className="border-r border-white/5 hover:bg-white/5 transition-colors relative">
+                  {getDayEvents(d).map(e => {
+                     const evHour = e.start.getHours();
+                     const evMin = e.start.getMinutes();
+                     if (evHour === h) {
+                        return (
+                          <div key={e.id} className="absolute inset-x-1 p-1 text-[9px] rounded font-bold overflow-hidden"
+                               style={{ 
+                                 top: `${(evMin/60)*100}%`, 
+                                 height: '90%', 
+                                 background: e.type==='deadline' ? 'rgba(244,63,94,0.2)' : e.type==='meeting'?'rgba(168,85,247,0.2)':'rgba(56,189,248,0.2)',
+                                 borderLeft: `2px solid ${e.type==='deadline'?'#f43f5e':e.type==='meeting'?'#a855f7':'#38bdf8'}`,
+                                 color: '#fff',
+                                 zIndex: 10
+                               }}>
+                            {format(e.start, 'h:mm')} - {e.title}
+                          </div>
+                        )
+                     }
+                     return null;
+                  })}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const selectedDayEvents = selectedDate ? getDayEvents(selectedDate) : [];
+  const morningEvents = selectedDayEvents.filter(e => e.start.getHours() < 12);
+  const afternoonEvents = selectedDayEvents.filter(e => e.start.getHours() >= 12 && e.start.getHours() < 17);
+  const eveningEvents = selectedDayEvents.filter(e => e.start.getHours() >= 17);
 
   if (loading) {
     return (
-      <>
-        <Background />
-        <div className="flex flex-col items-center justify-center py-20 h-screen w-full">
-          <ActivitySquare className="w-16 h-16 text-primary animate-pulse mb-4" />
-          <h2 className="text-2xl font-black text-white">Initializing Executive Calendar...</h2>
-          <p className="text-gray-400 mt-2">Correlating spatial timelines with digital twin forecasts</p>
-        </div>
-      </>
+      <div className="flex flex-col items-center justify-center py-20 h-screen w-full relative z-10">
+        <ActivitySquare className="w-16 h-16 text-sky-500 animate-pulse mb-4" />
+        <h2 className="text-2xl font-black text-white">Aggregating Productivity Matrix...</h2>
+      </div>
     );
   }
 
-  // Derive metrics safely
-  let totalScheduledMinutes = 0;
-  let focusMinutes = 0;
-  const safeEvents = events || [];
-  
-  safeEvents.forEach(e => {
-    if (e.start && e.end) {
-      const mins = differenceInMinutes(e.end, e.start);
-      totalScheduledMinutes += mins;
-      if (e.type === 'focus_block') focusMinutes += mins;
-    }
-  });
-  
-  const scheduledHours = Math.round((totalScheduledMinutes / 60) * 10) / 10;
-  const focusHours = Math.round((focusMinutes / 60) * 10) / 10;
-  
-  const availableHours = scheduledHours + (intelligence?.remaining_hours || 0);
-  
-  const safeTasks = tasks || [];
-  const missedTasks = safeTasks.filter(t => t.status !== 'done' && t.deadline && isBefore(new Date(t.deadline), new Date())).length;
-  
-  const contextSwitchingScore = Math.min(100, safeEvents.length * 8);
-
   return (
-    <>
-      <Background />
-      <div className="space-y-4 pb-8 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10">
-        
-        {/* SECTION 1: Calendar Intelligence KPI Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <AnimatedKpi value={scheduledHours} suffix="h" label="Scheduled Hours" icon={Clock} delay={0.1} colorClass="text-sky-400" />
-          <AnimatedKpi value={intelligence?.remaining_hours || 0} suffix="h" label="Remaining Capacity" icon={BatteryCharging} delay={0.2} colorClass="text-emerald-400" />
-          <AnimatedKpi value={analytics?.productivity_score || 0} label="Focus Score" icon={Target} delay={0.3} colorClass="text-purple-400" />
-          <AnimatedKpi value={intelligence?.schedule_confidence || 0} suffix="%" label="Schedule Confidence" icon={CheckCircle2} delay={0.4} colorClass="text-indigo-400" />
+    <div className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6 relative z-10 space-y-6">
+      
+      {/* Header & Controls */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-indigo-500 flex items-center gap-3">
+            <CalendarDays className="w-8 h-8 text-sky-400" /> AI Productivity Calendar
+          </h1>
+          <p className="text-gray-400 font-medium">Your central execution dashboard powered by Local Intelligence V3.</p>
         </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        
+        <div className="flex items-center gap-4">
+          <div className="flex bg-black/40 rounded-lg p-1 border border-white/10">
+            <button onClick={() => setView('month')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${view === 'month' ? 'bg-sky-500/20 text-sky-400' : 'text-gray-400 hover:text-white'}`}>Month</button>
+            <button onClick={() => setView('week')} className={`px-4 py-1.5 text-xs font-bold rounded-md transition-colors ${view === 'week' ? 'bg-sky-500/20 text-sky-400' : 'text-gray-400 hover:text-white'}`}>Week</button>
+          </div>
           
-          {/* LEFT COLUMN: Calendar & Analytics */}
-          <div className="lg:col-span-9 space-y-4">
-            
-            {/* SECTION 2: Executive Calendar View */}
-            <GlassCard className="p-4 bg-background/80 h-[650px] border-t-2 border-t-sky-500">
-              <style>
-                {`
-                  .rbc-calendar { font-family: inherit; color: #fff; }
-                  .rbc-header { padding: 8px; font-weight: bold; border-bottom: 1px solid rgba(255,255,255,0.1); text-transform: uppercase; font-size: 11px; letter-spacing: 1px;}
-                  .rbc-today { background-color: rgba(56, 189, 248, 0.05); }
-                  .rbc-off-range-bg { background-color: rgba(0, 0, 0, 0.2); }
-                  .rbc-month-view, .rbc-time-view { border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; overflow: hidden; }
-                  .rbc-day-bg { border-left: 1px solid rgba(255,255,255,0.1); }
-                  .rbc-month-row { border-top: 1px solid rgba(255,255,255,0.1); }
-                  .rbc-timeslot-group { border-bottom: 1px solid rgba(255,255,255,0.1); }
-                  .rbc-time-content { border-top: 1px solid rgba(255,255,255,0.1); }
-                  .rbc-time-header-content { border-left: 1px solid rgba(255,255,255,0.1); }
-                  .rbc-toolbar button { color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; margin: 0 2px;}
-                  .rbc-toolbar button:hover { background-color: rgba(255,255,255,0.1); }
-                  .rbc-toolbar button:active, .rbc-toolbar button.rbc-active { background-color: rgba(56, 189, 248, 0.2); color: #38bdf8; border-color: rgba(56, 189, 248, 0.5);}
-                `}
-              </style>
-              <BigCalendar
-                localizer={localizer}
-                events={events}
-                startAccessor={(event: any) => event.start}
-                endAccessor={(event: any) => event.end}
-                eventPropGetter={eventStyleGetter}
-                date={currentDate}
-                onNavigate={(newDate: Date) => setCurrentDate(newDate)}
-                view={currentView}
-                onView={(newView: any) => setCurrentView(newView)}
-                views={['month', 'week', 'day']}
-                step={30}
-                timeslots={2}
-              />
-            </GlassCard>
-
-            {/* SECTION 4: Workload Heatmap */}
-            <GlassCard className="border-t-2 border-t-purple-500">
-               <h3 className="text-xs font-bold text-purple-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                 <Activity className="w-4 h-4" /> Workload Intensity Heatmap
-               </h3>
-               <div className="flex justify-between items-end h-32 gap-2">
-                 {heatmap.length > 0 ? heatmap.map((day: any, i: number) => {
-                    const total = day.focus + day.admin;
-                    const max = Math.max(...heatmap.map((d: any) => d.focus + d.admin), 10);
-                    const height = `${(total / max) * 100}%`;
-                    return (
-                      <div key={i} className="flex-1 flex flex-col justify-end group">
-                        <div className="w-full bg-purple-500/20 rounded-t-sm hover:bg-purple-500/40 transition-all relative" style={{ height }}>
-                           <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity">
-                             {total} units
-                           </div>
-                        </div>
-                        <p className="text-[10px] text-gray-500 text-center mt-2 uppercase">{day.name}</p>
-                      </div>
-                    )
-                 }) : (
-                   <div className="w-full h-full flex items-center justify-center">
-                     <p className="text-xs text-gray-500 italic">No heatmap data available.</p>
-                   </div>
-                 )}
-               </div>
-            </GlassCard>
-
+          <div className="flex items-center gap-2 bg-black/40 rounded-lg p-1 border border-white/10">
+            <button onClick={() => changeDate('prev')} className="p-1 hover:bg-white/10 rounded"><ChevronLeft className="w-5 h-5"/></button>
+            <button onClick={() => changeDate('today')} className="px-3 text-xs font-bold hover:text-sky-400">Today</button>
+            <button onClick={() => changeDate('next')} className="p-1 hover:bg-white/10 rounded"><ChevronRight className="w-5 h-5"/></button>
           </div>
-
-          {/* RIGHT COLUMN: Dashboards */}
-          <div className="lg:col-span-3 space-y-4">
-            
-            {/* SECTION 8: Digital Twin Calendar Forecast */}
-            <GlassCard className="bg-blue-500/5 border-l-4 border-l-blue-500">
-               <h3 className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                 <BrainCircuit className="w-4 h-4" /> Twin Forecast Projection
-               </h3>
-               <div className="space-y-3">
-                 <div className="flex justify-between items-center bg-black/30 p-2 rounded border border-white/5">
-                   <span className="text-xs text-gray-400">Success Probability</span>
-                   <span className="text-sm font-bold text-emerald-400">{analytics?.deadline_success_rate || 0}%</span>
-                 </div>
-                 <div className="flex justify-between items-center bg-black/30 p-2 rounded border border-white/5">
-                   <span className="text-xs text-gray-400">Schedule Stability</span>
-                   <span className="text-sm font-bold text-blue-400">{intelligence?.schedule_confidence || 0}%</span>
-                 </div>
-                 <div className="flex justify-between items-center bg-black/30 p-2 rounded border border-white/5">
-                   <span className="text-xs text-gray-400">Future Risk</span>
-                   <Badge variant={analytics?.future_risk_forecast === 'High' ? 'danger' : 'info'}>{analytics?.future_risk_forecast || 'Low'}</Badge>
-                 </div>
-               </div>
-            </GlassCard>
-
-            {/* SECTION 5: Focus Intelligence */}
-            <GlassCard className="border-t-2 border-t-pink-500">
-               <h3 className="text-xs font-bold text-pink-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                 <Target className="w-4 h-4" /> Focus Intelligence
-               </h3>
-               <div className="grid grid-cols-2 gap-3">
-                 <div className="bg-black/30 p-3 rounded-lg border border-white/5 text-center">
-                    <p className="text-[10px] text-gray-500 uppercase mb-1">Deep Work Util</p>
-                    <p className="text-xl font-bold text-pink-400">{focusHours}h</p>
-                 </div>
-                 <div className="bg-black/30 p-3 rounded-lg border border-white/5 text-center">
-                    <p className="text-[10px] text-gray-500 uppercase mb-1">Context Switch</p>
-                    <p className="text-xl font-bold text-orange-400">{contextSwitchingScore}</p>
-                 </div>
-                 <div className="bg-black/30 p-3 rounded-lg border border-white/5 text-center col-span-2">
-                    <p className="text-[10px] text-gray-500 uppercase mb-1">Productivity Forecast</p>
-                    <div className="flex items-center justify-center gap-2">
-                       <TrendingUp className="w-4 h-4 text-emerald-400" />
-                       <p className="text-xl font-bold text-emerald-400">{analytics?.productivity_score || 0}%</p>
-                    </div>
-                 </div>
-               </div>
-            </GlassCard>
-
-            {/* SECTION 3: Capacity Forecast Panel */}
-            <GlassCard className="border-t-2 border-t-emerald-500">
-               <h3 className="text-xs font-bold text-emerald-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                 <BatteryCharging className="w-4 h-4" /> Capacity Forecast
-               </h3>
-               <div className="space-y-3">
-                 <div className="flex justify-between text-xs">
-                   <span className="text-gray-400">Available vs Planned</span>
-                   <span className="text-white font-medium">{availableHours}h / {scheduledHours}h</span>
-                 </div>
-                 <div className="w-full bg-white/5 rounded-full h-2">
-                   <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${Math.min(100, (scheduledHours / (availableHours || 1)) * 100)}%` }}></div>
-                 </div>
-                 <div className="flex gap-2 pt-2 border-t border-white/5">
-                   <div className="flex-1 bg-black/30 p-2 rounded text-center border border-white/5">
-                     <p className="text-[10px] text-gray-500 uppercase mb-1">Overload Risk</p>
-                     <p className={`text-sm font-bold ${intelligence?.capacity_percent > 85 ? 'text-rose-400' : 'text-emerald-400'}`}>
-                       {intelligence?.capacity_percent > 85 ? 'High' : 'Low'}
-                     </p>
-                   </div>
-                   <div className="flex-1 bg-black/30 p-2 rounded text-center border border-white/5">
-                     <p className="text-[10px] text-gray-500 uppercase mb-1">Burnout Risk</p>
-                     <p className={`text-sm font-bold ${analytics?.current_risk_level === 'High' ? 'text-rose-400' : 'text-emerald-400'}`}>
-                       {analytics?.current_risk_level || 'Low'}
-                     </p>
-                   </div>
-                 </div>
-               </div>
-            </GlassCard>
-
-            {/* SECTION 6: Calendar Risk Center */}
-            <GlassCard className="border-t-2 border-t-rose-500">
-               <h3 className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                 <ShieldAlert className="w-4 h-4" /> Calendar Risk Center
-               </h3>
-               <div className="space-y-2">
-                 <div className="flex justify-between items-center text-xs bg-black/30 p-2 rounded border border-white/5">
-                   <span className="text-gray-400">Missed Deadlines</span>
-                   <span className={`font-bold ${missedTasks > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>{missedTasks}</span>
-                 </div>
-                 <div className="flex justify-between items-center text-xs bg-black/30 p-2 rounded border border-white/5">
-                   <span className="text-gray-400">Rescue Triggers</span>
-                   <span className="font-bold text-warning">{intelligence?.rescue_overlays?.length || 0}</span>
-                 </div>
-                 {intelligence?.twin_warnings?.map((w: string, i: number) => (
-                    <div key={i} className="flex gap-2 items-start text-xs bg-rose-500/10 p-2 rounded border border-rose-500/20">
-                      <AlertTriangle className="w-3 h-3 text-rose-400 shrink-0 mt-0.5" />
-                      <span className="text-rose-200">{w}</span>
-                    </div>
-                 ))}
-               </div>
-            </GlassCard>
-
-            {/* SECTION 7: AI Recommendations */}
-            <GlassCard className="border-t-2 border-t-cyan-500">
-               <h3 className="text-xs font-bold text-cyan-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                 <Lightbulb className="w-4 h-4" /> Agent Recommendations
-               </h3>
-               <div className="space-y-2 text-xs">
-                 {intelligence?.insights?.planning?.map((rec: string, i: number) => (
-                   <div key={i} className="flex gap-2 p-2 bg-black/30 rounded border border-white/5">
-                     <CalendarDays className="w-3 h-3 text-cyan-400 shrink-0 mt-0.5" />
-                     <span className="text-gray-300">{rec}</span>
-                   </div>
-                 ))}
-                 {intelligence?.rescue_overlays?.map((rec: string, i: number) => (
-                   <div key={`res-${i}`} className="flex gap-2 p-2 bg-warning/10 rounded border border-warning/20">
-                     <ShieldAlert className="w-3 h-3 text-warning shrink-0 mt-0.5" />
-                     <span className="text-yellow-200">{rec}</span>
-                   </div>
-                 ))}
-               </div>
-            </GlassCard>
-
+          
+          <div className="text-xl font-black min-w-[150px] text-right text-white">
+            {format(currentDate, view === 'month' ? 'MMMM yyyy' : 'MMM yyyy')}
           </div>
-
         </div>
       </div>
-    </>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <AnimatedKpi value={events.length} label="Total Workload" icon={ActivitySquare} delay={0.1} colorClass="text-sky-400" />
+        <AnimatedKpi value={intelligence?.schedule_confidence || 85} suffix="%" label="Schedule Confidence" icon={CheckCircle2} delay={0.2} colorClass="text-emerald-400" />
+        <AnimatedKpi value={analytics?.productivity_score || 0} label="Focus Score" icon={Target} delay={0.3} colorClass="text-purple-400" />
+        <AnimatedKpi value={intelligence?.remaining_hours || 0} suffix="h" label="Capacity Available" icon={BatteryCharging} delay={0.4} colorClass="text-indigo-400" />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 relative">
+        <div className={`transition-all duration-300 ${selectedDate ? 'lg:col-span-8' : 'lg:col-span-12'}`}>
+          {view === 'month' ? renderMonthView() : renderWeekView()}
+        </div>
+        
+        {/* Day Planner Side Panel */}
+        <AnimatePresence>
+          {selectedDate && (
+            <motion.div 
+              initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+              className="lg:col-span-4 h-full"
+            >
+              <GlassCard className="h-full min-h-[600px] border-t-4 border-t-sky-500 relative flex flex-col">
+                <button onClick={() => setSelectedDate(null)} className="absolute top-4 right-4 p-1 rounded hover:bg-white/10">
+                  <X className="w-5 h-5 text-gray-400" />
+                </button>
+                
+                <div className="mb-6">
+                  <h3 className="text-2xl font-black text-white">{format(selectedDate, 'EEEE')}</h3>
+                  <p className="text-sky-400 font-bold">{format(selectedDate, 'MMMM d, yyyy')}</p>
+                </div>
+                
+                <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+                  
+                  {/* AI Recommendations */}
+                  {selectedDayEvents.some(e => e.risk_level === 'High') && (
+                    <div className="bg-rose-500/10 border border-rose-500/20 rounded-lg p-3">
+                      <h4 className="text-xs font-bold text-rose-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                        <ShieldAlert className="w-4 h-4"/> Critical Deadlines Today
+                      </h4>
+                      <p className="text-xs text-rose-200">The Intelligence Engine detects high-risk deadlines. Prioritize deep work immediately.</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/10 pb-1">Morning</h4>
+                    {morningEvents.length > 0 ? morningEvents.map(e => (
+                      <div key={e.id} className="bg-black/40 border border-white/5 p-3 rounded-lg flex items-start gap-3">
+                         <span className="text-xs font-bold text-gray-400 w-12 pt-0.5">{format(e.start, 'h:mm')}</span>
+                         <div>
+                           <p className="text-sm font-bold text-white">{e.title}</p>
+                           <Badge className="mt-1" variant={e.type==='deadline'?'danger':e.type==='goal'?'success':'info'}>{e.type}</Badge>
+                         </div>
+                      </div>
+                    )) : <p className="text-xs text-gray-500 italic">No morning items.</p>}
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/10 pb-1">Afternoon</h4>
+                    {afternoonEvents.length > 0 ? afternoonEvents.map(e => (
+                      <div key={e.id} className="bg-black/40 border border-white/5 p-3 rounded-lg flex items-start gap-3">
+                         <span className="text-xs font-bold text-gray-400 w-12 pt-0.5">{format(e.start, 'h:mm')}</span>
+                         <div>
+                           <p className="text-sm font-bold text-white">{e.title}</p>
+                           <Badge className="mt-1" variant={e.type==='deadline'?'danger':e.type==='goal'?'success':'info'}>{e.type}</Badge>
+                         </div>
+                      </div>
+                    )) : <p className="text-xs text-gray-500 italic">No afternoon items.</p>}
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/10 pb-1">Evening</h4>
+                    {eveningEvents.length > 0 ? eveningEvents.map(e => (
+                      <div key={e.id} className="bg-black/40 border border-white/5 p-3 rounded-lg flex items-start gap-3">
+                         <span className="text-xs font-bold text-gray-400 w-12 pt-0.5">{format(e.start, 'h:mm')}</span>
+                         <div>
+                           <p className="text-sm font-bold text-white">{e.title}</p>
+                           <Badge className="mt-1" variant={e.type==='deadline'?'danger':e.type==='goal'?'success':'info'}>{e.type}</Badge>
+                         </div>
+                      </div>
+                    )) : <p className="text-xs text-gray-500 italic">No evening items.</p>}
+                  </div>
+
+                </div>
+              </GlassCard>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 };

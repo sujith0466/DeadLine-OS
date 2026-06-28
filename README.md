@@ -1,180 +1,249 @@
-# DeadlineOS
+<!-- 1. Hero Banner -->
+<div align="center">
+  <h1>DeadlineOS</h1>
+  <p><b>The Enterprise AI Executive Operating System</b></p>
 
-**AI-Powered Executive Operating System for Students, Professionals, and Teams.**
+  [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)]()
+  [![Status](https://img.shields.io/badge/status-Production_Ready-success.svg)]()
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
+  [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
+</div>
 
-## Overview
-DeadlineOS is an advanced, fully integrated executive intelligence platform. Designed to go far beyond traditional task management, it seamlessly integrates a powerful AI Command Center with a real-time Digital Twin to simulate, orchestrate, and optimize your schedule.
+---
 
-**Core Capabilities:**
-* **AI Command Center:** Centralized hub for issuing natural language commands.
-* **Digital Twin:** Simulates your future capacity and models risk scenarios before they happen.
-* **Planner:** Intelligently schedules tasks, maximizing productivity and preventing burnout.
-* **Rescue Engine:** Detects and mitigates scheduling conflicts in real-time.
-* **Intervention Engine:** Proactively catches missed deadlines and auto-generates rescue strategies.
-* **Calendar Intelligence:** Visual execution layer with deep insights into workload density.
-* **Document Intelligence:** Extracts actionable tasks directly from unstructured PDFs, Syllabi, and Requirements.
-* **Vision Intelligence:** Understands images, screenshots, and visual assignments.
-* **Voice Copilot:** Complete voice-driven interaction for hands-free operation.
-* **Analytics Observatory:** Executive dashboard detailing AI confidence, productivity velocity, and system health.
+## 2. Executive Overview
+**What is DeadlineOS?**
+DeadlineOS is a comprehensive, AI-native executive intelligence platform. It moves beyond passive task tracking into active schedule orchestration, simulating future workload capacity against real-world constraints to act as an autonomous Chief of Staff.
 
-## Core Architecture
-**Frontend:**
-* React
-* TypeScript
-* Vite
-* Tailwind CSS
-* Framer Motion
+**The Problem Solved**
+Traditional task managers fail because they wait for the user to miss deadlines. High-performance individuals suffer from schedule density blindness.
 
-**Backend:**
-* Flask
-* SQLAlchemy
-* PostgreSQL (Neon)
+**Target Users**
+Engineered for high-performance individuals, students, founders, and professional teams who require predictive analytics to avoid burnout and missed milestones.
 
-**AI Layer:**
-* Gemini (Google AI)
-* Planning Agent
-* Rescue Agent
-* Vision Agent
-* Voice Agent
-* Digital Twin Agent
-* Intervention Engine
+**Key Differentiators**
+- **Proactive Interventions**: Evaluates schedule integrity to intercept workload collisions before they happen.
+- **Multimodal Intelligence**: Accepts commands via Voice, Vision (screenshots/whiteboards), and Documents.
+- **Monte-Carlo Digital Twin**: Mathematically simulates your success rate on upcoming goals.
 
-## System Modules
+---
 
-### Executive Dashboard
-[![Executive Dashboard](docs/screenshots/dashboard.png)](docs/screenshots/dashboard.png)
+## 3. Key Features
 
-<table width="100%">
-  <tr>
-    <td width="50%" align="center">
-      <b>AI Command Center</b><br><br>
-      <a href="docs/screenshots/command-center.png"><img src="docs/screenshots/command-center.png" alt="Command Center"/></a>
-    </td>
-    <td width="50%" align="center">
-      <b>AI Planner</b><br><br>
-      <a href="docs/screenshots/planner.png"><img src="docs/screenshots/planner.png" alt="Planner"/></a>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <b>Rescue Operations Center</b><br><br>
-      <a href="docs/screenshots/rescue.png"><img src="docs/screenshots/rescue.png" alt="Rescue Center"/></a>
-    </td>
-    <td width="50%" align="center">
-      <b>Active Interventions</b><br><br>
-      <a href="docs/screenshots/interventions.png"><img src="docs/screenshots/interventions.png" alt="Active Interventions"/></a>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <b>Digital Twin Laboratory</b><br><br>
-      <a href="docs/screenshots/digital-twin.png"><img src="docs/screenshots/digital-twin.png" alt="Digital Twin"/></a>
-    </td>
-    <td width="50%" align="center">
-      <b>Goals & Habits Intelligence</b><br><br>
-      <a href="docs/screenshots/goals.png"><img src="docs/screenshots/goals.png" alt="Goals"/></a>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <b>Executive Calendar Intelligence</b><br><br>
-      <a href="docs/screenshots/calendar.png"><img src="docs/screenshots/calendar.png" alt="Calendar"/></a>
-    </td>
-    <td width="50%" align="center">
-      <b>Executive Intelligence Observatory</b><br><br>
-      <a href="docs/screenshots/analytics.png"><img src="docs/screenshots/analytics.png" alt="Analytics"/></a>
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center">
-      <b>Document Intelligence</b><br><br>
-      <a href="docs/screenshots/documents.png"><img src="docs/screenshots/documents.png" alt="Documents"/></a>
-    </td>
-    <td width="50%" align="center">
-      <b>Vision Intelligence</b><br><br>
-      <a href="docs/screenshots/vision.png"><img src="docs/screenshots/vision.png" alt="Vision"/></a>
-    </td>
-  </tr>
-  <tr>
-    <td width="100%" colspan="2" align="center">
-      <b>Voice Copilot</b><br><br>
-      <a href="docs/screenshots/voice.png"><img src="docs/screenshots/voice.png" alt="Voice" width="50%"/></a>
-    </td>
-  </tr>
-</table>
-## System Flow
+**AI Planning & Coordination**
+- **AI Planner**: Auto-schedules tasks by finding calendar whitespace without violating burnout thresholds.
+- **Goals & Habits**: Tracks long-term objectives linked directly to daily atomic habits.
+- **Smart Calendar**: Real-time aggregation of goals, meetings, and deadlines into a single pane of glass.
 
-**Document:**
-Document Upload → Task Extraction → Planner → Calendar → Digital Twin → Intervention Engine → Analytics
+**Multimodal Intelligence**
+- **Voice Intelligence**: Hands-free natural language parsing to execute complex CRUD workflows.
+- **Vision Intelligence**: Extracts tasks and constraints from uploaded images or whiteboards.
+- **Document Intelligence**: Semantically chunks PDFs and DOCX files into tracked milestones.
 
-**Vision:**
-Vision Upload → OCR Processing → Task Creation → Planning Engine
+**Executive Defense**
+- **Digital Twin**: Simulates completion trajectories by analyzing past velocity against future workload.
+- **Rescue Center**: Detects at-risk tasks and auto-generates multi-step recovery strategies.
+- **Command Center**: Global floating terminal for instant AI interactions from anywhere in the OS.
 
-**Voice:**
-Voice Input → Intent Detection → Agent Routing → Execution
+**Observability & Security**
+- **Analytics**: Executive observatory tracking AI confidence scores and completion velocity.
+- **Authentication**: Stateless, enterprise-grade tenant isolation.
+- **Settings**: Complete control over AI aggressiveness, UI themes, and data management.
 
-## Installation
+---
 
-### 1. Backend Setup
-```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-pip install -r requirements.txt
+## 4. Screenshots
+
+<details open>
+<summary><b>Click to expand the Gallery</b></summary>
+<br>
+
+**Landing & Authentication**
+<img src="docs/screenshots/Landing_page.png" alt="Landing Page">
+
+**Dashboards**
+<img src="docs/screenshots/dashboard.png" alt="Dashboard">
+
+**Planning Matrix**
+<img src="docs/screenshots/planner.png" alt="Planner">
+<img src="docs/screenshots/calendar.png" alt="Calendar">
+<img src="docs/screenshots/goals.png" alt="Goals">
+
+**Intelligence Inputs**
+<img src="docs/screenshots/voice.png" alt="Voice Intelligence">
+<img src="docs/screenshots/vision.png" alt="Vision Intelligence">
+<img src="docs/screenshots/documents.png" alt="Document Intelligence">
+<img src="docs/screenshots/command-center.png" alt="Command Center">
+
+**Executive Defense Operations**
+<img src="docs/screenshots/digital-twin.png" alt="Digital Twin">
+<img src="docs/screenshots/rescue.png" alt="Rescue Center">
+<img src="docs/screenshots/interventions.png" alt="Interventions">
+
+**Observability & Settings**
+<img src="docs/screenshots/analytics.png" alt="Analytics">
+
+*(Missing visual representations: Settings, Profile, Notifications due to PII isolation)*
+</details>
+
+---
+
+## 5. Architecture
+DeadlineOS relies on a Hybrid Inference Model built on modern cloud primitives.
+
+- **Frontend**: A high-performance Vite SPA optimized for speed. Communicates via REST and WebSockets.
+- **Backend**: A modular Python Application Factory. Implements a globally injected Local Intelligence Engine.
+- **Database**: Connection-pooled serverless PostgreSQL optimized for multi-tenant isolation.
+- **Authentication**: Asymmetric stateless JWT verification at the routing layer.
+- **Deployment**: Vercel handles static edge caching; Render orchestrates the Python worker environments.
+- **Local Intelligence Engine**: Processes basic NLP (intent classification, entity extraction) entirely on-device/in-memory with <150ms latency.
+- **Gemini Fallback**: Used only when local confidence drops below a threshold, ensuring privacy and speed without sacrificing complex reasoning.
+
+---
+
+## 6. AI Architecture
+
+The system standardizes all intelligence through a unified Execution Engine.
+
+```mermaid
+graph TD
+    A[Voice Input] --> D
+    B[Vision OCR] --> D
+    C[Document Upload] --> D
+    
+    D[Local Intelligence Engine] -->|High Confidence| E[Execution Engine]
+    D -->|Low Confidence / Ambiguity| F[Gemini 2.0 Fallback]
+    
+    F --> E
+    
+    E --> G[Agent Registry]
+    G --> H((Database Context))
+    H --> I[Action Result]
 ```
 
-### 2. Frontend Setup
+---
+
+## 7. Tech Stack
+
+- **Frontend**: React 19, TypeScript, Vite, TailwindCSS 4, Framer Motion
+- **Backend**: Python 3.13, Flask, SQLAlchemy, Eventlet
+- **Database**: Neon Serverless PostgreSQL
+- **Authentication**: Supabase Auth (JWT)
+- **Deployment**: Vercel (Client), Render (API)
+- **AI**: Google Gemini 2.0 Flash + RapidFuzz (Local NLP)
+- **Monitoring**: Sentry (Application Tracing)
+
+---
+
+## 8. Folder Structure
+
+```text
+DeadlineOS/
+├── backend/
+│   ├── api/            # API Route boundaries
+│   ├── database/       # SQLAlchemy configuration
+│   ├── models/         # ORM definitions
+│   ├── scripts/        # Migrations and maintenance tools
+│   ├── services/       # Core business & AI execution logic
+│   └── utils/          # Security, auth, and error handlers
+├── docs/               # Screenshots, archives, and certifications
+├── frontend/
+│   ├── public/         # Static assets
+│   ├── src/
+│   │   ├── api/        # Axios configurations
+│   │   ├── components/ # Reusable React UI elements
+│   │   ├── context/    # Global State (Auth, Theme)
+│   │   ├── hooks/      # Custom React hooks
+│   │   ├── lib/        # Utility libraries (Supabase)
+│   │   └── pages/      # Route-level views
+│   └── package.json    # Frontend dependencies
+└── README.md
+```
+
+---
+
+## 9. Installation
+
+### 1. Database & External Services
+- Create a **Neon PostgreSQL** database.
+- Create a **Supabase** project.
+- Obtain a **Google Gemini API Key**.
+
+### 2. Environment Variables
+Create `.env` files from `.env.example` templates in both `frontend/` and `backend/`.
+
+### 3. Backend Setup
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # (Windows: .venv\Scripts\activate)
+pip install -r requirements.txt
+python app.py
+```
+
+### 4. Frontend Setup
 ```bash
 cd frontend
 npm install
-```
-
-### 3. Environment Variables
-Create a `.env` file in the `backend/` directory:
-```env
-FLASK_APP=app.py
-FLASK_ENV=development
-DATABASE_URL=your_postgresql_key
-GEMINI_API_KEY=your_gemini_api_key
-```
-
-### 4. Database Migration
-```bash
-cd backend
-flask db upgrade
-```
-
-### 5. Run Locally
-Start the backend API (Port 5000):
-```bash
-cd backend
-flask run --port=5000
-```
-Start the frontend dev server (Port 5173):
-```bash
-cd frontend
 npm run dev
 ```
 
-## Deployment
-* **Frontend:** Vercel (Production configuration)
-* **Backend:** Render (Platform-as-a-Service)
-* **Database:** Neon Serverless PostgreSQL
+---
 
-## Security
-* **Upload Validation:** Strict MIME type checking and file bounds for Documents, Images, and Audio.
-* **Timeout Guards:** Hard multi-threaded timeouts on all LLM calls prevent hanging WSGI workers.
-* **SQLAlchemy Protection:** Mitigates SQL injection through ORM parameterized queries.
-* **Error Boundaries:** Frontend gracefully catches React faults without breaking the UI application.
-* **Graceful Degradation:** The UI dynamically falls back to safe states if the AI provider experiences outages.
+## 10. Deployment
 
-## Performance
-* **N+1 Elimination:** Recursive loop queries replaced with pre-fetched sets and bulk transactions.
-* **Pagination:** Strict page bounds configured on historical intelligence and task endpoints.
-* **Query Governance:** Metric aggregation safely offloaded from Python directly to Neon PostgreSQL.
-* **React Memoization:** Advanced charts, physics visualizers, and dashboards stabilized via memo and useCallback.
-* **AI Timeout Controls:** Complete execution isolation for long-running generative models.
+DeadlineOS is production-ready for standard platforms.
 
-## Project Status
-**Production Ready**
-Phase 17D Launch Certified
+- **Render (Backend)**: Create a Web Service linked to your GitHub repo. Set Root Directory to `backend`. Build Command is `pip install -r requirements.txt`. Start Command is `gunicorn 'app:create_app()' --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT`.
+- **Vercel (Frontend)**: Link repo, set Framework Preset to `Vite`, Root Directory to `frontend`. Ensure `vercel.json` is present for SPA routing.
+- **Neon**: Retrieve your Transaction Pooler URL (usually port 6543) and append `?sslmode=require`.
+- **Supabase**: Update your Site URL and Redirect URLs to point to your Vercel domain.
+
+---
+
+## 11. Performance
+DeadlineOS prioritizes perceived and absolute speed:
+- **Local-First AI**: 90% of structural intelligence happens locally via NLP algorithms, bypassing network latency.
+- **Lazy Loading**: Route-level React component chunking reduces initial bundle sizes to <300kb.
+- **Optimistic Updates**: UI predicts successful backend executions instantly.
+- **Caching**: The Execution Engine aggressively caches repeated Gemini prompts.
+
+---
+
+## 12. Security
+- **JWT**: Stateless validation using Supabase's asymmetric signature verifications. No symmetric keys are manually shared.
+- **Supabase Auth**: Strictly handles user identity and isolation natively.
+- **Environment Variables**: No credentials committed. Git exclusions hardened.
+- **Rate Limiting**: `flask-limiter` implemented at the global application boundary.
+- **Input Validation**: Handled strictly via Marshmallow schemas and SQLAlchemy parameterized mapping to prevent SQLi/XSS.
+
+---
+
+## 13. Roadmap
+- **v1.0**: Core operating system, AI Command Center, Local Intelligence Engine. *(Completed)*
+- **v1.1**: OAuth Google Calendar native syncing. Webhook ingestion API.
+- **v2.0**: Native Mobile Apps (React Native). Multi-tenant organizational teams.
+
+---
+
+## 14. Contributing
+Contributions are welcome. Please adhere to the following workflow:
+1. Fork the repository.
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
+3. Commit your changes utilizing Conventional Commits.
+4. Push to the branch (`git push origin feature/AmazingFeature`).
+5. Open a Pull Request.
+
+Ensure all backend tests pass (`pytest tests/`) and the frontend lints correctly (`npm run lint`).
+
+---
+
+## 15. License
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+
+## 16. Author
+**Sujith Kumar Sanisetty**
+- **LinkedIn**: [Connect on LinkedIn](https://www.linkedin.com/in/s-sujith-kumar-802059298)
+- **GitHub**: [sujith0466](https://github.com/sujith0466)

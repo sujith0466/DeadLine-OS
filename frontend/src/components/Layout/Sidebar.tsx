@@ -1,6 +1,7 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, CalendarClock, LifeBuoy, Zap, Camera, Settings, Network, BarChart3, Calendar as CalendarIcon, AlertOctagon, Target, FileText, Mic } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { LayoutDashboard, CalendarClock, LifeBuoy, Zap, Camera, Settings, Network, BarChart3, Calendar as CalendarIcon, Target, FileText, Mic, LogOut } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export const Sidebar: React.FC = () => {
   const navItems = [
@@ -13,10 +14,17 @@ export const Sidebar: React.FC = () => {
     { name: 'Document Intel', path: '/documents', icon: FileText },
     { name: 'Voice Copilot', path: '/voice', icon: Mic },
     { name: 'Vision Upload', path: '/vision', icon: Camera },
-    { name: 'Interventions', path: '/interventions', icon: AlertOctagon },
     { name: 'Smart Calendar', path: '/calendar', icon: CalendarIcon },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
   ];
+
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/login');
+  };
 
   return (
     <div className="w-64 h-screen fixed left-0 top-0 border-r border-white/10 bg-background/50 backdrop-blur-xl flex flex-col pt-6 pb-6 z-20">
@@ -47,9 +55,22 @@ export const Sidebar: React.FC = () => {
       </div>
 
       <div className="px-4 mt-auto">
-        <button className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-gray-400 hover:text-white hover:bg-white/5 w-full">
+        <NavLink 
+          to="/settings"
+          className={({ isActive }) =>
+            `flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 mb-1 ${
+              isActive 
+                ? 'bg-white/10 text-white shadow-inner border border-white/5' 
+                : 'text-gray-400 hover:text-white hover:bg-white/5 w-full'
+            }`
+          }
+        >
           <Settings className="w-5 h-5" />
           <span className="font-medium">Settings</span>
+        </NavLink>
+        <button onClick={handleLogout} className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-red-400 hover:text-red-300 hover:bg-red-500/10 w-full">
+          <LogOut className="w-5 h-5" />
+          <span className="font-medium">Logout</span>
         </button>
       </div>
     </div>

@@ -8,6 +8,7 @@ estimated effort, risk of delay, and a priority score.
 import datetime
 import logging
 from typing import Dict, Any
+from agents.hybrid_inference import execute_hybrid
 
 logger = logging.getLogger(__name__)
 
@@ -55,42 +56,105 @@ class PriorityAgent:
 
     def analyze_task(self, task_data: Dict[str, Any], active_tasks_count: int = 0) -> Dict[str, Any]:
         """
-        Analyzes task urgency, importance, risk, and priority score.
-        
-        Args:
-            task_data: dict containing title, description, deadline, estimated_hours
-            active_tasks_count: current number of pending tasks for context
-            
-        Returns:
-            dict: Structured priority analysis
+        Analyzes task urgency, importance, risk, and priority score using Hybrid Inference.
         """
-        title = task_data.get("title", "Untitled Task")
-        description = task_data.get("description", "No description provided")
-        deadline = task_data.get("deadline", "No deadline")
-        estimated_hours = task_data.get("estimated_hours", 1.0)
-        
-        # Get current time in ISO format to calculate deadline proximity
-        now = datetime.datetime.now(datetime.timezone.utc).isoformat()
-        
-        user_prompt = PRIORITY_USER_PROMPT_TEMPLATE.format(
-            title=title,
-            description=description,
-            deadline=deadline,
-            now=now,
-            estimated_hours=estimated_hours,
-            active_tasks_count=active_tasks_count
-        )
-        
-        logger.info("Priority Agent analyzing task: %s (Deadline: %s)", title, deadline)
-        
-        try:
-            result = self.gemini.generate_structured(
+        def _gemini_inference():
+            title = task_data.get("title", "Untitled Task")
+            description = task_data.get("description", "No description provided")
+            deadline = task_data.get("deadline", "No deadline")
+            estimated_hours = task_data.get("estimated_hours", 1.0)
+            
+            now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+            
+            user_prompt = PRIORITY_USER_PROMPT_TEMPLATE.format(
+                title=title,
+                description=description,
+                deadline=deadline,
+                now=now,
+                estimated_hours=estimated_hours,
+                active_tasks_count=active_tasks_count
+            )
+            
+            logger.info("Priority Agent (Gemini) analyzing task: %s", title)
+            return self.gemini.generate_structured(
                 system_prompt=PRIORITY_SYSTEM_PROMPT,
                 user_prompt=user_prompt,
                 schema=PRIORITY_SCHEMA,
-                temperature=0.2  # Low temperature for analytical consistency
+                temperature=0.2
             )
-            return result
-        except Exception as exc:
-            logger.error("Priority Agent failed to analyze task %r: %s", title, exc)
-            raise
+
+        def _local_inference():
+            title = task_data.get("title", "Untitled Task")
+            description = task_data.get("description", "")
+            deadline_str = task_data.get("deadline")
+            estimated_hours = float(task_data.get("estimated_hours", 1.0))
+            
+            urgency_score = 10
+            urgency_label = "Low"
+            has_deadline = False
+            
+            if deadline_str and deadline_str != "No deadline":
+                has_deadline = True
+                try:
+                    # Parse deadline (could be ISO format)
+                    deadline_dt = datetime.datetime.fromisoformat(deadline_str.replace('Z', '+00:00'))
+                    now_dt = datetime.datetime.now(datetime.timezone.utc)
+                    delta = deadline_dt - now_dt
+                    hours_left = delta.total_seconds() / 3600.0
+                    
+                    if hours_left < 24:
+                        urgency_score = 50
+                        urgency_label = "High"
+                    elif hours_left < 24 * 7:
+                        urgency_score = 30
+                        urgency_label = "Medium"
+                except Exception:
+                    pass
+
+            text_to_analyze = (title + " " + description).lower()
+            high_keywords = ["asap", "urgent", "critical", "blocker", "client", "production", "immediately"]
+            medium_keywords = ["soon", "important", "review", "bug", "fix"]
+            
+            importance_score = 10
+            importance_label = "Low"
+            
+            if any(k in text_to_analyze for k in high_keywords):
+                importance_score = 30
+                importance_label = "High"
+            elif any(k in text_to_analyze for k in medium_keywords):
+                importance_score = 20
+                importance_label = "Medium"
+                
+            risk_score = 10
+            risk_label = "Low"
+            if estimated_hours > 8:
+                risk_score = 20
+                risk_label = "High"
+            elif estimated_hours > 4:
+                risk_score = 15
+                risk_label = "Medium"
+                
+            total_priority = urgency_score + importance_score + risk_score
+            # Normalize to 0-100 just in case
+            total_priority = min(100, max(0, total_priority))
+            
+            # Confidence calculation
+            # If no deadline and no strong keywords, we lack deterministic signals
+            confidence = 100
+            if not has_deadline:
+                if importance_label == "Low":
+                    confidence = 80
+                else:
+                    confidence = 90
+            
+            return {
+                "priority_score": total_priority,
+                "urgency": urgency_label,
+                "importance": importance_label,
+                "estimated_hours": estimated_hours,
+                "risk_level": risk_label,
+                "reasoning": f"Calculated based on {urgency_label} urgency and {importance_label} importance.",
+                "_system_confidence": confidence
+            }
+
+        return execute_hybrid(_local_inference, _gemini_inference, threshold=80)

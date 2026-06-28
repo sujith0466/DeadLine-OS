@@ -12,6 +12,7 @@ class Intervention(db.Model):
     __tablename__ = "interventions"
     
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), nullable=False, index=True)
     type = db.Column(db.String(50), nullable=False) # procrastination, rescue, twin_forecast, calendar_overload, accountability
     severity = db.Column(db.String(20), nullable=False) # Critical, High, Medium, Low
     priority_score = db.Column(db.Integer, default=0) # 0-100
@@ -27,6 +28,7 @@ class Intervention(db.Model):
     def to_dict(self) -> dict:
         return {
             "id": self.id,
+            "user_id": self.user_id,
             "type": self.type,
             "severity": self.severity,
             "priority_score": self.priority_score,
@@ -37,4 +39,30 @@ class Intervention(db.Model):
             "created_at": self.created_at.isoformat(),
             "resolved": self.resolved,
             "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None
+        }
+
+class Threat(db.Model):
+    __tablename__ = "threats"
+    
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = db.Column(db.String(36), nullable=False, index=True)
+    type = db.Column(db.String(50), nullable=False)
+    severity = db.Column(db.String(20), nullable=False)
+    source = db.Column(db.String(100), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    details = db.Column(db.JSON, nullable=True)
+    status = db.Column(db.String(20), default="active")
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self) -> dict:
+        return {
+            "id": self.id,
+            "user_id": self.user_id,
+            "type": self.type,
+            "severity": self.severity,
+            "source": self.source,
+            "message": self.message,
+            "details": self.details,
+            "status": self.status,
+            "created_at": self.created_at.isoformat() if self.created_at else None
         }

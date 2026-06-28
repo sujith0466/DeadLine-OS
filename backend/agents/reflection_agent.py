@@ -40,7 +40,10 @@ class ReflectionAgent:
         response_data = self.gemini.generate_structured(prompt, self._get_schema())
         
         try:
+            from flask import g
+            uid = getattr(g, "user_id", None)
             report = ReflectionReport(
+                user_id=uid,
                 achievements=response_data.get("achievements", []),
                 missed_opportunities=response_data.get("missed_opportunities", []),
                 lessons_learned=response_data.get("lessons_learned", []),

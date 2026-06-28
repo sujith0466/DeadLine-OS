@@ -27,6 +27,12 @@ class BaseConfig:
     SQLALCHEMY_DATABASE_URI: str = os.getenv("DATABASE_URL")
     SQLALCHEMY_TRACK_MODIFICATIONS: bool = False
     SQLALCHEMY_ECHO: bool = False  # Set True in Dev to log SQL queries
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        "pool_size": 10,
+        "pool_recycle": 1800,  # recycle connections every 30 mins to avoid Neon drops
+        "pool_pre_ping": True, # Test connections before handing out to prevent 'server closed the connection unexpectedly'
+        "max_overflow": 20
+    }
 
     # ── CORS ──────────────────────────────────────────────────
     # Comma-separated list of allowed origins.
@@ -63,7 +69,7 @@ class BaseConfig:
 class DevelopmentConfig(BaseConfig):
     """Local development — verbose output, debug mode on."""
     DEBUG = True
-    SQLALCHEMY_ECHO = True
+    SQLALCHEMY_ECHO = False
     LOG_LEVEL = "DEBUG"
 
 

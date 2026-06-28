@@ -44,7 +44,10 @@ class AccountabilityAgent:
         
         # Save to DB
         try:
+            from flask import g
+            uid = getattr(g, "user_id", None)
             metrics = AccountabilityMetrics(
+                user_id=uid,
                 completion_rate=response_data.get("completion_rate", 0),
                 consistency_score=response_data.get("consistency_score", 0),
                 procrastination_score=response_data.get("procrastination_score", 0),

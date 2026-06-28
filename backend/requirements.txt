@@ -10,9 +10,10 @@
 # ============================================================
 
 # --- Core Framework ---
-flask==3.0.3
-flask-cors==4.0.1
+flask==3.1.3
+flask-cors==6.0.0
 flask-socketio==5.3.6
+flask-limiter==3.8.0
 
 # --- Database ---
 flask-sqlalchemy==3.1.1
@@ -26,7 +27,7 @@ apscheduler>=3.10.0
 google-generativeai==0.7.2
 
 # --- Document Intelligence ---
-pypdf==4.2.0
+pypdf==6.13.3
 python-docx==1.1.2
 
 # --- Async / Concurrency (pre-built wheels) ---
@@ -34,11 +35,19 @@ eventlet>=0.33.3
 greenlet>=3.1.1
 
 # --- Utilities ---
-python-dotenv==1.0.1
+python-dotenv==1.2.2
 cachetools==5.3.3
+sentry-sdk[flask]==2.13.0
 
 # --- Vision / Image Processing (pre-built wheel) ---
 pillow>=10.0.0
+easyocr>=1.7.0
+opencv-python-headless
+numpy
+dateparser
+pillow-heif
+rapidfuzz
+python-dateutil
 
 # --- Production WSGI ---
 # Windows dev / CI:
