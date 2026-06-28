@@ -34,8 +34,9 @@ with app.app_context():
     
     print("--- RUNNING LOCAL INTELLIGENCE (Gemini Disabled) ---")
     start = time.time()
-    res = orchestrator.evaluate_system_state()
+    res = orchestrator.evaluate_system_state(test_user_id)
     end = time.time()
+    print("\n--- Final Briefing ---")
     
     print(f"Status: {res['status']}")
     print(f"Execution Time: {(end-start)*1000:.2f}ms")

@@ -66,7 +66,7 @@ def execute_system_state():
 
     try:
         orchestrator = OrchestratorService(gemini)
-        result = orchestrator.evaluate_system_state()
+        result = orchestrator.evaluate_system_state(g.user_id)
         return jsonify(result), 200
         
     except Exception as e:

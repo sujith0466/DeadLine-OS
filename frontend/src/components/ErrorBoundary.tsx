@@ -19,7 +19,26 @@ export class ErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): State {
+    // Gracefully handle Vite chunk load errors from stale caches
+    if (
+      error.name === 'ChunkLoadError' ||
+      error.message.includes('fetch dynamically imported module') ||
+      error.message.includes('Importing a module script failed')
+    ) {
+      const reloadKey = 'chunk_load_error_reloaded';
+      if (!sessionStorage.getItem(reloadKey)) {
+        sessionStorage.setItem(reloadKey, 'true');
+        window.location.reload();
+      }
+    }
     return { hasError: true, error };
+  }
+
+  public componentDidMount() {
+    // If the component successfully mounts, clear the rescue flag.
+    // This ensures that if another deployment happens days later while the tab is still open,
+    // the user will be successfully rescued again.
+    sessionStorage.removeItem('chunk_load_error_reloaded');
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {

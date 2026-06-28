@@ -63,7 +63,11 @@ class GoalService:
         db.session.commit()
         
         for idx, m_title in enumerate(agent_data.get("milestones", [])):
-            m = Milestone(goal_id=goal.id, title=m_title)
+            m_user_id = goal.user_id or user_id
+            if not m_user_id:
+                raise ValueError("Milestone creation failed: a valid user_id is strictly required to satisfy database constraints.")
+                
+            m = Milestone(user_id=m_user_id, goal_id=goal.id, title=m_title)
             db.session.add(m)
             db.session.flush()
             

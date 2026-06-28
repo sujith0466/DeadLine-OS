@@ -209,9 +209,9 @@ class OrchestratorService:
 
         return final_briefing
 
-    def evaluate_system_state(self) -> Dict[str, Any]:
+    def evaluate_system_state(self, user_id: str) -> Dict[str, Any]:
         """
-        Executes orchestration pipeline against existing database state.
+        Executes orchestration pipeline against existing database state for a specific user.
         Flow: Priority -> Planning -> Rescue -> Twin -> Interventions
         """
         from models.task import Task
@@ -226,8 +226,8 @@ class OrchestratorService:
         logger.info("Starting System Orchestration Evaluation...")
         t_start = time.time()
 
-        # Fetch Active Tasks
-        active_tasks_qs = Task.query.filter(Task.status.in_(["pending", "in_progress"])).all()
+        # Fetch Active Tasks for this specific user
+        active_tasks_qs = Task.query.filter_by(user_id=user_id).filter(Task.status.in_(["pending", "in_progress"])).all()
         tasks_list = [t.to_dict() for t in active_tasks_qs]
         
         if not tasks_list:
@@ -337,6 +337,7 @@ class OrchestratorService:
                         reason = " ".join([str(r) for r in reason])
                         
                 intervention = Intervention(
+                    user_id=user_id,
                     type="rescue",
                     severity=rescue_result.get("risk_level", "High"),
                     trigger_source="Rescue Agent Orchestration",
