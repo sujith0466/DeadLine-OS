@@ -9,11 +9,15 @@ actionable structured tasks.
 import json
 import logging
 import io
+import os
 import re
 import cv2
 import numpy as np
 from PIL import Image
 from typing import Dict, Any
+
+from services.ocr.tesseract_provider import TesseractProvider
+from services.ocr.gemini_provider import GeminiProvider
 
 try:
     import pillow_heif
@@ -25,12 +29,6 @@ try:
     import dateparser
 except ImportError:
     dateparser = None
-
-try:
-    import easyocr
-    OCR_READER = easyocr.Reader(['en'], gpu=False, verbose=False)
-except ImportError:
-    OCR_READER = None
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +90,11 @@ class VisionAgent:
     
     def __init__(self, gemini_service):
         self.gemini = gemini_service
+        self.tesseract = TesseractProvider()
+        self.gemini_ocr = GeminiProvider(gemini_service, VISION_PROMPT_TEMPLATE, VISION_SCHEMA)
+        
+        # Configuration
+        self.conf_threshold = float(os.getenv("OCR_CONFIDENCE_THRESHOLD", "75")) / 100.0
 
     def preprocess_image(self, image_bytes: bytes) -> bytes:
         """Resizes and normalizes image for OCR and Gemini."""
@@ -133,7 +136,7 @@ class VisionAgent:
             # 5. Adaptive Thresholding
             thresh = cv2.adaptiveThreshold(blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
             
-            # Convert back to bytes for EasyOCR
+            # Convert back to bytes for Tesseract / Gemini
             success, encoded_img = cv2.imencode('.png', thresh)
             if success:
                 return encoded_img.tobytes()
@@ -146,32 +149,68 @@ class VisionAgent:
             logger.warning("Image preprocessing failed, using original: %s", e)
             return image_bytes
 
+    def _calculate_blur_score(self, cv_image: np.ndarray) -> float:
+        """Returns the variance of the Laplacian (higher means sharper)."""
+        return cv2.Laplacian(cv_image, cv2.CV_64F).var()
+
     def extract_tasks_via_ocr(self, image_bytes: bytes) -> tuple[Dict[str, Any], float]:
-        """Runs local OCR and regex extraction if text is highly structured."""
-        if not OCR_READER:
-            return {}, 0.0
-            
+        """Runs local OCR and regex extraction with intelligent Gemini fallback."""
         try:
-            results = OCR_READER.readtext(image_bytes)
-            if not results:
-                return {}, 0.0
+            # Reconstruct cv_image from preprocessed bytes for density / blur checks
+            np_arr = np.frombuffer(image_bytes, np.uint8)
+            cv_image = cv2.imdecode(np_arr, cv2.IMREAD_GRAYSCALE)
+            
+            if cv_image is None or not self.tesseract.is_available:
+                logger.info("Tesseract unavailable or image corrupted. Using Gemini Fallback.")
+                gemini_res = self.extract_tasks_from_image(image_bytes, "image/png")
+                return {
+                    "raw_text": gemini_res.get("summary", "Extracted via Gemini Vision"),
+                    "parsed_preview": gemini_res
+                }, 1.0
+
+            blur_score = self._calculate_blur_score(cv_image)
+            
+            # 1. Run Tesseract
+            full_text, avg_conf = self.tesseract.extract_text(image_bytes, cv_image)
+            
+            # 2. Heuristics
+            text_len = len(full_text.strip())
+            area = cv_image.shape[0] * cv_image.shape[1]
+            density = text_len / area if area > 0 else 0
+            
+            # 3. Intelligent Decision Engine
+            is_reliable = True
+            
+            if avg_conf < self.conf_threshold:
+                is_reliable = False
+            elif text_len < 10:
+                is_reliable = False
+            elif blur_score < 50.0:
+                is_reliable = False
                 
-            # Calculate average confidence
-            confs = [res[2] for res in results]
-            avg_conf = sum(confs) / len(confs) if confs else 0.0
-            
-            # Combine text
-            text_lines = [res[1] for res in results]
-            full_text = "\n".join(text_lines)
-            
+            if not is_reliable:
+                logger.info("OCR deemed unreliable (conf: %.2f, len: %d, blur: %.1f). Falling back to Gemini.", avg_conf, text_len, blur_score)
+                # Fallback transparently inside this method so routes remain unchanged
+                gemini_res = self.extract_tasks_from_image(image_bytes, "image/png")
+                return {
+                    "raw_text": gemini_res.get("summary", "Extracted via Gemini Vision"),
+                    "parsed_preview": gemini_res
+                }, 1.0
+                
+            # Reliable: Parse structured preview
             return {
                 "raw_text": full_text,
                 "parsed_preview": self.parse_raw_text(full_text)
             }, avg_conf
             
         except Exception as e:
-            logger.error("OCR extraction failed: %s", e)
-            return {"raw_text": "", "parsed_preview": {"tasks": [], "deadlines": [], "action_items": []}}, 0.0
+            logger.error("Intelligent OCR engine failed cleanly: %s", e)
+            # Failsafe fallback
+            gemini_res = self.extract_tasks_from_image(image_bytes, "image/png")
+            return {
+                "raw_text": gemini_res.get("summary", "Extracted via Gemini Vision"),
+                "parsed_preview": gemini_res
+            }, 1.0
 
     def parse_raw_text(self, full_text: str) -> Dict[str, Any]:
         """Parses structured tasks and deadlines from raw text."""
@@ -224,30 +263,8 @@ class VisionAgent:
     def extract_tasks_from_image(self, image_bytes: bytes, mime_type: str) -> Dict[str, Any]:
         """
         Analyzes an image and extracts structured tasks, deadlines, and action items.
-        
-        Args:
-            image_bytes: raw image content
-            mime_type: e.g. "image/png" or "image/jpeg"
-            
-        Returns:
-            dict: Structured extraction results matching VISION_SCHEMA.
+        (Called directly by routes for pure-AI vision or internally as a fallback)
         """
-        # GeminiService vision endpoint takes a single combined prompt
-        full_prompt = VISION_PROMPT_TEMPLATE.format(
-            schema_json=json.dumps(VISION_SCHEMA, indent=2)
-        )
-        
-        logger.info("Vision Agent analyzing %s image (%d bytes)", mime_type, len(image_bytes))
-        
-        try:
-            result = self.gemini.generate_vision(
-                image_bytes=image_bytes,
-                prompt=full_prompt,
-                mime_type=mime_type,
-                structured=True,
-                temperature=0.2  # Keep it precise for extraction
-            )
-            return result
-        except Exception as exc:
-            logger.error("Vision Agent failed to process image: %s", exc)
-            raise
+        logger.info("Vision Agent analyzing %s image (%d bytes) with Gemini", mime_type, len(image_bytes))
+        # Delegate to the Gemini Provider to fulfill abstraction
+        return self.gemini_ocr.extract_tasks_directly(image_bytes, mime_type)
