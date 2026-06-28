@@ -4,9 +4,12 @@ import requests
 from database.db import db
 from models.user import User
 
+from app import limiter
+
 demo_bp = Blueprint("demo", __name__)
 
 @demo_bp.route("/demo/start", methods=["POST"])
+@limiter.limit("10 per minute")
 def start_demo():
     """Authenticate the permanent demo account and return the session."""
     email = os.environ.get("DEMO_USER_EMAIL")

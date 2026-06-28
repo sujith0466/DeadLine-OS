@@ -22,7 +22,9 @@ import logging
 from datetime import datetime, timezone
 
 from flask import Blueprint, jsonify, request, current_app, g
+from utils.responses import success_response
 from utils.auth import require_auth
+from app import limiter
 
 from agents.priority_agent import PriorityAgent
 from agents.planning_agent import PlanningAgent
@@ -497,6 +499,7 @@ def get_digital_twin_history():
 
 @agents_bp.route("/agents/vision", methods=["POST"])
 @require_auth
+@limiter.limit("20 per minute")
 def run_vision_agent():
     """
     Trigger the Vision Agent to extract tasks from an uploaded image.
@@ -681,6 +684,7 @@ def run_accountability():
 
 @agents_bp.route("/agents/coach", methods=["POST"])
 @require_auth
+@limiter.limit("20 per minute")
 def run_coach():
     """Trigger the Coach Agent."""
     _set_agent_state("coach", "running")

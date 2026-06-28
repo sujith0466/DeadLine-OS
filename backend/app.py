@@ -34,6 +34,14 @@ from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+
+# Global limiter instance
+limiter = Limiter(
+    key_func=get_remote_address,
+    default_limits=["10000 per day", "1000 per hour"],
+    default_limits_exempt_when=lambda: request.method == 'OPTIONS',
+    storage_uri="memory://"
+)
 import uuid
 
 # ── Local imports ──────────────────────────────────────────────────────────────
@@ -198,12 +206,7 @@ def create_app(config_override=None) -> Flask:
     register_global_errors(app)
 
     # ── 8.5 Configure Rate Limiting ────────────────────────────────────────────
-    limiter = Limiter(
-        get_remote_address,
-        app=app,
-        default_limits=["200 per day", "50 per hour"],
-        storage_uri="memory://" # Can be replaced with Redis later
-    )
+    limiter.init_app(app)
     app.extensions['limiter'] = limiter
 
     # ── 9. Register Request Hooks ──────────────────────────────────────────────
@@ -241,20 +244,42 @@ def _register_blueprints(app: Flask) -> None:
     from api.settings import settings_bp
 
     app.register_blueprint(health_bp, url_prefix="/api")
+    
     app.register_blueprint(tasks_bp, url_prefix="/api")
+    limiter.exempt(tasks_bp)
+    
     app.register_blueprint(agents_bp, url_prefix="/api")
+    
     app.register_blueprint(orchestration_bp, url_prefix="/api")
+    limiter.exempt(orchestration_bp)
+    
     app.register_blueprint(analytics_bp, url_prefix="/api")
+    limiter.exempt(analytics_bp)
+    
     app.register_blueprint(calendar_bp, url_prefix="/api")
+    limiter.exempt(calendar_bp)
+    
     app.register_blueprint(interventions_bp, url_prefix="/api")
+    limiter.exempt(interventions_bp)
+    
     app.register_blueprint(goals_bp, url_prefix="/api")
+    limiter.exempt(goals_bp)
     app.register_blueprint(documents_bp, url_prefix="/api")
     app.register_blueprint(voice_bp, url_prefix="/api")
+    
     app.register_blueprint(notifications_bp, url_prefix="/api")
+    limiter.exempt(notifications_bp)
+    
     app.register_blueprint(reports_bp, url_prefix="/api")
+    limiter.exempt(reports_bp)
+    
     app.register_blueprint(users_bp, url_prefix="/api")
+    limiter.exempt(users_bp)
+    
     app.register_blueprint(demo_bp, url_prefix="/api")
+    
     app.register_blueprint(settings_bp, url_prefix="/api")
+    limiter.exempt(settings_bp)
 
     is_dev = os.getenv("FLASK_ENV", "development") == "development"
     if not is_dev:
