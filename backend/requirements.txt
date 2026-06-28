@@ -16,8 +16,8 @@ flask-socketio==5.3.6
 flask-limiter==3.8.0
 
 # --- Database ---
-flask-sqlalchemy==3.1.1
-sqlalchemy==2.0.30
+flask-sqlalchemy==3.1.2
+sqlalchemy==2.0.51
 psycopg2-binary==2.9.10
 
 # --- Background Jobs ---
@@ -31,8 +31,8 @@ pypdf==6.13.3
 python-docx==1.1.2
 
 # --- Async / Concurrency (pre-built wheels) ---
-eventlet>=0.33.3
-greenlet>=3.1.1
+eventlet>=0.41.0
+greenlet>=3.5.2
 
 # --- Utilities ---
 python-dotenv==1.2.2
