@@ -6,7 +6,7 @@
 
   [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)]()
   [![Status](https://img.shields.io/badge/status-Production_Ready-success.svg)]()
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)]()
+  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
   [![Build Status](https://img.shields.io/badge/build-passing-brightgreen.svg)]()
 </div>
 
@@ -213,19 +213,59 @@ DeadlineOS prioritizes perceived and absolute speed:
 ---
 
 ## 14. Contributing
-Contributions are welcome. Please adhere to the following workflow:
-1. Fork the repository.
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`).
-3. Commit your changes utilizing Conventional Commits.
-4. Push to the branch (`git push origin feature/AmazingFeature`).
-5. Open a Pull Request.
 
-Ensure all backend tests pass (`pytest tests/`) and the frontend lints correctly (`npm run lint`).
+Contributions of all kinds are welcome — bug reports, feature suggestions,
+documentation improvements, and code fixes.
+
+See **[`CONTRIBUTING.md`](CONTRIBUTING.md)** for the full development workflow,
+commit standards, and Pull Request guidelines.
+
+See **[`USAGE.md`](USAGE.md)** for step-by-step local setup and best practices.
+
+**Quick summary:**
+1. [Open an Issue](https://github.com/sujith0466/DeadLine-OS/issues) to discuss your proposed change.
+2. Fork the repository and create a feature branch.
+3. Commit using [Conventional Commits](https://www.conventionalcommits.org/).
+4. Open a Pull Request against `main`.
+
+Ensure backend tests pass (`pytest tests/`) and the frontend lints cleanly (`npm run lint`).
 
 ---
 
-## 15. License
-Distributed under the MIT License. See `LICENSE` for more information.
+## 15. License & Usage
+
+DeadlineOS is distributed under the **[MIT License](LICENSE)** — one of the
+most permissive open-source licenses available. You are free to use, copy,
+modify, merge, publish, distribute, sublicense, and sell copies of this
+software, provided the original copyright notice is retained.
+
+See [`LICENSE`](LICENSE) for the complete, authoritative legal text.
+See [`USAGE.md`](USAGE.md) for installation, setup, and deployment instructions.
+
+### Community Guidelines
+
+> ⚠️ The following are **community recommendations**, not additional legal
+> restrictions. They do not modify or extend the MIT License in any way.
+
+- **Preserve the copyright notice.** Keep the original
+  `Copyright (c) 2026 Sujith Kumar Sanisetty` notice in all copies or
+  substantial portions of the Software, as required by the MIT License.
+
+- **Give credit when practical.** If you build a product, tutorial, or
+  showcase on top of DeadlineOS, a visible attribution (e.g.,
+  *"Built on DeadlineOS"*) is appreciated by the community.
+
+- **Document significant modifications.** If you fork and significantly
+  alter the project, noting your changes in a `CHANGELOG.md` or
+  `MODIFICATIONS.md` helps downstream users understand what has changed.
+
+- **Do not misrepresent your fork.** Avoid publishing a fork under the
+  name "DeadlineOS" in a way that could cause confusion with the
+  official project.
+
+- **Contribute improvements back.** If you fix a bug or add a broadly
+  useful feature, consider opening a Pull Request so the improvement
+  can benefit the whole community.
 
 ---
 
