@@ -1,19 +1,18 @@
 import logging
-from flask import Blueprint, jsonify, request, current_app
+from flask import Blueprint, jsonify, request, current_app, g
 from services.orchestrator import OrchestratorService
 from utils.auth import require_auth
 
 logger = logging.getLogger(__name__)
 orchestration_bp = Blueprint("orchestration", __name__)
 
+
 @orchestration_bp.route("/orchestration/feed", methods=["GET"])
 @require_auth
 def get_activity_feed():
     """Returns the global AI Activity feed."""
-    return jsonify({
-        "status": "success",
-        "feed": OrchestratorService.get_feed()
-    }), 200
+    return jsonify({"status": "success", "feed": OrchestratorService.get_feed()}), 200
+
 
 @orchestration_bp.route("/orchestration/pipeline", methods=["POST"])
 @require_auth
@@ -36,22 +35,33 @@ def run_pipeline():
     mime_type = file.mimetype
     allowed_mimes = ["image/jpeg", "image/jpg", "image/png", "image/webp"]
     if mime_type not in allowed_mimes:
-        return jsonify({"error": f"Unsupported file type: {mime_type}. Allowed: {', '.join(allowed_mimes)}"}), 400
+        return (
+            jsonify(
+                {
+                    "error": f"Unsupported file type: {mime_type}. Allowed: {', '.join(allowed_mimes)}"
+                }
+            ),
+            400,
+        )
 
     try:
         image_bytes = file.read()
         orchestrator = OrchestratorService(gemini)
-        
-        # In a real app we'd parse availability from form data, 
+
+        # In a real app we'd parse availability from form data,
         # but for this demo we'll inject a default availability
-        availability = {"daily_available_hours": 6, "preferred_work_hours": {"start": "09:00", "end": "21:00"}}
-        
+        availability = {
+            "daily_available_hours": 6,
+            "preferred_work_hours": {"start": "09:00", "end": "21:00"},
+        }
+
         result = orchestrator.run_pipeline(image_bytes, mime_type, availability)
         return jsonify(result), 200
-        
+
     except Exception as e:
         logger.error("Orchestration pipeline failed: %s", e)
         return jsonify({"error": str(e)}), 500
+
 
 @orchestration_bp.route("/orchestration/execute", methods=["POST"])
 @require_auth
@@ -68,7 +78,7 @@ def execute_system_state():
         orchestrator = OrchestratorService(gemini)
         result = orchestrator.evaluate_system_state(g.user_id)
         return jsonify(result), 200
-        
+
     except Exception as e:
         logger.error("System Orchestration Evaluation failed: %s", e)
         return jsonify({"error": str(e)}), 500

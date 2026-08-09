@@ -99,3 +99,4 @@ backend/test_smoke.py
 frontend/strip_mock.py
 frontend/audit_console.cjs
 backend/scripts/seed_demo.py
+backend/tests/e2e

@@ -22,20 +22,12 @@ class TestVisionAgent(unittest.TestCase):
                 {
                     "title": "React Assignment",
                     "deadline": "2026-06-25",
-                    "priority": "High"
+                    "priority": "High",
                 }
             ],
-            "deadlines": [
-                {
-                    "task": "React Assignment",
-                    "date": "2026-06-25"
-                }
-            ],
-            "action_items": [
-                "Build dashboard UI",
-                "Implement charts"
-            ],
-            "summary": "Assignment with high urgency detected."
+            "deadlines": [{"task": "React Assignment", "date": "2026-06-25"}],
+            "action_items": ["Build dashboard UI", "Implement charts"],
+            "summary": "Assignment with high urgency detected.",
         }
         self.mock_gemini.generate_vision.return_value = mock_response
 
@@ -56,16 +48,16 @@ class TestVisionAgent(unittest.TestCase):
         # Verify GeminiService was called with the correct parameters
         self.mock_gemini.generate_vision.assert_called_once()
         call_kwargs = self.mock_gemini.generate_vision.call_args.kwargs
-        
+
         # Verify inputs
         self.assertEqual(call_kwargs["image_bytes"], image_bytes)
         self.assertEqual(call_kwargs["mime_type"], mime_type)
         self.assertTrue(call_kwargs["structured"])
-        
+
         # Verify prompts
         self.assertIn("intelligent productivity analyst", call_kwargs["prompt"])
         self.assertIn("generate priority recommendations", call_kwargs["prompt"])
-        
+
         # Verify schema string is embedded in the prompt
         self.assertIn("tasks", call_kwargs["prompt"])
         self.assertIn("deadlines", call_kwargs["prompt"])

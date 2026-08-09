@@ -44,8 +44,8 @@ class Task(db.Model):
     user_id = db.Column(
         db.String(36),
         db.ForeignKey("users.id", name="fk_task_user"),
-        nullable=True, # Will become false after migration
-        index=True
+        nullable=True,  # Will become false after migration
+        index=True,
     )
 
     # ── Core Fields ───────────────────────────────────────────
@@ -67,7 +67,7 @@ class Task(db.Model):
 
     # ── Intelligence ──────────────────────────────────────────
     ai_confidence = db.Column(db.Integer, nullable=True, default=92)
-    
+
     # ── Goals ─────────────────────────────────────────────────
     goal_id = db.Column(db.String(36), nullable=True)
     milestone_id = db.Column(db.String(36), nullable=True)
@@ -93,10 +93,9 @@ class Task(db.Model):
     @property
     def is_overdue(self) -> bool:
         """True if deadline has passed and task is not done."""
-        return (
-            self.status not in ("done",)
-            and datetime.now(timezone.utc) > self.deadline.replace(tzinfo=timezone.utc)
-        )
+        return self.status not in ("done",) and datetime.now(
+            timezone.utc
+        ) > self.deadline.replace(tzinfo=timezone.utc)
 
     @property
     def hours_until_deadline(self) -> float:

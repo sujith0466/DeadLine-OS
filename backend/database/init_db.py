@@ -23,7 +23,9 @@ def init_db(app) -> None:
     Safe to call multiple times — existing tables are preserved unless
     drop_first=True is passed (not exposed here for safety).
     """
-    from database.db import db  # noqa: F401    # Import all models here so SQLAlchemy knows about them
+    from database.db import (
+        db,
+    )  # noqa: F401    # Import all models here so SQLAlchemy knows about them
     import models.task
     import models.intelligence
     import models.intervention
@@ -112,7 +114,8 @@ def seed_db(app) -> None:
 if __name__ == "__main__":
     import os
     import sys
-    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     from app import create_app
 
     flask_app = create_app()

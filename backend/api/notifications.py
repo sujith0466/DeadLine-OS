@@ -7,6 +7,7 @@ from utils.auth import require_auth
 logger = logging.getLogger(__name__)
 notifications_bp = Blueprint("notifications", __name__)
 
+
 @notifications_bp.route("/notifications", methods=["GET"])
 @require_auth
 def get_notifications():
@@ -15,27 +16,29 @@ def get_notifications():
         offset = int(request.args.get("offset", 0))
         unread_only = request.args.get("unread_only", "false").lower() == "true"
         category = request.args.get("category", None)
-        
+
         result = NotificationService.get_notifications(
-            limit=limit,
-            offset=offset,
-            unread_only=unread_only,
-            category=category
+            limit=limit, offset=offset, unread_only=unread_only, category=category
         )
-        
-        return jsonify({
-            "success": True,
-            "data": result
-        }), 200
+
+        return jsonify({"success": True, "data": result}), 200
     except Exception as e:
         logger.error(f"Failed to fetch notifications: {e}")
         logger.error(traceback.format_exc())
-        return jsonify({
-            "success": False,
-            "error": "An unexpected server error occurred while fetching notifications."
-        }), 500
+        return (
+            jsonify(
+                {
+                    "success": False,
+                    "error": "An unexpected server error occurred while fetching notifications.",
+                }
+            ),
+            500,
+        )
 
-@notifications_bp.route("/notifications/<notification_id>/read", methods=["PUT", "POST"])
+
+@notifications_bp.route(
+    "/notifications/<notification_id>/read", methods=["PUT", "POST"]
+)
 @require_auth
 def mark_read(notification_id):
     try:
@@ -47,6 +50,7 @@ def mark_read(notification_id):
         logger.error(f"Failed to mark notification read: {e}")
         return jsonify({"success": False, "error": "Internal server error"}), 500
 
+
 @notifications_bp.route("/notifications/read-all", methods=["PUT", "POST"])
 @require_auth
 def mark_all_read():
@@ -57,6 +61,7 @@ def mark_all_read():
         logger.error(f"Failed to mark all read: {e}")
         return jsonify({"success": False, "error": "Internal server error"}), 500
 
+
 @notifications_bp.route("/notifications/clear", methods=["DELETE"])
 @require_auth
 def clear_all():
@@ -66,6 +71,7 @@ def clear_all():
     except Exception as e:
         logger.error(f"Failed to clear notifications: {e}")
         return jsonify({"success": False, "error": "Internal server error"}), 500
+
 
 @notifications_bp.route("/notifications/<notification_id>", methods=["DELETE"])
 @require_auth

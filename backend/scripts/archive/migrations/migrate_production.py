@@ -19,6 +19,7 @@ from models.intelligence import ExecutionProfile, WeeklyReview
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 def run_production_migration():
     logger.info("Initializing production migration protocol...")
     app = create_app()
@@ -27,17 +28,18 @@ def run_production_migration():
             logger.info("Creating all missing tables...")
             db.create_all()
             logger.info("Database schema hardened successfully.")
-            
+
             # Seed default ExecutionProfile if none exists
             if ExecutionProfile.query.count() == 0:
                 profile = ExecutionProfile()
                 db.session.add(profile)
                 db.session.commit()
                 logger.info("Seeded default ExecutionProfile.")
-                
+
         except Exception as e:
             logger.error(f"Migration Failed: {e}")
             sys.exit(1)
+
 
 if __name__ == "__main__":
     run_production_migration()

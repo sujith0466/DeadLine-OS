@@ -41,14 +41,17 @@ def health():
         "timestamp": "<ISO 8601 UTC>"
     }
     """
-    return jsonify(
-        {
-            "status": "healthy",
-            "service": "DeadlineOS",
-            "version": current_app.config.get("APP_VERSION", "1.0.0"),
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-        }
-    ), 200
+    return (
+        jsonify(
+            {
+                "status": "healthy",
+                "service": "DeadlineOS",
+                "version": current_app.config.get("APP_VERSION", "1.0.0"),
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+        200,
+    )
 
 
 @health_bp.route("/health/gemini", methods=["GET"])
@@ -70,12 +73,15 @@ def health_gemini():
     gemini = current_app.extensions.get("gemini_service")
 
     if gemini is None:
-        return jsonify(
-            {
-                "status": "error",
-                "message": "GeminiService not initialised in app context.",
-            }
-        ), 503
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "GeminiService not initialised in app context.",
+                }
+            ),
+            503,
+        )
 
     result = gemini.health_check()
     http_status = 200 if result.get("status") == "ok" else 503

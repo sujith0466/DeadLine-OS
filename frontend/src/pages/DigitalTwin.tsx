@@ -1,51 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { usePageMeta } from '../hooks/usePageMeta';
 import { 
-  Zap, Activity, GitBranch, Target, ShieldAlert, Cpu,
+  Zap, Activity, GitBranch, Target, Cpu,
   AlertTriangle, ArrowRight, Box, Loader2, Play
 } from 'lucide-react';
 import { GlassCard } from '../components/UI/GlassCard';
 import { GradientButton } from '../components/UI/GradientButton';
 import { DeadlineOSApi } from '../api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useCountUp } from '../hooks/useCountUp';
+
 import { useSync } from '../hooks/useSync';
 import { useLocation } from 'react-router-dom';
 import { Skeleton } from '../components/UI/Skeleton';
 
-const AnimatedKpi = React.memo(({ value, suffix = '', label, icon: Icon, delay = 0, colorClass = "text-white" }: any) => {
-  const isNumber = typeof value === 'number';
-  const count = useCountUp(isNumber ? value : 0, 1.5);
-return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay, duration: 0.5, ease: "easeOut" }}
-    >
-      <GlassCard className="p-4 flex flex-col hover:-translate-y-1 transition-transform duration-300">
-        <div className="flex justify-between items-start mb-2">
-          <div className="p-1.5 rounded-lg bg-white/5 border border-white/10">
-            <Icon className="w-4 h-4 text-gray-400" />
-          </div>
-        </div>
-        <div>
-          <div className={`text-2xl font-black mb-1 tracking-tight ${colorClass}`}>
-            {isNumber ? <span ref={count.ref}>{count.value}</span> : <span>{value}</span>}
-            {suffix}
-          </div>
-          <p className="text-[10px] text-gray-400 uppercase tracking-wider font-semibold">{label}</p>
-        </div>
-      </GlassCard>
-    </motion.div>
-  );
-});
+
 
 export const DigitalTwin: React.FC = () => {
   usePageMeta('Digital Twin');
   const [scenario, setScenario] = useState({ action: 'delay_task', task: 'React Assignment', delay_days: 1 });
   const [simulation, setSimulation] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [analytics, setAnalytics] = useState<any>(null);
+
   const [history, setHistory] = useState<any[]>([]);
 
   const location = useLocation();
@@ -61,18 +36,12 @@ export const DigitalTwin: React.FC = () => {
     }
   };
 
-  const fetchAnalytics = async () => {
-    const res = await DeadlineOSApi.getAnalyticsOverview();
-    setAnalytics(res.data);
-  };
 
   useEffect(() => {
-    fetchAnalytics();
     fetchHistory();
   }, []);
 
   useSync(['DIGITAL_TWIN_SIMULATED', 'TASK_COMPLETED', 'TASK_UPDATED'], () => {
-    fetchAnalytics();
     fetchHistory();
   });
 
@@ -97,14 +66,7 @@ export const DigitalTwin: React.FC = () => {
   return (
     <div className="space-y-8 pb-12">
       
-      {/* SECTION A: Twin Intelligence KPIs */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <AnimatedKpi value={analytics?.deadline_success_rate || 0} suffix="%" label="Success Probability" icon={Target} delay={0.1} colorClass="text-emerald-400" />
-        <AnimatedKpi value={analytics?.future_risk_forecast || 'Low'} label="Future Risk" icon={ShieldAlert} delay={0.2} colorClass="text-cyan-400" />
-        <AnimatedKpi value={analytics?.completion_rate || 0} suffix="%" label="Schedule Stability" icon={Activity} delay={0.3} colorClass="text-white" />
-        <AnimatedKpi value={analytics?.ai_confidence_score || 0} suffix="%" label="Prediction Confidence" icon={Cpu} delay={0.4} colorClass="text-purple-400" />
-      </div>
-
+      {/* SECTION A: Twin Intelligence KPIs (REMOVED: Generic KPIs belong on Dashboard) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* LEFT COLUMN: Scenario Builder */}

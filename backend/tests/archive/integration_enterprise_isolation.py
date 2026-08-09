@@ -11,14 +11,35 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
 
 import uuid
+
 run_id = str(uuid.uuid4())[:8]
 
 users = [
-    {"email": f"alice_{run_id}@deadlineos.com", "password": "Password123!", "name": "Alice"},
-    {"email": f"bob_{run_id}@deadlineos.com", "password": "Password123!", "name": "Bob"},
-    {"email": f"charlie_{run_id}@deadlineos.com", "password": "Password123!", "name": "Charlie"},
-    {"email": f"david_{run_id}@deadlineos.com", "password": "Password123!", "name": "David"},
-    {"email": f"emma_{run_id}@deadlineos.com", "password": "Password123!", "name": "Emma"}
+    {
+        "email": f"alice_{run_id}@deadlineos.com",
+        "password": "Password123!",
+        "name": "Alice",
+    },
+    {
+        "email": f"bob_{run_id}@deadlineos.com",
+        "password": "Password123!",
+        "name": "Bob",
+    },
+    {
+        "email": f"charlie_{run_id}@deadlineos.com",
+        "password": "Password123!",
+        "name": "Charlie",
+    },
+    {
+        "email": f"david_{run_id}@deadlineos.com",
+        "password": "Password123!",
+        "name": "David",
+    },
+    {
+        "email": f"emma_{run_id}@deadlineos.com",
+        "password": "Password123!",
+        "name": "Emma",
+    },
 ]
 
 tokens = {}
@@ -30,8 +51,17 @@ for u in users:
     # 1. Create User via Admin API (bypasses rate limits and auto-confirms)
     res = requests.post(
         f"{SUPABASE_URL}/auth/v1/admin/users",
-        json={"email": u["email"], "password": u["password"], "email_confirm": True, "user_metadata": {"name": u["name"]}},
-        headers={"Authorization": f"Bearer {SERVICE_ROLE_KEY}", "apikey": SERVICE_ROLE_KEY, "Content-Type": "application/json"}
+        json={
+            "email": u["email"],
+            "password": u["password"],
+            "email_confirm": True,
+            "user_metadata": {"name": u["name"]},
+        },
+        headers={
+            "Authorization": f"Bearer {SERVICE_ROLE_KEY}",
+            "apikey": SERVICE_ROLE_KEY,
+            "Content-Type": "application/json",
+        },
     )
     if res.status_code in [200, 201]:
         print(f"Created {u['name']} via Admin API")
@@ -42,9 +72,9 @@ for u in users:
     login_res = requests.post(
         f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
         json={"email": u["email"], "password": u["password"]},
-        headers={"apikey": ANON_KEY, "Content-Type": "application/json"}
+        headers={"apikey": ANON_KEY, "Content-Type": "application/json"},
     )
-    
+
     try:
         tokens[u["name"]] = login_res.json()["access_token"]
         print(f"Logged in {u['name']}")
@@ -55,18 +85,31 @@ print("\n--- Populating Data ---")
 for name, token in tokens.items():
     headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     # Task
-    res = requests.post(f"{API_URL}/tasks", headers=headers, json={
-        "title": f"{name}'s Secret Task", "estimated_hours": 2, "deadline": "2026-12-31T00:00:00Z"
-    })
+    res = requests.post(
+        f"{API_URL}/tasks",
+        headers=headers,
+        json={
+            "title": f"{name}'s Secret Task",
+            "estimated_hours": 2,
+            "deadline": "2026-12-31T00:00:00Z",
+        },
+    )
     # Goal
-    res = requests.post(f"{API_URL}/goals", headers=headers, json={
-        "title": f"{name}'s Secret Goal", "category": "Work"
-    })
+    res = requests.post(
+        f"{API_URL}/goals",
+        headers=headers,
+        json={"title": f"{name}'s Secret Goal", "category": "Work"},
+    )
 
 print("\n--- Testing Isolation ---")
 # Alice tries to read tasks. Does she see Bob's?
-headers_alice = {"Authorization": f"Bearer {tokens['Alice']}", "Content-Type": "application/json"}
-tasks_alice = requests.get(f"{API_URL}/tasks", headers=headers_alice).json().get("tasks", [])
+headers_alice = {
+    "Authorization": f"Bearer {tokens['Alice']}",
+    "Content-Type": "application/json",
+}
+tasks_alice = (
+    requests.get(f"{API_URL}/tasks", headers=headers_alice).json().get("tasks", [])
+)
 
 passed = True
 for t in tasks_alice:
@@ -74,7 +117,7 @@ for t in tasks_alice:
         print(f"FAIL: Alice can see {t.get('title')}")
         passed = False
 
-# Try getting Bob's tasks directly? The API only has GET /tasks which relies on g.user_id. 
+# Try getting Bob's tasks directly? The API only has GET /tasks which relies on g.user_id.
 # There's no GET /tasks/<id> across users.
 if passed:
     print("SUCCESS: Isolation verified! Users can only see their own data.")

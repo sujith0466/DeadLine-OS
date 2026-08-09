@@ -8,11 +8,14 @@ One-to-One relationship with the User model.
 from datetime import datetime, timezone
 from database.db import db
 
-class UserSettings(db.Model):
-    __tablename__ = 'user_settings'
 
-    user_id = db.Column(db.String(36), db.ForeignKey('users.id', ondelete='CASCADE'), primary_key=True)
-    
+class UserSettings(db.Model):
+    __tablename__ = "user_settings"
+
+    user_id = db.Column(
+        db.String(36), db.ForeignKey("users.id", ondelete="CASCADE"), primary_key=True
+    )
+
     # JSON columns for flexible settings mapping
     profile = db.Column(db.JSON, default=dict)
     appearance = db.Column(db.JSON, default=dict)
@@ -20,10 +23,14 @@ class UserSettings(db.Model):
     planner = db.Column(db.JSON, default=dict)
     ai = db.Column(db.JSON, default=dict)
     security = db.Column(db.JSON, default=dict)
-    
-    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
-    user = db.relationship('User', backref=db.backref('settings', uselist=False))
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+    )
+
+    user = db.relationship("User", backref=db.backref("settings", uselist=False))
 
     def serialize(self):
         return {
@@ -34,7 +41,7 @@ class UserSettings(db.Model):
             "planner": self.planner or {},
             "ai": self.ai or {},
             "security": self.security or {},
-            "updated_at": self.updated_at.isoformat() if self.updated_at else None
+            "updated_at": self.updated_at.isoformat() if self.updated_at else None,
         }
 
     @staticmethod

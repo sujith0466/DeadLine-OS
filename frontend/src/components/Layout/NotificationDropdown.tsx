@@ -99,7 +99,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
   if (!isOpen) return null;
 
   return (
-    <div ref={dropdownRef} className="absolute top-16 right-8 w-96 max-h-[32rem] flex flex-col bg-black/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+    <div ref={dropdownRef} className="absolute top-16 right-4 sm:right-8 w-[calc(100vw-2rem)] sm:w-96 max-h-[32rem] flex flex-col bg-black/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
         <h3 className="text-sm font-bold text-white flex items-center gap-2">
           Notifications

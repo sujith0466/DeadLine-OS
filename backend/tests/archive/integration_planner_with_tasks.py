@@ -13,24 +13,33 @@ password = os.environ.get("DEMO_USER_PASSWORD")
 res = requests.post(
     f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
     json={"email": email, "password": password},
-    headers={"apikey": ANON_KEY, "Content-Type": "application/json"}
+    headers={"apikey": ANON_KEY, "Content-Type": "application/json"},
 )
 token = res.json()["access_token"]
 headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 
 # Create a task
-task_res = requests.post("http://localhost:5000/api/tasks", headers=headers, json={
-    "title": "Build production AI",
-    "estimated_hours": 3,
-    "deadline": "2026-12-31T00:00:00Z",
-    "priority": 1
-})
+task_res = requests.post(
+    "http://localhost:5000/api/tasks",
+    headers=headers,
+    json={
+        "title": "Build production AI",
+        "estimated_hours": 3,
+        "deadline": "2026-12-31T00:00:00Z",
+        "priority": 1,
+    },
+)
 print("Task creation:", task_res.status_code)
 
-tasks = requests.get("http://localhost:5000/api/tasks", headers=headers).json().get("tasks", [])
+tasks = (
+    requests.get("http://localhost:5000/api/tasks", headers=headers)
+    .json()
+    .get("tasks", [])
+)
 
 print("Triggering planner with tasks...")
-plan_res = requests.post("http://localhost:5000/api/agents/plan", headers=headers, json={"tasks": tasks})
+plan_res = requests.post(
+    "http://localhost:5000/api/agents/plan", headers=headers, json={"tasks": tasks}
+)
 print(plan_res.status_code)
 print(plan_res.text)
-

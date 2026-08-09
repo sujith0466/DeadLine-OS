@@ -1,10 +1,13 @@
 from typing import Any, Dict, Optional
 from flask import jsonify, g
 
-def success_response(data: Any = None, message: str = "Success", status_code: int = 200) -> tuple:
+
+def success_response(
+    data: Any = None, message: str = "Success", status_code: int = 200
+) -> tuple:
     """
     Standardized success response.
-    
+
     Format:
     {
         "status": "success",
@@ -14,7 +17,7 @@ def success_response(data: Any = None, message: str = "Success", status_code: in
     }
     """
     request_id = getattr(g, "request_id", None)
-    
+
     response_body = {
         "status": "success",
         "message": message,
@@ -23,13 +26,19 @@ def success_response(data: Any = None, message: str = "Success", status_code: in
         response_body["data"] = data
     if request_id:
         response_body["request_id"] = request_id
-        
+
     return jsonify(response_body), status_code
 
-def error_response(message: str, error_code: str = "INTERNAL_ERROR", status_code: int = 500, details: Optional[Dict[str, Any]] = None) -> tuple:
+
+def error_response(
+    message: str,
+    error_code: str = "INTERNAL_ERROR",
+    status_code: int = 500,
+    details: Optional[Dict[str, Any]] = None,
+) -> tuple:
     """
     Standardized error response.
-    
+
     Format:
     {
         "status": "error",
@@ -42,19 +51,13 @@ def error_response(message: str, error_code: str = "INTERNAL_ERROR", status_code
     }
     """
     request_id = getattr(g, "request_id", None)
-    
-    error_obj = {
-        "code": error_code,
-        "message": message
-    }
+
+    error_obj = {"code": error_code, "message": message}
     if details:
         error_obj["details"] = details
-        
-    response_body = {
-        "status": "error",
-        "error": error_obj
-    }
+
+    response_body = {"status": "error", "error": error_obj}
     if request_id:
         response_body["request_id"] = request_id
-        
+
     return jsonify(response_body), status_code

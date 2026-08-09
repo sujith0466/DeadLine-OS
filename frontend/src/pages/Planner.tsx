@@ -3,7 +3,7 @@ import { usePageMeta } from '../hooks/usePageMeta';
 import { 
   CalendarClock, BrainCircuit, Activity, Clock, Zap, Target, 
   ShieldAlert, Coffee, Settings2, Play, Loader2, CheckCircle2,
-  AlertTriangle, Server, Archive, BarChart2, ListX, Lock, Unlock, Plus
+  Server, Archive, BarChart2, ListX, Lock, Unlock
 } from 'lucide-react';
 import { GlassCard } from '../components/UI/GlassCard';
 import { GradientButton } from '../components/UI/GradientButton';
@@ -47,7 +47,7 @@ export const Planner: React.FC = () => {
   const [tasks, setTasks] = useState<any[]>([]);
   const [schedule, setSchedule] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [analytics, setAnalytics] = useState<any>(null);
+
   
   const [availableHours, setAvailableHours] = useState(6);
   const [deepWorkFocus, setDeepWorkFocus] = useState(true);
@@ -90,20 +90,15 @@ export const Planner: React.FC = () => {
      setSchedule({ ...schedule, schedule: newSched });
   };
 
-  const extendDuration = (idx: number) => {
-     console.log("Extend duration for slot", idx);
-     alert("Duration extension requested! (Timeline Recalculation Pending)");
-  };
+
 
   const fetchData = async () => {
     try {
-      const [tasksRes, analyticsRes, scheduleRes] = await Promise.all([
+      const [tasksRes, scheduleRes] = await Promise.all([
         DeadlineOSApi.getTasks(),
-        DeadlineOSApi.getAnalyticsOverview(),
         DeadlineOSApi.getLatestSchedule()
       ]);
       setTasks(tasksRes.tasks || []);
-      setAnalytics(analyticsRes.data || null);
       if (scheduleRes.data) {
         setSchedule(scheduleRes.data);
         if (scheduleRes.data.available_hours) setAvailableHours(scheduleRes.data.available_hours);
@@ -142,13 +137,28 @@ export const Planner: React.FC = () => {
     }
   };
 
+  const parseTimeToHHMM = (timeStr: string) => {
+    if (!timeStr) return "00:00";
+    if (timeStr.includes("T") || timeStr.includes(" ")) {
+      try {
+        const d = new Date(timeStr.replace(" ", "T"));
+        const hh = d.getHours().toString().padStart(2, '0');
+        const mm = d.getMinutes().toString().padStart(2, '0');
+        return `${hh}:${mm}`;
+      } catch (e) {
+        return timeStr.substring(0, 5);
+      }
+    }
+    return timeStr.substring(0, 5);
+  };
+
   const calculatePlannedHours = () => {
     if (!schedule || !schedule.schedule) return 0;
     let totalMins = 0;
     schedule.schedule.forEach((s: any) => {
       if (s.is_break || s.task.toLowerCase().includes('break')) return;
-      const [sh, sm] = s.start_time.split(':').map(Number);
-      const [eh, em] = s.end_time.split(':').map(Number);
+      const [sh, sm] = parseTimeToHHMM(s.start_time).split(':').map(Number);
+      const [eh, em] = parseTimeToHHMM(s.end_time).split(':').map(Number);
       let mins = (eh * 60 + em) - (sh * 60 + sm);
       if (mins < 0) mins += 24 * 60;
       totalMins += mins;
@@ -157,8 +167,8 @@ export const Planner: React.FC = () => {
   };
 
   const calculateDuration = (start: string, end: string) => {
-    const [sh, sm] = start.split(':').map(Number);
-    const [eh, em] = end.split(':').map(Number);
+    const [sh, sm] = parseTimeToHHMM(start).split(':').map(Number);
+    const [eh, em] = parseTimeToHHMM(end).split(':').map(Number);
     let mins = (eh * 60 + em) - (sh * 60 + sm);
     if (mins < 0) mins += 24 * 60;
     const h = Math.floor(mins / 60);
@@ -171,7 +181,6 @@ export const Planner: React.FC = () => {
   const plannedHours = calculatePlannedHours();
   const capacityUtilization = availableHours > 0 ? Math.round((plannedHours / availableHours) * 100) : 0;
   const backlogCount = schedule?.backlog?.length || 0;
-  const focusScore = schedule?.confidence_score || (analytics?.productivity_score || 0);
   
   // Schedule Health Status unified logic
   let healthStatus = "Optimal";
@@ -218,14 +227,12 @@ export const Planner: React.FC = () => {
         </div>
       </div>
 
-      {/* SECTION 2: KPI COMMAND BAR (Simplified to 6) */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-4">
+      {/* SECTION 2: KPI COMMAND BAR (Simplified to 4 core scheduling metrics) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <AnimatedKpi value={availableHours} suffix="h" label="Available Hours" icon={Clock} delay={0.1} colorClass="text-white" />
         <AnimatedKpi value={plannedHours} suffix="h" label="Planned Hours" icon={Activity} delay={0.15} colorClass="text-amber-400" />
         <AnimatedKpi value={capacityUtilization} suffix="%" label="Capacity Used" icon={BarChart2} delay={0.2} colorClass={capacityUtilization > 90 ? "text-rose-400" : "text-cyan-400"} />
         <AnimatedKpi value={backlogCount} label="Backlog Tasks" icon={ListX} delay={0.25} colorClass={backlogCount > 0 ? "text-rose-400" : "text-emerald-400"} />
-        <AnimatedKpi value={focusScore} suffix="%" label="Confidence" icon={Target} delay={0.3} colorClass="text-emerald-400" />
-        <AnimatedKpi value={riskLevel} label="Risk Level" icon={AlertTriangle} delay={0.35} colorClass={riskLevel === 'High' ? 'text-rose-400' : riskLevel === 'Medium' ? 'text-amber-400' : 'text-emerald-400'} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -298,7 +305,7 @@ export const Planner: React.FC = () => {
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-3">
                               <span className={`text-sm font-black tracking-wider ${isBreak ? 'text-gray-400' : 'text-white'}`}>
-                                {slot.start_time} <span className="text-gray-600 mx-1">—</span> {slot.end_time}
+                                {parseTimeToHHMM(slot.start_time)} <span className="text-gray-600 mx-1">—</span> {parseTimeToHHMM(slot.end_time)}
                               </span>
                               <Badge variant="neutral">{durationStr}</Badge>
                             </div>
@@ -307,9 +314,6 @@ export const Planner: React.FC = () => {
                                 <>
                                   <button onClick={() => toggleLock(idx)} className={`p-1 rounded-md transition-colors ${slot.locked ? 'bg-rose-500/20 text-rose-400' : 'hover:bg-white/10 text-gray-400'}`}>
                                     {slot.locked ? <Lock className="w-4 h-4"/> : <Unlock className="w-4 h-4"/>}
-                                  </button>
-                                  <button onClick={() => extendDuration(idx)} className="p-1 rounded-md hover:bg-white/10 text-gray-400 transition-colors">
-                                    <Plus className="w-4 h-4"/>
                                   </button>
                                 </>
                               )}

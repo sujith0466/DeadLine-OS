@@ -8,6 +8,7 @@ from app import limiter
 
 demo_bp = Blueprint("demo", __name__)
 
+
 @demo_bp.route("/demo/start", methods=["POST"])
 @limiter.limit("10 per minute")
 def start_demo():
@@ -24,34 +25,33 @@ def start_demo():
     headers = {
         "apikey": anon_key,
         "Authorization": f"Bearer {anon_key}",
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
     res = requests.post(
         f"{supabase_url}/auth/v1/token?grant_type=password",
         json={"email": email, "password": password},
         headers=headers,
-        timeout=10
+        timeout=10,
     )
     if res.status_code != 200:
         return jsonify({"error": f"Failed to authenticate demo user: {res.text}"}), 401
-    
+
     session_data = res.json()
     demo_user_id = session_data.get("user", {}).get("id")
-    
+
     # Ensure local user exists just in case
     user = db.session.get(User, demo_user_id)
     if not user:
         new_user = User(
-            id=demo_user_id,
-            email=email,
-            username="demo_user",
-            full_name="Demo User"
+            id=demo_user_id, email=email, username="demo_user", full_name="Demo User"
         )
         db.session.add(new_user)
         db.session.commit()
-    
-    return jsonify({
-        "access_token": session_data.get("access_token"),
-        "refresh_token": session_data.get("refresh_token"),
-        "user": session_data.get("user")
-    })
+
+    return jsonify(
+        {
+            "access_token": session_data.get("access_token"),
+            "refresh_token": session_data.get("refresh_token"),
+            "user": session_data.get("user"),
+        }
+    )

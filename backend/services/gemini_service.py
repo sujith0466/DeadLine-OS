@@ -110,7 +110,7 @@ class GeminiService:
         Raises:      GeminiServiceError after all retries are exhausted.
         """
         import concurrent.futures
-        
+
         delay = self._retry_delay
         last_error: Exception | None = None
 
@@ -193,7 +193,9 @@ class GeminiService:
         -------
         str : The model's text response.
         """
-        cache_key = self._cache_key("text", prompt, system_instruction or "", str(temperature))
+        cache_key = self._cache_key(
+            "text", prompt, system_instruction or "", str(temperature)
+        )
 
         if use_cache and cache_key in self._cache:
             logger.debug("Cache HIT for generate_text (key=%s…)", cache_key[:12])
@@ -337,8 +339,7 @@ class GeminiService:
 
         if structured:
             enhanced_prompt = (
-                prompt
-                + "\n\nReturn ONLY valid JSON. No markdown fences. "
+                prompt + "\n\nReturn ONLY valid JSON. No markdown fences. "
                 "Start with '{' and end with '}'."
             )
         else:

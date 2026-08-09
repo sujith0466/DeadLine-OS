@@ -13,7 +13,7 @@ anon_key = os.environ.get("SUPABASE_ANON_KEY")
 res = requests.post(
     f"{supabase_url}/auth/v1/token?grant_type=password",
     json={"email": email, "password": password},
-    headers={"apikey": anon_key, "Content-Type": "application/json"}
+    headers={"apikey": anon_key, "Content-Type": "application/json"},
 )
 
 token = res.json()["access_token"]

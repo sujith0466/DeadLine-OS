@@ -70,7 +70,7 @@ export const AIActivityFeed: React.FC = () => {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-96 max-h-96 overflow-y-auto bg-[#0f172a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 z-50">
+        <div className="absolute right-0 sm:right-4 mt-2 w-[calc(100vw-2rem)] sm:w-96 max-h-96 overflow-y-auto bg-[#0f172a]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl p-4 z-50">
           <div className="flex justify-between items-center mb-4 pb-2 border-b border-white/10">
             <h3 className="font-bold text-white text-sm">Real-time Orchestration</h3>
             <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-full border border-primary/30">

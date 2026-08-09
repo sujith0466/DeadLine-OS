@@ -32,21 +32,26 @@ class TestRescueAgent(unittest.TestCase):
                 "deadline": "2026-06-25T18:00:00",
                 "estimated_hours": 8,
                 "completed_hours": 2,
-                "priority_score": 92
+                "priority_score": 92,
             }
         ]
-        
-        availability = {
-            "daily_available_hours": 3
-        }
+
+        availability = {"daily_available_hours": 3}
 
         self.mock_gemini.generate_structured.return_value = {
             "risk_detected": True,
             "risk_level": "High",
-            "strategies": [{"name": "Safe"}, {"name": "Balanced"}, {"name": "Aggressive"}]
+            "strategies": [
+                {"name": "Safe"},
+                {"name": "Balanced"},
+                {"name": "Aggressive"},
+            ],
         }
 
-        with patch("agents.digital_twin_agent.DigitalTwinAgent.simulate_scenario", return_value={"projected_state": {"success_probability": 85}}):
+        with patch(
+            "agents.digital_twin_agent.DigitalTwinAgent.simulate_scenario",
+            return_value={"projected_state": {"success_probability": 85}},
+        ):
             result = self.agent.generate_recovery_plan(tasks, availability)
 
         self.assertTrue(result["risk_detected"])

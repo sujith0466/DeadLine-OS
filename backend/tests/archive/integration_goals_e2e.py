@@ -3,11 +3,14 @@ import requests
 
 BASE_URL = "http://localhost:5000/api"
 
+
 def run_tests():
     print("Testing Goals & Habits API...")
 
     # 1. Create a habit
-    res = requests.post(f"{BASE_URL}/habits", json={"name": "Test Habit API", "frequency": "Daily"})
+    res = requests.post(
+        f"{BASE_URL}/habits", json={"name": "Test Habit API", "frequency": "Daily"}
+    )
     assert res.status_code == 201, f"Failed to create habit: {res.text}"
     habit_id = res.json()["data"]["id"]
     print("[OK] Create Habit")
@@ -23,7 +26,9 @@ def run_tests():
     print("[OK] Duplicate Check-In Blocked")
 
     # 4. Edit Habit
-    res = requests.put(f"{BASE_URL}/habits/{habit_id}", json={"target_duration": "45 mins"})
+    res = requests.put(
+        f"{BASE_URL}/habits/{habit_id}", json={"target_duration": "45 mins"}
+    )
     assert res.status_code == 200
     assert res.json()["data"]["target_duration"] == "45 mins"
     print("[OK] Edit Habit")
@@ -44,6 +49,7 @@ def run_tests():
     print("[OK] Edit Goal (404 Handled)")
 
     print("\nAll Backend Validation Tests Passed!")
+
 
 if __name__ == "__main__":
     try:

@@ -9,6 +9,7 @@ from models.intelligence import ReflectionReport
 from database.db import db
 import json
 
+
 class ReflectionAgent:
     def __init__(self, gemini_service):
         self.gemini = gemini_service
@@ -17,16 +18,43 @@ class ReflectionAgent:
         return {
             "type": "object",
             "properties": {
-                "achievements": {"type": "array", "items": {"type": "string"}, "description": "Wins for the day"},
-                "missed_opportunities": {"type": "array", "items": {"type": "string"}, "description": "What went wrong"},
-                "lessons_learned": {"type": "array", "items": {"type": "string"}, "description": "Takeaways for tomorrow"},
-                "tomorrow_priorities": {"type": "array", "items": {"type": "string"}, "description": "What to focus on tomorrow"},
-                "daily_summary": {"type": "string", "description": "A 2-sentence overarching summary of the day"}
+                "achievements": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Wins for the day",
+                },
+                "missed_opportunities": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "What went wrong",
+                },
+                "lessons_learned": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Takeaways for tomorrow",
+                },
+                "tomorrow_priorities": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "What to focus on tomorrow",
+                },
+                "daily_summary": {
+                    "type": "string",
+                    "description": "A 2-sentence overarching summary of the day",
+                },
             },
-            "required": ["achievements", "missed_opportunities", "lessons_learned", "tomorrow_priorities", "daily_summary"]
+            "required": [
+                "achievements",
+                "missed_opportunities",
+                "lessons_learned",
+                "tomorrow_priorities",
+                "daily_summary",
+            ],
         }
 
-    def generate_reflection(self, tasks: List[Dict], twin_simulation: Dict) -> Dict[str, Any]:
+    def generate_reflection(
+        self, tasks: List[Dict], twin_simulation: Dict
+    ) -> Dict[str, Any]:
         """Provides an end-of-day reflection."""
         prompt = f"""
         You are the DeadlineOS Reflection Agent.
@@ -36,11 +64,12 @@ class ReflectionAgent:
         
         Write a concise, high-impact daily reflection report for the user. Focus on what they achieved, what they missed, and what tomorrow demands based on the Twin's simulation.
         """
-        
+
         response_data = self.gemini.generate_structured(prompt, self._get_schema())
-        
+
         try:
             from flask import g
+
             uid = getattr(g, "user_id", None)
             report = ReflectionReport(
                 user_id=uid,
@@ -48,15 +77,15 @@ class ReflectionAgent:
                 missed_opportunities=response_data.get("missed_opportunities", []),
                 lessons_learned=response_data.get("lessons_learned", []),
                 tomorrow_priorities=response_data.get("tomorrow_priorities", []),
-                daily_summary=response_data.get("daily_summary", "")
+                daily_summary=response_data.get("daily_summary", ""),
             )
             db.session.add(report)
             db.session.commit()
-            
+
             response_data["id"] = report.id
-            
+
         except Exception:
             db.session.rollback()
             pass
-            
+
         return response_data

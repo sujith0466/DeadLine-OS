@@ -6,6 +6,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class NotificationService:
     @staticmethod
     def create_notification(
@@ -20,10 +21,11 @@ class NotificationService:
         icon: str = None,
         color: str = None,
         category: str = "System",
-        user_id: str = None
+        user_id: str = None,
     ) -> Notification:
         try:
             from flask import g
+
             uid = user_id or getattr(g, "user_id", None)
             notif = Notification(
                 user_id=uid,
@@ -37,7 +39,7 @@ class NotificationService:
                 action_url=action_url,
                 icon=icon,
                 color=color,
-                category=category
+                category=category,
             )
             db.session.add(notif)
             db.session.commit()
@@ -53,34 +55,43 @@ class NotificationService:
         offset: int = 0,
         unread_only: bool = False,
         category: str = None,
-        user_id: str = None
+        user_id: str = None,
     ) -> Dict[str, Any]:
         from flask import g
+
         uid = user_id or getattr(g, "user_id", None)
         query = Notification.query.filter_by(user_id=uid)
-        
+
         if unread_only:
             query = query.filter_by(read=False)
         if category:
             query = query.filter_by(category=category)
-            
+
         total = query.count()
         unread_count = Notification.query.filter_by(user_id=uid, read=False).count()
-        
-        notifications = query.order_by(Notification.created_at.desc()).offset(offset).limit(limit).all()
-        
+
+        notifications = (
+            query.order_by(Notification.created_at.desc())
+            .offset(offset)
+            .limit(limit)
+            .all()
+        )
+
         return {
             "notifications": [n.to_dict() for n in notifications],
             "total": total,
-            "unread_count": unread_count
+            "unread_count": unread_count,
         }
 
     @staticmethod
     def mark_as_read(notification_id: str, user_id: str = None) -> bool:
         try:
             from flask import g
+
             uid = user_id or getattr(g, "user_id", None)
-            notif = Notification.query.filter_by(user_id=uid, id=notification_id).first()
+            notif = Notification.query.filter_by(
+                user_id=uid, id=notification_id
+            ).first()
             if notif:
                 notif.read = True
                 db.session.commit()
@@ -95,8 +106,11 @@ class NotificationService:
     def mark_all_as_read(user_id: str = None) -> bool:
         try:
             from flask import g
+
             uid = user_id or getattr(g, "user_id", None)
-            db.session.query(Notification).filter_by(user_id=uid, read=False).update({"read": True})
+            db.session.query(Notification).filter_by(user_id=uid, read=False).update(
+                {"read": True}
+            )
             db.session.commit()
             return True
         except Exception as e:
@@ -108,6 +122,7 @@ class NotificationService:
     def clear_all(user_id: str = None) -> bool:
         try:
             from flask import g
+
             uid = user_id or getattr(g, "user_id", None)
             db.session.query(Notification).filter_by(user_id=uid).delete()
             db.session.commit()
@@ -121,8 +136,11 @@ class NotificationService:
     def delete_notification(notification_id: str, user_id: str = None) -> bool:
         try:
             from flask import g
+
             uid = user_id or getattr(g, "user_id", None)
-            notif = Notification.query.filter_by(user_id=uid, id=notification_id).first()
+            notif = Notification.query.filter_by(
+                user_id=uid, id=notification_id
+            ).first()
             if notif:
                 db.session.delete(notif)
                 db.session.commit()

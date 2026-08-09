@@ -8,6 +8,7 @@ Acts as the NLU router for the entire OS.
 from typing import Dict, Any
 from services.gemini_service import GeminiService
 
+
 class VoiceCopilotAgent:
 
     def __init__(self, gemini_service):
@@ -36,7 +37,7 @@ class VoiceCopilotAgent:
         Estimate your confidence in this intent detection (0-100).
         Identify which backend agents need to be invoked to fulfill this request.
         """
-        
+
         schema = {
             "type": "OBJECT",
             "properties": {
@@ -46,27 +47,31 @@ class VoiceCopilotAgent:
                     "type": "OBJECT",
                     "properties": {
                         "target_name": {"type": "STRING"},
-                        "target_date": {"type": "STRING"}
-                    }
+                        "target_date": {"type": "STRING"},
+                    },
                 },
                 "voice_response": {"type": "STRING"},
-                "agents_triggered": {
-                    "type": "ARRAY",
-                    "items": {"type": "STRING"}
-                }
+                "agents_triggered": {"type": "ARRAY", "items": {"type": "STRING"}},
             },
-            "required": ["intent", "confidence", "entities", "voice_response", "agents_triggered"]
+            "required": [
+                "intent",
+                "confidence",
+                "entities",
+                "voice_response",
+                "agents_triggered",
+            ],
         }
-        
+
         try:
             return self.gemini.generate_structured(prompt, transcript, schema)
         except Exception as e:
             import logging
+
             logging.error(f"VoiceCopilotAgent Error: {e}")
             return {
                 "intent": "unknown",
                 "confidence": 0,
                 "entities": {},
                 "voice_response": "I encountered an error understanding that request.",
-                "agents_triggered": []
+                "agents_triggered": [],
             }

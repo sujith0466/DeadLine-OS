@@ -138,47 +138,7 @@ export const Analytics: React.FC = () => {
   return (
     <div className="space-y-8 pb-12">
       
-      {/* SECTION A — Executive Intelligence KPIs */}
-      {overview && (
-        <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <GlassCard className="p-4 border-t-4 border-t-primary">
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Task Completion</p>
-              <p className="text-3xl font-black text-white">{overview.completion_rate}%</p>
-            </GlassCard>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
-            <GlassCard className="p-4 border-t-4 border-t-success">
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Success Prob</p>
-              <p className="text-3xl font-black text-success">{overview.deadline_success_rate}%</p>
-            </GlassCard>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-            <GlassCard className="p-4 border-t-4 border-t-secondary bg-secondary/5">
-              <p className="text-[10px] text-secondary font-bold uppercase tracking-widest mb-1">AI Confidence</p>
-              <p className="text-3xl font-black text-white">{overview.ai_confidence_score}%</p>
-            </GlassCard>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}>
-            <GlassCard className="p-4 border-t-4 border-t-rose-500">
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Future Risk</p>
-              <p className="text-2xl font-black text-rose-500 mt-1">{overview.future_risk_forecast}</p>
-            </GlassCard>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-            <GlassCard className="p-4 border-t-4 border-t-blue-400">
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Intervention Effectiveness</p>
-              <p className="text-3xl font-black text-blue-400 mt-1">{interventionsStats?.resolution_rate || 0}%</p>
-            </GlassCard>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-            <GlassCard className="p-4 border-t-4 border-t-orange-400">
-              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-1">Twin Accuracy</p>
-              <p className="text-3xl font-black text-white mt-1">{twinAccuracy?.total_simulations > 0 ? '98%' : 'N/A'}</p>
-            </GlassCard>
-          </motion.div>
-        </div>
-      )}
+      {/* SECTION A — Executive Intelligence KPIs (REMOVED: Dashboard handles this responsibility) */}
 
       {/* SECTION F — AI Insights Engine */}
       {insights && (

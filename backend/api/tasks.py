@@ -41,11 +41,16 @@ def _task_or_404(task_id: str) -> Task:
     task = Task.query.filter_by(id=task_id, user_id=g.user_id).first()
     if task is None:
         from flask import abort
-        abort(404, description=f"Task '{task_id}' not found or you do not have permission to view it.")
+
+        abort(
+            404,
+            description=f"Task '{task_id}' not found or you do not have permission to view it.",
+        )
     return task
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
+
 
 @tasks_bp.route("/tasks", methods=["GET"])
 @require_auth
@@ -84,20 +89,23 @@ def list_tasks():
 
     # Sorting
     sort_column = getattr(Task, sort_field, Task.deadline)
-    query = query.order_by(
-        sort_column.desc() if order == "desc" else sort_column.asc()
-    )
+    query = query.order_by(sort_column.desc() if order == "desc" else sort_column.asc())
 
     total_count = query.count()
     tasks = query.offset(offset).limit(limit).all()
-    
-    return jsonify({
-        "tasks": [t.to_dict() for t in tasks],
-        "count": len(tasks),
-        "total": total_count,
-        "page": page,
-        "limit": limit
-    }), 200
+
+    return (
+        jsonify(
+            {
+                "tasks": [t.to_dict() for t in tasks],
+                "count": len(tasks),
+                "total": total_count,
+                "page": page,
+                "limit": limit,
+            }
+        ),
+        200,
+    )
 
 
 @tasks_bp.route("/tasks", methods=["POST"])
@@ -139,9 +147,14 @@ def create_task():
     try:
         deadline = datetime.fromisoformat(data["deadline"].replace("Z", "+00:00"))
     except (ValueError, AttributeError):
-        return jsonify(
-            {"error": "Invalid 'deadline' format. Use ISO 8601 (e.g. 2026-06-23T18:00:00Z)."}
-        ), 422
+        return (
+            jsonify(
+                {
+                    "error": "Invalid 'deadline' format. Use ISO 8601 (e.g. 2026-06-23T18:00:00Z)."
+                }
+            ),
+            422,
+        )
 
     task = Task(
         id=str(uuid.uuid4()),
@@ -149,20 +162,31 @@ def create_task():
         description=data.get("description", "").strip() or None,
         deadline=deadline,
         estimated_hours=float(data.get("estimated_hours", 1.0)),
-        category=data.get("category", "work") if data.get("category") in VALID_CATEGORIES else "work",
+        category=(
+            data.get("category", "work")
+            if data.get("category") in VALID_CATEGORIES
+            else "work"
+        ),
         status="pending",
-        source=data.get("source", "manual") if data.get("source") in VALID_SOURCES else "manual",
+        source=(
+            data.get("source", "manual")
+            if data.get("source") in VALID_SOURCES
+            else "manual"
+        ),
         source_file=data.get("source_file"),
-        user_id=g.user_id
+        user_id=g.user_id,
     )
 
     db.session.add(task)
     db.session.commit()
-    
+
     InterventionEngine.trigger_evaluation()
 
     logger.info("Task created: id=%s title=%r", task.id, task.title)
-    return jsonify({"task": task.to_dict(), "message": "Task created successfully"}), 201
+    return (
+        jsonify({"task": task.to_dict(), "message": "Task created successfully"}),
+        201,
+    )
 
 
 @tasks_bp.route("/tasks/<task_id>", methods=["GET"])
@@ -227,19 +251,29 @@ def update_task(task_id: str):
 
     if "deadline" in data:
         try:
-            task.deadline = datetime.fromisoformat(data["deadline"].replace("Z", "+00:00"))
+            task.deadline = datetime.fromisoformat(
+                data["deadline"].replace("Z", "+00:00")
+            )
         except (ValueError, AttributeError):
             return jsonify({"error": "Invalid 'deadline' format."}), 422
 
     task.updated_at = datetime.now(timezone.utc)
     db.session.commit()
 
-    if "status" in data and data["status"] == "done" and getattr(task, "milestone_id", None):
+    if (
+        "status" in data
+        and data["status"] == "done"
+        and getattr(task, "milestone_id", None)
+    ):
         try:
             GoalService.update_milestone_status(task.milestone_id, "COMPLETED")
         except Exception as e:
-            logger.error("Failed to automatically complete milestone %s: %s", task.milestone_id, str(e))
-            
+            logger.error(
+                "Failed to automatically complete milestone %s: %s",
+                task.milestone_id,
+                str(e),
+            )
+
     InterventionEngine.trigger_evaluation()
 
     logger.info("Task updated: id=%s", task_id)
@@ -259,7 +293,7 @@ def delete_task(task_id: str):
     task = _task_or_404(task_id)
     db.session.delete(task)
     db.session.commit()
-    
+
     InterventionEngine.trigger_evaluation()
 
     logger.info("Task deleted: id=%s", task_id)
@@ -307,18 +341,23 @@ def log_progress(task_id: str):
 
     task.updated_at = datetime.now(timezone.utc)
     db.session.commit()
-    
+
     InterventionEngine.trigger_evaluation()
 
     logger.info(
         "Progress logged: task_id=%s hours_added=%.2f total_hours=%.2f",
-        task_id, hours, task.actual_hours,
+        task_id,
+        hours,
+        task.actual_hours,
     )
 
-    return jsonify(
-        {
-            "task": task.to_dict(),
-            "completion_percentage": task.completion_percentage,
-            "message": "Progress logged",
-        }
-    ), 200
+    return (
+        jsonify(
+            {
+                "task": task.to_dict(),
+                "completion_percentage": task.completion_percentage,
+                "message": "Progress logged",
+            }
+        ),
+        200,
+    )

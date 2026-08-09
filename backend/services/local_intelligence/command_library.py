@@ -1,30 +1,43 @@
 from typing import Dict, List, Any
 
+
 class CommandLibrary:
     """
     Central repository of all recognized OS commands and their metadata.
     """
-    
+
     COMMANDS = [
         {
             "intent": "planning",
-            "keywords": ["plan my week", "generate weekly plan", "schedule my tasks", "plan my day", "open planner"],
+            "keywords": [
+                "plan my week",
+                "generate weekly plan",
+                "schedule my tasks",
+                "plan my day",
+                "open planner",
+            ],
             "agent": "PlanningAgent",
             "required_entities": [],
             "optional_entities": ["target_date"],
             "minimum_confidence": 75,
             "execution_strategy": "synchronous",
-            "description": "Generates an automated schedule based on the user's pending tasks."
+            "description": "Generates an automated schedule based on the user's pending tasks.",
         },
         {
             "intent": "rescue",
-            "keywords": ["rescue plan", "im falling behind", "i am falling behind", "open rescue center", "need a rescue plan"],
+            "keywords": [
+                "rescue plan",
+                "im falling behind",
+                "i am falling behind",
+                "open rescue center",
+                "need a rescue plan",
+            ],
             "agent": "RescueAgent",
             "required_entities": [],
             "optional_entities": [],
             "minimum_confidence": 75,
             "execution_strategy": "synchronous",
-            "description": "Analyzes the user's workload to detect burnout or failure risks."
+            "description": "Analyzes the user's workload to detect burnout or failure risks.",
         },
         {
             "intent": "task_creation",
@@ -34,7 +47,7 @@ class CommandLibrary:
             "optional_entities": ["target_date", "priority"],
             "minimum_confidence": 65,
             "execution_strategy": "synchronous",
-            "description": "Creates a new task in the user's workspace."
+            "description": "Creates a new task in the user's workspace.",
         },
         {
             "intent": "goal_creation",
@@ -44,47 +57,73 @@ class CommandLibrary:
             "optional_entities": ["target_date"],
             "minimum_confidence": 70,
             "execution_strategy": "synchronous",
-            "description": "Creates a new long-term goal."
+            "description": "Creates a new long-term goal.",
         },
         {
             "intent": "calendar_query",
-            "keywords": ["show my calendar", "open calendar", "move my meeting", "reschedule meeting", "today's meetings"],
+            "keywords": [
+                "show my calendar",
+                "open calendar",
+                "move my meeting",
+                "reschedule meeting",
+                "today's meetings",
+            ],
             "agent": "Navigation",
             "required_entities": [],
             "optional_entities": ["target_date"],
             "minimum_confidence": 75,
             "execution_strategy": "navigation",
-            "description": "Navigates to the calendar or processes calendar adjustments."
+            "description": "Navigates to the calendar or processes calendar adjustments.",
         },
         {
             "intent": "analytics_query",
-            "keywords": ["show analytics", "analyze my productivity", "open analytics", "productivity stats"],
+            "keywords": [
+                "show analytics",
+                "analyze my productivity",
+                "open analytics",
+                "productivity stats",
+            ],
             "agent": "Navigation",
             "required_entities": [],
             "optional_entities": [],
             "minimum_confidence": 75,
             "execution_strategy": "navigation",
-            "description": "Navigates to the analytics dashboard."
+            "description": "Navigates to the analytics dashboard.",
         },
         {
             "intent": "digital_twin",
-            "keywords": ["simulate what happens if", "digital twin", "simulate deadline", "open digital twin"],
+            "keywords": [
+                "simulate what happens if",
+                "digital twin",
+                "simulate deadline",
+                "open digital twin",
+            ],
             "agent": "DigitalTwinAgent",
             "required_entities": [],
             "optional_entities": ["target_name"],
             "minimum_confidence": 75,
             "execution_strategy": "synchronous",
-            "description": "Runs a digital twin simulation for task shifts."
+            "description": "Runs a digital twin simulation for task shifts.",
         },
         {
             "intent": "navigation",
-            "keywords": ["open dashboard", "go to dashboard", "show dashboard", "go to settings", "open settings", "show goals", "open goals", "open documents", "open vision"],
+            "keywords": [
+                "open dashboard",
+                "go to dashboard",
+                "show dashboard",
+                "go to settings",
+                "open settings",
+                "show goals",
+                "open goals",
+                "open documents",
+                "open vision",
+            ],
             "agent": "Navigation",
             "required_entities": ["target_name"],
             "optional_entities": [],
             "minimum_confidence": 70,
             "execution_strategy": "navigation",
-            "description": "Navigates to a specific frontend route."
+            "description": "Navigates to a specific frontend route.",
         },
         {
             "intent": "document_query",
@@ -94,17 +133,21 @@ class CommandLibrary:
             "optional_entities": ["document_name"],
             "minimum_confidence": 75,
             "execution_strategy": "asynchronous",
-            "description": "Triggers the document intelligence processor."
+            "description": "Triggers the document intelligence processor.",
         },
         {
             "intent": "vision_query",
-            "keywords": ["analyze this image", "what is in this picture", "vision intelligence"],
+            "keywords": [
+                "analyze this image",
+                "what is in this picture",
+                "vision intelligence",
+            ],
             "agent": "VisionIntelligence",
             "required_entities": [],
             "optional_entities": ["image_reference"],
             "minimum_confidence": 75,
             "execution_strategy": "asynchronous",
-            "description": "Triggers the vision intelligence processor."
+            "description": "Triggers the vision intelligence processor.",
         },
         {
             "intent": "focus_mode",
@@ -114,8 +157,8 @@ class CommandLibrary:
             "optional_entities": ["duration"],
             "minimum_confidence": 80,
             "execution_strategy": "navigation",
-            "description": "Activates focus mode."
-        }
+            "description": "Activates focus mode.",
+        },
     ]
 
     @classmethod

@@ -6,20 +6,22 @@ from models.telemetry import AgentExecutionLog
 
 logger = logging.getLogger(__name__)
 
+
 class TelemetryService:
     @staticmethod
     def log_execution(
-        agent_name: str, 
-        action: str, 
-        status: str, 
-        start_time: float, 
-        confidence: int = 0, 
+        agent_name: str,
+        action: str,
+        status: str,
+        start_time: float,
+        confidence: int = 0,
         metadata: Optional[Dict[str, Any]] = None,
-        user_id: str = None
+        user_id: str = None,
     ):
         """Persists agent execution data for downstream analytics."""
         try:
             from flask import g
+
             uid = user_id or getattr(g, "user_id", None)
             duration_ms = int((time.time() - start_time) * 1000)
             log = AgentExecutionLog(
@@ -29,7 +31,7 @@ class TelemetryService:
                 status=status,
                 confidence=confidence,
                 execution_time_ms=duration_ms,
-                metadata_payload=metadata or {}
+                metadata_payload=metadata or {},
             )
             db.session.add(log)
             db.session.commit()

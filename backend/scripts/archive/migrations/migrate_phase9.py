@@ -17,7 +17,7 @@ with app.app_context():
     print("New tables ensured via create_all().")
 
 # Alter existing tables
-load_dotenv('.env')
+load_dotenv(".env")
 url = os.getenv("DATABASE_URL")
 if not url:
     print("No DATABASE_URL found.")
@@ -31,7 +31,7 @@ commands = [
     "ALTER TABLE rescue_executions ADD COLUMN snapshot_id VARCHAR(36);",
     "ALTER TABLE rescue_executions ADD COLUMN strategy_name VARCHAR(50);",
     "ALTER TABLE rescue_executions ADD COLUMN executed_actions JSON;",
-    "ALTER TABLE rescue_executions ADD COLUMN status VARCHAR(20) DEFAULT 'executed';"
+    "ALTER TABLE rescue_executions ADD COLUMN status VARCHAR(20) DEFAULT 'executed';",
 ]
 
 with engine.begin() as conn:

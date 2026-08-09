@@ -22,12 +22,8 @@ print("==================================================")
 print(" DEADLINE OS - PRODUCTION END-TO-END QA SUITE")
 print("==================================================")
 
-report = {
-    "modules": {},
-    "performance": {},
-    "bugs_discovered": [],
-    "apis_tested": set()
-}
+report = {"modules": {}, "performance": {}, "bugs_discovered": [], "apis_tested": set()}
+
 
 def record_db_counts():
     counts = {}
@@ -40,6 +36,7 @@ def record_db_counts():
         counts["RescuePlan"] = RescuePlan.query.count()
     return counts
 
+
 def get_ephemeral_ids():
     ids = {}
     with app.app_context():
@@ -48,6 +45,7 @@ def get_ephemeral_ids():
         ids["RescueExecution"] = {e.id for e in RescueExecution.query.all()}
         ids["RescuePlan"] = {p.id for p in RescuePlan.query.all()}
     return ids
+
 
 initial_counts = record_db_counts()
 initial_ephemeral_ids = get_ephemeral_ids()
@@ -58,8 +56,9 @@ qa_data_ids = {
     "goals": [],
     "habits": [],
     "schedules": [],
-    "notifications": []
+    "notifications": [],
 }
+
 
 def log_test(module, status, message=""):
     if module not in report["modules"]:
@@ -68,6 +67,7 @@ def log_test(module, status, message=""):
         report["modules"][module] = "FAIL"
         report["bugs_discovered"].append(f"[{module}] {message}")
     print(f"[{module}] {'✅ PASS' if status == 'PASS' else '❌ FAIL'} {message}")
+
 
 def test_api(method, endpoint, json=None, expected_status=200):
     t0 = time.time()
@@ -81,38 +81,52 @@ def test_api(method, endpoint, json=None, expected_status=200):
             res = requests.put(f"{BASE_URL}{endpoint}", json=json)
         elif method == "DELETE":
             res = requests.delete(f"{BASE_URL}{endpoint}")
-            
+
         t1 = time.time()
         elapsed = (t1 - t0) * 1000
-        report["performance"][endpoint] = report["performance"].get(endpoint, []) + [elapsed]
+        report["performance"][endpoint] = report["performance"].get(endpoint, []) + [
+            elapsed
+        ]
 
         if res.status_code == 500:
-            log_test("API_STABILITY", "FAIL", f"HTTP 500 on {method} {endpoint}: {res.text}")
+            log_test(
+                "API_STABILITY", "FAIL", f"HTTP 500 on {method} {endpoint}: {res.text}"
+            )
             return None, res.status_code
 
         if expected_status and res.status_code != expected_status:
-            log_test("API_ROUTING", "FAIL", f"Expected {expected_status}, got {res.status_code} on {method} {endpoint}")
-            
+            log_test(
+                "API_ROUTING",
+                "FAIL",
+                f"Expected {expected_status}, got {res.status_code} on {method} {endpoint}",
+            )
+
         return res.json() if res.content else None, res.status_code
     except Exception as e:
         log_test("NETWORK", "FAIL", f"Network error on {method} {endpoint}: {str(e)}")
         return None, 0
+
 
 # ---------------------------------------------------------
 # 1. Negative Testing
 # ---------------------------------------------------------
 print("\n--- RUNNING NEGATIVE TESTS ---")
 # Missing fields
-res, status = test_api("POST", "/tasks", json={"description": "No title"}, expected_status=422)
-if status == 422: log_test("Negative Testing", "PASS", "Task validation caught missing title")
+res, status = test_api(
+    "POST", "/tasks", json={"description": "No title"}, expected_status=422
+)
+if status == 422:
+    log_test("Negative Testing", "PASS", "Task validation caught missing title")
 
 # Invalid body
 res, status = test_api("POST", "/tasks", json={}, expected_status=400)
-if status == 400: log_test("Negative Testing", "PASS", "Task validation caught empty JSON")
+if status == 400:
+    log_test("Negative Testing", "PASS", "Task validation caught empty JSON")
 
 # Invalid ID (404)
 res, status = test_api("GET", "/tasks/invalid-123", expected_status=404)
-if status == 404: log_test("Negative Testing", "PASS", "404 handler works for invalid task ID")
+if status == 404:
+    log_test("Negative Testing", "PASS", "404 handler works for invalid task ID")
 
 
 # ---------------------------------------------------------
@@ -126,15 +140,15 @@ goal_payload = {
     "title": "Launch DeadlineOS MVP",
     "description": "Production QA Validation Goal",
     "category": "Career",
-    "target_date": future_date
+    "target_date": future_date,
 }
 res, status = test_api("POST", "/goals", json=goal_payload, expected_status=201)
 if status == 201:
     goal_id = res.get("data", {}).get("id")
     qa_data_ids["goals"].append(goal_id)
     log_test("Goals", "PASS", "Goal created successfully")
-    
-    # (Milestones are currently managed via the Goal creation/editing inline payload, 
+
+    # (Milestones are currently managed via the Goal creation/editing inline payload,
     # not a direct POST route, so we skip the independent POST test)
 else:
     log_test("Goals", "FAIL", "Failed to create Goal")
@@ -144,7 +158,7 @@ task_payload = {
     "title": "Review PostgreSQL schema",
     "deadline": future_date,
     "estimated_hours": 2.0,
-    "category": "work"
+    "category": "work",
 }
 res, status = test_api("POST", "/tasks", json=task_payload, expected_status=201)
 if status == 201:
@@ -153,23 +167,32 @@ if status == 201:
     log_test("Tasks", "PASS", "Task created")
 
 # Create Habit
-habit_payload = {
-    "name": "Daily Planning",
-    "category": "General",
-    "frequency": "Daily"
-}
+habit_payload = {"name": "Daily Planning", "category": "General", "frequency": "Daily"}
 res, status = test_api("POST", "/habits", json=habit_payload, expected_status=201)
 if status == 201:
     habit_id = res.get("data", {}).get("id")
     qa_data_ids["habits"].append(habit_id)
     log_test("Habits", "PASS", "Habit created")
-    
+
     # Check-in
-    c_res, c_status = test_api("POST", f"/habits/{habit_id}/checkin", expected_status=200)
-    if c_status == 200: log_test("Habits", "PASS", "Habit check-in successful")
+    c_res, c_status = test_api(
+        "POST", f"/habits/{habit_id}/checkin", expected_status=200
+    )
+    if c_status == 200:
+        log_test("Habits", "PASS", "Habit check-in successful")
 
 # Run Planner
-res, status = test_api("POST", "/agents/plan", json={"tasks": [{"id": qa_data_ids["tasks"][0], "title": "QA Task", "deadline": future_date}], "availability": {"daily_available_hours": 6}}, expected_status=200)
+res, status = test_api(
+    "POST",
+    "/agents/plan",
+    json={
+        "tasks": [
+            {"id": qa_data_ids["tasks"][0], "title": "QA Task", "deadline": future_date}
+        ],
+        "availability": {"daily_available_hours": 6},
+    },
+    expected_status=200,
+)
 if status == 200:
     log_test("Planner", "PASS", "Schedule generated successfully")
 else:
@@ -177,19 +200,32 @@ else:
 
 # Run Analytics
 res, status = test_api("GET", "/analytics/overview", expected_status=200)
-if status == 200: log_test("Analytics", "PASS", "Analytics generated")
+if status == 200:
+    log_test("Analytics", "PASS", "Analytics generated")
 
 # Run Twin
-res, status = test_api("POST", "/agents/digital-twin", json={"scenario": {"action": "delay", "task": "QA Task", "delay_days": 1}}, expected_status=200)
-if status == 200: log_test("DigitalTwin", "PASS", "Twin simulation successful")
+res, status = test_api(
+    "POST",
+    "/agents/digital-twin",
+    json={"scenario": {"action": "delay", "task": "QA Task", "delay_days": 1}},
+    expected_status=200,
+)
+if status == 200:
+    log_test("DigitalTwin", "PASS", "Twin simulation successful")
 
 # Run Rescue
-res, status = test_api("POST", "/agents/rescue", json={"tasks": [], "availability": {}}, expected_status=200)
-if status == 200: log_test("RescueCenter", "PASS", "Rescue strategy generated")
+res, status = test_api(
+    "POST",
+    "/agents/rescue",
+    json={"tasks": [], "availability": {}},
+    expected_status=200,
+)
+if status == 200:
+    log_test("RescueCenter", "PASS", "Rescue strategy generated")
 
 # Test Notifications
 res, status = test_api("GET", "/notifications", expected_status=200)
-if status == 200: 
+if status == 200:
     log_test("Notifications", "PASS", "Notifications fetched")
     notifs = res.get("data", {}).get("notifications", [])
     for n in notifs:
@@ -214,16 +250,20 @@ with app.app_context():
     # Only delete notifications explicitly tracked
     for n_id in qa_data_ids["notifications"]:
         Notification.query.filter_by(id=n_id).delete()
-    
+
     for item in ScheduleSlot.query.all():
-        if item.id not in initial_ephemeral_ids["ScheduleSlot"]: db.session.delete(item)
+        if item.id not in initial_ephemeral_ids["ScheduleSlot"]:
+            db.session.delete(item)
     for item in Schedule.query.all():
-        if item.id not in initial_ephemeral_ids["Schedule"]: db.session.delete(item)
+        if item.id not in initial_ephemeral_ids["Schedule"]:
+            db.session.delete(item)
     for item in RescueExecution.query.all():
-        if item.id not in initial_ephemeral_ids["RescueExecution"]: db.session.delete(item)
+        if item.id not in initial_ephemeral_ids["RescueExecution"]:
+            db.session.delete(item)
     for item in RescuePlan.query.all():
-        if item.id not in initial_ephemeral_ids["RescuePlan"]: db.session.delete(item)
-        
+        if item.id not in initial_ephemeral_ids["RescuePlan"]:
+            db.session.delete(item)
+
     db.session.commit()
 
 final_counts = record_db_counts()
@@ -233,9 +273,17 @@ integrity_pass = True
 for key in initial_counts:
     if initial_counts[key] != final_counts[key]:
         integrity_pass = False
-        log_test("Data Integrity", "FAIL", f"{key} count mismatch: initial={initial_counts[key]}, final={final_counts[key]}")
+        log_test(
+            "Data Integrity",
+            "FAIL",
+            f"{key} count mismatch: initial={initial_counts[key]}, final={final_counts[key]}",
+        )
 if integrity_pass:
-    log_test("Data Integrity", "PASS", "All tables reverted to initial row counts (no orphaned records)")
+    log_test(
+        "Data Integrity",
+        "PASS",
+        "All tables reverted to initial row counts (no orphaned records)",
+    )
 
 # ---------------------------------------------------------
 # 4. Generate Report
@@ -245,7 +293,7 @@ print(" PRODUCTION QA REPORT")
 print("==================================================")
 for mod, stat in report["modules"].items():
     print(f"{mod}: {stat}")
-    
+
 print("\nPERFORMANCE METRICS (avg response time ms):")
 for ep, times in report["performance"].items():
     avg = sum(times) / len(times)

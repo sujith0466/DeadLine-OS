@@ -8,6 +8,7 @@ import { AnimatePresence } from 'framer-motion';
 import { GlobalErrorToast } from './components/GlobalErrorToast';
 import { AuthProvider } from './context/AuthContext';
 import { SettingsProvider } from './context/SettingsContext';
+import { RuntimeProvider } from './context/RuntimeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
@@ -127,11 +128,13 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <SettingsProvider>
+        <RuntimeProvider>
           <BrowserRouter>
             <AnimatedRoutes />
             <GlobalErrorToast />
           </BrowserRouter>
-        </SettingsProvider>
+                </RuntimeProvider>
+</SettingsProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

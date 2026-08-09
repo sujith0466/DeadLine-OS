@@ -40,9 +40,39 @@ apiClient.interceptors.request.use(async (config) => {
   return config;
 });
 
+// Simple retry state storage for Axios
+const retryConfig = {
+  maxRetries: 3,
+  retryDelay: (retryCount: number) => Math.min(1000 * (2 ** retryCount), 5000)
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // Automatic Retry Queue for Network Errors & 5xx Server Errors
+    if (originalRequest && !originalRequest._retryCount) {
+      originalRequest._retryCount = 0;
+    }
+    
+    const isRetryableError = 
+      error.code === 'ERR_NETWORK' || 
+      error.message === 'Network Error' || 
+      error.code === 'ECONNABORTED' ||
+      (error.response && (error.response.status >= 500 || error.response.status === 429));
+
+    if (isRetryableError && originalRequest && originalRequest._retryCount < retryConfig.maxRetries) {
+      originalRequest._retryCount += 1;
+      const delay = retryConfig.retryDelay(originalRequest._retryCount);
+      
+      console.debug(`[API] Retry ${originalRequest._retryCount}/${retryConfig.maxRetries} for ${originalRequest.url} in ${delay}ms`);
+      
+      // Create a promise that resolves after the delay
+      await new Promise(resolve => setTimeout(resolve, delay));
+      return apiClient(originalRequest);
+    }
+
     let errorMessage = 'Something went wrong. Please try again.';
     
     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error' || error.code === 'ECONNABORTED') {
@@ -467,5 +497,29 @@ export const DeadlineOSApi = {
   async deleteAccount() {
     const response = await apiClient.delete('/account');
     return response.data;
+  }
+,
+
+  runtime: {
+    async getActive() {
+      const response = await apiClient.get('/runtime/active');
+      return response.data;
+    },
+    async start(entityId: string, entityType: string, plannedDurationSec?: number) {
+      const response = await apiClient.post('/runtime/start', { entity_id: entityId, entity_type: entityType, planned_duration_sec: plannedDurationSec });
+      return response.data;
+    },
+    async pause(entityId: string) {
+      const response = await apiClient.post('/runtime/pause', { entity_id: entityId });
+      return response.data;
+    },
+    async resume(entityId: string) {
+      const response = await apiClient.post('/runtime/resume', { entity_id: entityId });
+      return response.data;
+    },
+    async complete(entityId: string, completionSource: string = 'MANUAL') {
+      const response = await apiClient.post('/runtime/complete', { entity_id: entityId, completion_source: completionSource });
+      return response.data;
+    }
   }
 };

@@ -8,20 +8,29 @@ import uuid
 from datetime import datetime, timezone
 from database.db import db
 
+
 class Intervention(db.Model):
     __tablename__ = "interventions"
-    
+
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.String(36), nullable=False, index=True)
-    type = db.Column(db.String(50), nullable=False) # procrastination, rescue, twin_forecast, calendar_overload, accountability
-    severity = db.Column(db.String(20), nullable=False) # Critical, High, Medium, Low
-    priority_score = db.Column(db.Integer, default=0) # 0-100
-    confidence_score = db.Column(db.Integer, default=0) # 0-100
-    trigger_source = db.Column(db.String(100), nullable=False) # e.g., 'Digital Twin Forecast', 'Accountability Analytics'
+    type = db.Column(
+        db.String(50), nullable=False
+    )  # procrastination, rescue, twin_forecast, calendar_overload, accountability
+    severity = db.Column(db.String(20), nullable=False)  # Critical, High, Medium, Low
+    priority_score = db.Column(db.Integer, default=0)  # 0-100
+    confidence_score = db.Column(db.Integer, default=0)  # 0-100
+    trigger_source = db.Column(
+        db.String(100), nullable=False
+    )  # e.g., 'Digital Twin Forecast', 'Accountability Analytics'
     message = db.Column(db.Text, nullable=False)
-    recommended_action = db.Column(db.JSON, nullable=False) # e.g., {"action": "reschedule", "target": "Task_A", "suggested_time": "14:00"}
-    
-    created_at = db.Column(db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    recommended_action = db.Column(
+        db.JSON, nullable=False
+    )  # e.g., {"action": "reschedule", "target": "Task_A", "suggested_time": "14:00"}
+
+    created_at = db.Column(
+        db.DateTime, nullable=False, default=lambda: datetime.now(timezone.utc)
+    )
     resolved = db.Column(db.Boolean, default=False)
     resolved_at = db.Column(db.DateTime, nullable=True)
 
@@ -38,12 +47,13 @@ class Intervention(db.Model):
             "recommended_action": self.recommended_action,
             "created_at": self.created_at.isoformat(),
             "resolved": self.resolved,
-            "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None
+            "resolved_at": self.resolved_at.isoformat() if self.resolved_at else None,
         }
+
 
 class Threat(db.Model):
     __tablename__ = "threats"
-    
+
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.String(36), nullable=False, index=True)
     type = db.Column(db.String(50), nullable=False)
@@ -64,5 +74,5 @@ class Threat(db.Model):
             "message": self.message,
             "details": self.details,
             "status": self.status,
-            "created_at": self.created_at.isoformat() if self.created_at else None
+            "created_at": self.created_at.isoformat() if self.created_at else None,
         }

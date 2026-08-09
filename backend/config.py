@@ -30,16 +30,16 @@ class BaseConfig:
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_size": 10,
         "pool_recycle": 1800,  # recycle connections every 30 mins to avoid Neon drops
-        "pool_pre_ping": True, # Test connections before handing out to prevent 'server closed the connection unexpectedly'
-        "max_overflow": 20
+        "pool_pre_ping": True,  # Test connections before handing out to prevent 'server closed the connection unexpectedly'
+        "max_overflow": 20,
     }
 
     # ── CORS ──────────────────────────────────────────────────
     # Comma-separated list of allowed origins.
     # Example: "http://localhost:5173,https://deadlineos.vercel.app"
-    CORS_ORIGINS: list[str] = os.getenv(
-        "CORS_ORIGINS", "http://localhost:5173"
-    ).split(",")
+    CORS_ORIGINS: list[str] = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(
+        ","
+    )
 
     # ── Google AI / Gemini ────────────────────────────────────
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
@@ -51,7 +51,7 @@ class BaseConfig:
     GEMINI_RETRY_DELAY: float = float(os.getenv("GEMINI_RETRY_DELAY", "1.5"))
 
     # ── Response Cache (in-memory TTL) ────────────────────────
-    GEMINI_CACHE_TTL: int = int(os.getenv("GEMINI_CACHE_TTL", "300"))   # seconds
+    GEMINI_CACHE_TTL: int = int(os.getenv("GEMINI_CACHE_TTL", "300"))  # seconds
     GEMINI_CACHE_MAXSIZE: int = int(os.getenv("GEMINI_CACHE_MAXSIZE", "100"))
 
     # ── WebSocket ─────────────────────────────────────────────
@@ -68,6 +68,7 @@ class BaseConfig:
 
 class DevelopmentConfig(BaseConfig):
     """Local development — verbose output, debug mode on."""
+
     DEBUG = True
     SQLALCHEMY_ECHO = False
     LOG_LEVEL = "DEBUG"
@@ -75,6 +76,7 @@ class DevelopmentConfig(BaseConfig):
 
 class TestingConfig(BaseConfig):
     """Isolated test runs — in-memory database."""
+
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
@@ -82,6 +84,7 @@ class TestingConfig(BaseConfig):
 
 class ProductionConfig(BaseConfig):
     """Production — strict settings, no debug."""
+
     DEBUG = False
     SQLALCHEMY_ECHO = False
     LOG_LEVEL = "WARNING"

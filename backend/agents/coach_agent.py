@@ -9,6 +9,7 @@ from models.intelligence import CoachReport
 from database.db import db
 import json
 
+
 class CoachAgent:
     def __init__(self, gemini_service):
         self.gemini = gemini_service
@@ -17,17 +18,49 @@ class CoachAgent:
         return {
             "type": "object",
             "properties": {
-                "strengths": {"type": "array", "items": {"type": "string"}, "description": "What the user does well"},
-                "weaknesses": {"type": "array", "items": {"type": "string"}, "description": "Areas needing improvement"},
-                "insights": {"type": "array", "items": {"type": "string"}, "description": "Deep productivity insights"},
-                "improvement_plan": {"type": "array", "items": {"type": "string"}, "description": "Step-by-step plan"},
-                "weekly_challenge": {"type": "string", "description": "A specific, tailored challenge for this week"},
-                "recommendations": {"type": "array", "items": {"type": "string"}, "description": "Actionable advice"}
+                "strengths": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "What the user does well",
+                },
+                "weaknesses": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Areas needing improvement",
+                },
+                "insights": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Deep productivity insights",
+                },
+                "improvement_plan": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Step-by-step plan",
+                },
+                "weekly_challenge": {
+                    "type": "string",
+                    "description": "A specific, tailored challenge for this week",
+                },
+                "recommendations": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Actionable advice",
+                },
             },
-            "required": ["strengths", "weaknesses", "insights", "improvement_plan", "weekly_challenge", "recommendations"]
+            "required": [
+                "strengths",
+                "weaknesses",
+                "insights",
+                "improvement_plan",
+                "weekly_challenge",
+                "recommendations",
+            ],
         }
 
-    def generate_coaching(self, active_tasks: List[Dict], metrics: Dict) -> Dict[str, Any]:
+    def generate_coaching(
+        self, active_tasks: List[Dict], metrics: Dict
+    ) -> Dict[str, Any]:
         """Provides coaching insights based on metrics and current workload."""
         prompt = f"""
         You are the DeadlineOS Coach Agent. Review the user's workload and accountability metrics.
@@ -37,11 +70,12 @@ class CoachAgent:
         
         Act as an elite personal productivity coach. Be motivating but demanding.
         """
-        
+
         response_data = self.gemini.generate_structured(prompt, self._get_schema())
-        
+
         try:
             from flask import g
+
             uid = getattr(g, "user_id", None)
             report = CoachReport(
                 user_id=uid,
@@ -50,15 +84,15 @@ class CoachAgent:
                 insights=response_data.get("insights", []),
                 improvement_plan=response_data.get("improvement_plan", []),
                 weekly_challenge=response_data.get("weekly_challenge", ""),
-                recommendations=response_data.get("recommendations", [])
+                recommendations=response_data.get("recommendations", []),
             )
             db.session.add(report)
             db.session.commit()
-            
+
             response_data["id"] = report.id
-            
+
         except Exception:
             db.session.rollback()
             pass
-            
+
         return response_data
