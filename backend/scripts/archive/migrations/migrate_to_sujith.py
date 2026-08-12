@@ -9,7 +9,7 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY")
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
-email = os.environ.get("DEMO_USER_EMAIL", "demo@deadlineos.com")
+email = os.environ.get("DEMO_USER_EMAIL", "admin@deadlineos.com")
 password = os.environ.get("DEMO_USER_PASSWORD", "demo-password-placeholder")
 
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY")

@@ -15,6 +15,7 @@ import { Register } from './pages/auth/Register';
 
 const Landing = React.lazy(() => import('./pages/Landing').then(m => ({ default: m.Landing })));
 const Dashboard = React.lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const Today = React.lazy(() => import('./pages/Today/Today').then(m => ({ default: m.Today })));
 const Planner = React.lazy(() => import('./pages/Planner').then(m => ({ default: m.Planner })));
 const Rescue = React.lazy(() => import('./pages/Rescue').then(m => ({ default: m.Rescue })));
 const DigitalTwin = React.lazy(() => import('./pages/DigitalTwin').then(m => ({ default: m.DigitalTwin })));
@@ -52,6 +53,7 @@ const AnimatedRoutes = () => {
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<PageReveal><Dashboard /></PageReveal>} />
+          <Route path="/today" element={<PageReveal><Today /></PageReveal>} />
           <Route path="/planner" element={<PageReveal><Planner /></PageReveal>} />
           <Route path="/rescue" element={<PageReveal><Rescue /></PageReveal>} />
           <Route path="/digital-twin" element={<PageReveal><DigitalTwin /></PageReveal>} />

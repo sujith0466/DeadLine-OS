@@ -130,6 +130,12 @@ export const DeadlineOSApi = {
     return response.data;
   },
 
+  
+  // ── TODAY SURFACE ────────────────────────────────────────────────────────
+  async getTodayActivities() {
+    const response = await apiClient.get('/today');
+    return response.data;
+  },
   // ── TASKS ─────────────────────────────────────────────────────────────
   
   async getTasks() {

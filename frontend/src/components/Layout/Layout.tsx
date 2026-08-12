@@ -1,5 +1,6 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
+import { FocusSession } from '../FocusSession/FocusSession';
 import { Sidebar } from './Sidebar';
 import { Navbar } from './Navbar';
 import { AppBackground } from './AppBackground';
@@ -13,6 +14,7 @@ export const Layout: React.FC = () => {
         <Navbar />
         <main className="flex-1 p-8 overflow-y-auto">
           <Outlet />
+          <FocusSession />
         </main>
       </div>
     </div>

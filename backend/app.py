@@ -298,6 +298,7 @@ def _register_blueprints(app: Flask) -> None:
     from api.demo import demo_bp
     from api.settings import settings_bp
     from api.runtime import runtime_bp
+    from api.today import today_bp
     
     # Register Domain Listeners
     import services.domain_listeners
@@ -342,12 +343,15 @@ def _register_blueprints(app: Flask) -> None:
     limiter.exempt(settings_bp)
 
     app.register_blueprint(runtime_bp, url_prefix="/api")
+
+    app.register_blueprint(today_bp, url_prefix="/api")
+    limiter.exempt(today_bp)
     limiter.exempt(runtime_bp)
 
     is_dev = os.getenv("FLASK_ENV", "development") == "development"
     if not is_dev:
         logging.getLogger(__name__).info(
-            "[ROUTES] Blueprints registered: health, tasks, agents, orchestration, analytics, calendar, interventions, goals, documents, voice, notifications, reports, users, demo"
+            "[ROUTES] Blueprints registered: health, tasks, agents, orchestration, analytics, calendar, interventions, goals, documents, voice, notifications, reports, users, demo, today"
         )
 
 
