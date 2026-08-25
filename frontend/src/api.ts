@@ -694,4 +694,35 @@ export const DeadlineOSApi = {
   chatAccountabilityPartner: (message: string, history?: any[]) =>
     apiClient.post('/ai/accountability/chat', { message, history: history || [] }).then(r => r.data),
 
+
+  // Phase 7: Analytics & Insights
+  getMorningBrief: (date?: string) =>
+    apiClient.get('/analytics/morning-brief', { params: { date } }).then(r => r.data),
+
+  getEveningReflection: (date?: string) =>
+    apiClient.get('/analytics/evening-reflection', { params: { date } }).then(r => r.data),
+
+  getDailyScore: (date?: string) =>
+    apiClient.get('/analytics/daily-score', { params: { date } }).then(r => r.data),
+
+  getHabitHealth: () =>
+    apiClient.get('/analytics/habit-health').then(r => r.data),
+
+  getGoalProgress: () =>
+    apiClient.get('/analytics/goal-progress').then(r => r.data),
+
+  getDeadlineHeatmap: (days: number = 30) =>
+    apiClient.get('/analytics/deadline-heatmap', { params: { days } }).then(r => r.data),
+
+  getTimelineAnalytics: (startDate?: string, endDate?: string, limit: number = 50) =>
+    apiClient.get('/analytics/timeline', { params: { start_date: startDate, end_date: endDate, limit } }).then(r => r.data),
+
+  getSessionAnalytics: (days: number = 30) =>
+    apiClient.get('/analytics/sessions', { params: { days } }).then(r => r.data),
+
+  getTrendsAnalytics: (days: number = 30) =>
+    apiClient.get('/analytics/trends', { params: { days } }).then(r => r.data),
+
+  interpretAnalytics: (days: number = 7) =>
+    apiClient.post('/analytics/ai/interpret', { days }).then(r => r.data),
 };
