@@ -44,6 +44,10 @@ class ReminderService:
     @classmethod
     def register_schedule_reminders(cls, slot: ScheduleSlot) -> List[Notification]:
         """Registers all configured pre-alerts and reminders for a ScheduleSlot."""
+        from services.recovery.service import RecoveryService
+        if RecoveryService.is_user_on_vacation(slot.user_id):
+            return []
+
         offsets = cls.get_user_offsets(slot.user_id)
         slot_start = slot.start_time.replace(tzinfo=timezone.utc) if slot.start_time.tzinfo is None else slot.start_time
         

@@ -612,4 +612,42 @@ export const DeadlineOSApi = {
     return response.data;
   },
 
+
+  // --- Phase 5: Recovery & Flexibility ---
+  skipToday: (data: { entity_id: string; entity_type?: string; schedule_id?: string; reason?: string }) =>
+    apiClient.post('/recovery/skip-today', data).then(r => r.data),
+
+  pauseActivity: (data: { entity_id: string; entity_type?: string; reason?: string }) =>
+    apiClient.post('/recovery/pause-activity', data).then(r => r.data),
+
+  resumeActivity: (data: { entity_id: string; entity_type?: string }) =>
+    apiClient.post('/recovery/resume-activity', data).then(r => r.data),
+
+  getRecoveryItems: () =>
+    apiClient.get('/recovery/items').then(r => r.data),
+
+  executeRecoveryAction: (data: { action: string; entity_id: string; entity_type?: string; schedule_id?: string; params?: any }) =>
+    apiClient.post('/recovery/action', data).then(r => r.data),
+
+  getSmartRecoveryRecommendations: () =>
+    apiClient.get('/recovery/smart-recommendations').then(r => r.data),
+
+  startVacationMode: (data: { start_date: string; end_date: string; suppress_notifications?: boolean; reason?: string }) =>
+    apiClient.post('/recovery/vacation/start', data).then(r => r.data),
+
+  endVacationMode: () =>
+    apiClient.post('/recovery/vacation/end').then(r => r.data),
+
+  getVacationStatus: () =>
+    apiClient.get('/recovery/vacation/status').then(r => r.data),
+
+  activateEmergencyMode: (data?: { reason?: string; auto_skip_non_critical?: boolean }) =>
+    apiClient.post('/recovery/emergency/activate', data || {}).then(r => r.data),
+
+  deactivateEmergencyMode: () =>
+    apiClient.post('/recovery/emergency/deactivate').then(r => r.data),
+
+  getEmergencyStatus: () =>
+    apiClient.get('/recovery/emergency/status').then(r => r.data),
+
 };

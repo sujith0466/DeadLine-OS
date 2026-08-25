@@ -87,6 +87,7 @@ PHASE*.md
 docs/verification/
 backend/scripts/phase3/
 backend/scripts/phase4/
+backend/scripts/phase5/
 
 # ------------------------------------------------------------------------------
 # 7. Deployment / Services Artifacts

@@ -300,6 +300,7 @@ def _register_blueprints(app: Flask) -> None:
     from api.runtime import runtime_bp
     from api.today import today_bp
     from api.schedule import schedule_bp
+    from api.recovery import recovery_bp
     
     # Register Domain Listeners
     import services.domain_listeners
@@ -347,6 +348,8 @@ def _register_blueprints(app: Flask) -> None:
 
     app.register_blueprint(today_bp, url_prefix="/api")
     app.register_blueprint(schedule_bp, url_prefix="/api")
+    app.register_blueprint(recovery_bp, url_prefix="/api")
+    limiter.exempt(recovery_bp)
     limiter.exempt(schedule_bp)
     limiter.exempt(today_bp)
     limiter.exempt(runtime_bp)
