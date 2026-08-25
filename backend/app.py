@@ -317,7 +317,7 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(orchestration_bp, url_prefix="/api")
     limiter.exempt(orchestration_bp)
 
-    app.register_blueprint(analytics_bp, url_prefix="/api/analytics")
+    app.register_blueprint(analytics_bp, url_prefix="/api")
     limiter.exempt(analytics_bp)
 
     app.register_blueprint(calendar_bp, url_prefix="/api")
