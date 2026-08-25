@@ -26,15 +26,48 @@ class SchedulingRepository:
         end_time: Optional[datetime] = None,
         status: Optional[str] = None
     ) -> List[ScheduleSlot]:
-        """Query user slots in UTC within a given time range."""
+        """Query user slots in UTC within a given time range safely."""
+        from utils.timezone import parse_datetime_safe
+
         query = ScheduleSlot.query.filter_by(user_id=user_id)
-        if start_time:
-            query = query.filter(ScheduleSlot.end_time >= start_time)
-        if end_time:
-            query = query.filter(ScheduleSlot.start_time <= end_time)
         if status:
             query = query.filter_by(status=status)
-        return query.order_by(ScheduleSlot.start_time.asc()).all()
+        slots = query.all()
+
+        if not start_time and not end_time:
+            return sorted(
+                slots,
+                key=lambda s: parse_datetime_safe(s.start_time) or datetime.min.replace(tzinfo=timezone.utc)
+            )
+
+        st_bound = parse_datetime_safe(start_time) if start_time else None
+        if st_bound and st_bound.tzinfo is None:
+            st_bound = st_bound.replace(tzinfo=timezone.utc)
+
+        et_bound = parse_datetime_safe(end_time) if end_time else None
+        if et_bound and et_bound.tzinfo is None:
+            et_bound = et_bound.replace(tzinfo=timezone.utc)
+
+        filtered = []
+        for s in slots:
+            s_st = parse_datetime_safe(s.start_time)
+            s_et = parse_datetime_safe(s.end_time)
+            if s_st and s_st.tzinfo is None:
+                s_st = s_st.replace(tzinfo=timezone.utc)
+            if s_et and s_et.tzinfo is None:
+                s_et = s_et.replace(tzinfo=timezone.utc)
+
+            if st_bound and s_et and s_et < st_bound:
+                continue
+            if et_bound and s_st and s_st > et_bound:
+                continue
+
+            filtered.append(s)
+
+        return sorted(
+            filtered,
+            key=lambda s: parse_datetime_safe(s.start_time) or datetime.min.replace(tzinfo=timezone.utc)
+        )
 
     @staticmethod
     def get_slots_by_entity(entity_type: str, entity_id: str) -> List[ScheduleSlot]:

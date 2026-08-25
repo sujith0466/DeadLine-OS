@@ -124,10 +124,13 @@ class CalendarService:
                 pass
 
         # 3. Fetch Scheduled Slots (Smart Scheduling)
+        from utils.timezone import parse_datetime_safe
         slots = SchedulingRepository.get_slots_by_user(uid, start, end)
         for s in slots:
-            s_start = s.start_time.replace(tzinfo=timezone.utc) if s.start_time.tzinfo is None else s.start_time
-            s_end = s.end_time.replace(tzinfo=timezone.utc) if s.end_time.tzinfo is None else s.end_time
+            s_start_dt = parse_datetime_safe(s.start_time) or datetime.now(timezone.utc)
+            s_start = s_start_dt.replace(tzinfo=timezone.utc) if s_start_dt.tzinfo is None else s_start_dt
+            s_end_dt = parse_datetime_safe(s.end_time) or s_start
+            s_end = s_end_dt.replace(tzinfo=timezone.utc) if s_end_dt.tzinfo is None else s_end_dt
             
             events.append({
                 "id": s.id,

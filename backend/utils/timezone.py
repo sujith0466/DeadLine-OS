@@ -18,7 +18,7 @@ Usage:
 
 import logging
 from datetime import datetime, timezone, timedelta
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Any, Union
 
 logger = logging.getLogger(__name__)
 
@@ -127,46 +127,75 @@ def get_user_timezone(user_id: Optional[str] = None) -> str:
     return DEFAULT_TIMEZONE
 
 
-def to_user_local(dt: datetime, tz_str: str) -> datetime:
+def parse_datetime_safe(dt_val: Any) -> Optional[datetime]:
     """
-    Convert a UTC datetime to the user's local timezone.
+    Ensure dt_val is converted to a datetime object.
+    Supports datetime instances and ISO/standard datetime strings.
+    """
+    if dt_val is None:
+        return None
+    if isinstance(dt_val, datetime):
+        return dt_val
+    if isinstance(dt_val, str):
+        val = dt_val.strip()
+        if not val:
+            return None
+        try:
+            return datetime.fromisoformat(val.replace("Z", "+00:00"))
+        except Exception:
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M:%S.%f", "%Y-%m-%d"):
+                try:
+                    return datetime.strptime(val, fmt)
+                except ValueError:
+                    pass
+    return None
+
+
+def to_user_local(dt: Any, tz_str: str) -> Optional[datetime]:
+    """
+    Convert a UTC datetime (or datetime string) to the user's local timezone.
 
     Parameters
     ----------
-    dt     : A timezone-aware UTC datetime.
+    dt     : A timezone-aware UTC datetime or ISO string.
     tz_str : IANA timezone string (e.g. "Asia/Kolkata").
 
     Returns
     -------
     A timezone-aware datetime in the target timezone.
-    Returns the original UTC datetime if conversion fails.
+    Returns the original UTC datetime if conversion fails, or None if dt is None.
     """
     if dt is None:
-        return dt  # type: ignore[return-value]
+        return None
+
+    dt_obj = parse_datetime_safe(dt)
+    if dt_obj is None:
+        logger.warning("[timezone] Invalid datetime input to to_user_local: %r", dt)
+        return None
 
     # Ensure dt is UTC-aware
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=_UTC)
+    if dt_obj.tzinfo is None:
+        dt_obj = dt_obj.replace(tzinfo=_UTC)
 
     zi = _get_zoneinfo(tz_str)
     if zi is None:
         logger.warning("[timezone] Invalid tz_str '%s', returning UTC.", tz_str)
-        return dt
+        return dt_obj
 
     try:
-        return dt.astimezone(zi)  # type: ignore[arg-type]
+        return dt_obj.astimezone(zi)
     except Exception as e:
         logger.warning("[timezone] astimezone failed for tz '%s': %s", tz_str, e)
-        return dt
+        return dt_obj
 
 
-def to_utc(dt: datetime, tz_str: str) -> datetime:
+def to_utc(dt: Any, tz_str: str) -> Optional[datetime]:
     """
-    Convert a local naive (or aware) datetime to UTC.
+    Convert a local naive (or aware) datetime or string to UTC.
 
     Parameters
     ----------
-    dt     : A datetime, possibly naive (assumed to be in tz_str).
+    dt     : A datetime or ISO string, possibly naive (assumed to be in tz_str).
     tz_str : IANA timezone string of the source timezone.
 
     Returns
@@ -174,26 +203,31 @@ def to_utc(dt: datetime, tz_str: str) -> datetime:
     A timezone-aware UTC datetime.
     """
     if dt is None:
-        return dt  # type: ignore[return-value]
+        return None
+
+    dt_obj = parse_datetime_safe(dt)
+    if dt_obj is None:
+        logger.warning("[timezone] Invalid datetime input to to_utc: %r", dt)
+        return None
 
     # If already UTC-aware, just normalise
-    if dt.tzinfo is not None:
+    if dt_obj.tzinfo is not None:
         try:
-            return dt.astimezone(_UTC)
+            return dt_obj.astimezone(_UTC)
         except Exception:
             pass
 
     zi = _get_zoneinfo(tz_str)
     if zi is None:
         logger.warning("[timezone] Invalid tz_str '%s', treating as UTC.", tz_str)
-        return dt.replace(tzinfo=_UTC)
+        return dt_obj.replace(tzinfo=_UTC)
 
     try:
-        aware_local = dt.replace(tzinfo=zi)  # type: ignore[arg-type]
+        aware_local = dt_obj.replace(tzinfo=zi)
         return aware_local.astimezone(_UTC)
     except Exception as e:
         logger.warning("[timezone] to_utc failed for tz '%s': %s", tz_str, e)
-        return dt.replace(tzinfo=_UTC)
+        return dt_obj.replace(tzinfo=_UTC)
 
 
 def slot_times_to_utc(

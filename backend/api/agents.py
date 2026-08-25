@@ -307,10 +307,10 @@ def run_planning_agent():
             new_schedule = Schedule(
                 user_id=g.user_id,
                 target_date=(
-                    result.get("schedule", [{}])[0].get(
+                    result["schedule"][0].get(
                         "date", datetime.now().strftime("%Y-%m-%d")
                     )
-                    if result.get("schedule")
+                    if (result.get("schedule") and len(result["schedule"]) > 0)
                     else datetime.now().strftime("%Y-%m-%d")
                 ),
                 confidence_score=result.get("confidence_score", 100),
@@ -328,10 +328,10 @@ def run_planning_agent():
 
             user_tz = get_user_timezone(g.user_id)
             target_date_str = (
-                result.get("schedule", [{}])[0].get(
+                result["schedule"][0].get(
                     "date", datetime.now().strftime("%Y-%m-%d")
                 )
-                if result.get("schedule")
+                if (result.get("schedule") and len(result["schedule"]) > 0)
                 else datetime.now().strftime("%Y-%m-%d")
             )
 

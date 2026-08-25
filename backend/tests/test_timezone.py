@@ -43,3 +43,47 @@ def test_to_user_local():
     utc_dt = datetime(2026, 7, 16, 13, 0, tzinfo=timezone.utc)
     local_dt = to_user_local(utc_dt, "America/New_York")
     assert local_dt.strftime("%H:%M") == "09:00"
+
+
+def test_to_user_local_string_regression():
+    """Reproduce previous AttributeError: 'str' object has no attribute 'tzinfo' and verify fix."""
+    str_iso = "2026-07-16T13:00:00+00:00"
+    local_dt = to_user_local(str_iso, "America/New_York")
+    assert local_dt is not None
+    assert local_dt.strftime("%H:%M") == "09:00"
+
+    str_z = "2026-07-16T13:00:00Z"
+    local_dt2 = to_user_local(str_z, "America/New_York")
+    assert local_dt2 is not None
+    assert local_dt2.strftime("%H:%M") == "09:00"
+
+    str_naive = "2026-07-16 13:00:00"
+    local_dt3 = to_user_local(str_naive, "America/New_York")
+    assert local_dt3 is not None
+    assert local_dt3.strftime("%H:%M") == "09:00"
+
+
+def test_to_utc_string_support():
+    str_local = "2026-07-16 09:00:00"
+    utc_dt = to_utc(str_local, "America/New_York")
+    assert utc_dt is not None
+    assert utc_dt.isoformat() == "2026-07-16T13:00:00+00:00"
+
+
+def test_schedule_slot_serialization():
+    import models.user
+    import models.task
+    import models.goal
+    import models.schedule
+    from models.schedule import ScheduleSlot
+    slot = ScheduleSlot(
+        user_id="test-user",
+        task_title="Review architecture",
+        start_time="2026-07-16T13:00:00+00:00",
+        end_time="2026-07-16T14:30:00+00:00",
+        status="CONFIRMED"
+    )
+    d = slot.to_dict()
+    assert d["title"] == "Review architecture"
+    assert d["start_time_utc"] == "2026-07-16T13:00:00+00:00"
+    assert d["end_time_utc"] == "2026-07-16T14:30:00+00:00"

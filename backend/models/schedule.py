@@ -121,7 +121,7 @@ class ScheduleSlot(db.Model):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
 
     def to_dict(self):
-        from utils.timezone import get_user_timezone, to_user_local
+        from utils.timezone import get_user_timezone, to_user_local, parse_datetime_safe
 
         user_tz = get_user_timezone(self.user_id)
 
@@ -135,9 +135,12 @@ class ScheduleSlot(db.Model):
         def _iso_utc(dt):
             if not dt:
                 return None
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            return dt.astimezone(timezone.utc).isoformat()
+            dt_obj = parse_datetime_safe(dt)
+            if not dt_obj:
+                return str(dt)
+            if dt_obj.tzinfo is None:
+                dt_obj = dt_obj.replace(tzinfo=timezone.utc)
+            return dt_obj.astimezone(timezone.utc).isoformat()
 
         return {
             "id": self.id,
