@@ -30,13 +30,15 @@ class AIProvider(abc.ABC):
         system_prompt: str,
         user_prompt: str,
         schema: Dict[str, Any],
-        fallback_fn: Optional[Callable[[], Dict[str, Any]]] = None
+        fallback_fn: Optional[Callable[[], Dict[str, Any]]] = None,
+        *args,
+        **kwargs
     ) -> Dict[str, Any]:
         """Generates schema-conforming structured JSON output."""
         pass
 
     @abc.abstractmethod
-    def generate_text(self, system_prompt: str, user_prompt: str) -> str:
+    def generate_text(self, system_prompt: str, user_prompt: str, *args, **kwargs) -> str:
         """Generates plain text completion."""
         pass
 
@@ -64,7 +66,9 @@ class OpenRouterAIProvider(AIProvider):
         system_prompt: str,
         user_prompt: str,
         schema: Dict[str, Any],
-        fallback_fn: Optional[Callable[[], Dict[str, Any]]] = None
+        fallback_fn: Optional[Callable[[], Dict[str, Any]]] = None,
+        *args,
+        **kwargs
     ) -> Dict[str, Any]:
         from services.ai.safety import AISafety
 
@@ -133,7 +137,7 @@ class OpenRouterAIProvider(AIProvider):
             result["_fallback_reason"] = str(e)
             return result
 
-    def generate_text(self, system_prompt: str, user_prompt: str) -> str:
+    def generate_text(self, system_prompt: str, user_prompt: str, *args, **kwargs) -> str:
         from services.ai.safety import AISafety
 
         AISafety.assert_prompt_safe(f"{system_prompt}\n{user_prompt}")
@@ -192,7 +196,9 @@ class GeminiAIProvider(AIProvider):
         system_prompt: str,
         user_prompt: str,
         schema: Dict[str, Any],
-        fallback_fn: Optional[Callable[[], Dict[str, Any]]] = None
+        fallback_fn: Optional[Callable[[], Dict[str, Any]]] = None,
+        *args,
+        **kwargs
     ) -> Dict[str, Any]:
         from services.ai.safety import AISafety
 
@@ -227,7 +233,7 @@ class GeminiAIProvider(AIProvider):
             result["_fallback_reason"] = str(e)
             return result
 
-    def generate_text(self, system_prompt: str, user_prompt: str) -> str:
+    def generate_text(self, system_prompt: str, user_prompt: str, *args, **kwargs) -> str:
         from services.ai.safety import AISafety
         AISafety.assert_prompt_safe(f"{system_prompt}\n{user_prompt}")
 
@@ -250,7 +256,9 @@ class DeterministicFallbackProvider(AIProvider):
         system_prompt: str,
         user_prompt: str,
         schema: Dict[str, Any],
-        fallback_fn: Optional[Callable[[], Dict[str, Any]]] = None
+        fallback_fn: Optional[Callable[[], Dict[str, Any]]] = None,
+        *args,
+        **kwargs
     ) -> Dict[str, Any]:
         from services.ai.safety import AISafety
         if fallback_fn:
@@ -261,7 +269,7 @@ class DeterministicFallbackProvider(AIProvider):
         result["_fallback_used"] = True
         return result
 
-    def generate_text(self, system_prompt: str, user_prompt: str) -> str:
+    def generate_text(self, system_prompt: str, user_prompt: str, *args, **kwargs) -> str:
         return "Deterministic baseline response."
 
 
@@ -286,7 +294,9 @@ class HybridFailoverAIProvider(AIProvider):
         system_prompt: str,
         user_prompt: str,
         schema: Dict[str, Any],
-        fallback_fn: Optional[Callable[[], Dict[str, Any]]] = None
+        fallback_fn: Optional[Callable[[], Dict[str, Any]]] = None,
+        *args,
+        **kwargs
     ) -> Dict[str, Any]:
         # 1. Attempt Primary (OpenRouter)
         try:
@@ -294,7 +304,9 @@ class HybridFailoverAIProvider(AIProvider):
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 schema=schema,
-                fallback_fn=None
+                fallback_fn=None,
+                *args,
+                **kwargs
             )
             # Check if primary succeeded without internal fallback triggering
             if primary_res and not primary_res.get("_fallback_used", False):
@@ -311,7 +323,9 @@ class HybridFailoverAIProvider(AIProvider):
                 system_prompt=system_prompt,
                 user_prompt=user_prompt,
                 schema=schema,
-                fallback_fn=fallback_fn
+                fallback_fn=fallback_fn,
+                *args,
+                **kwargs
             )
             if fallback_res and not fallback_res.get("_fallback_used", False):
                 fallback_res["_fallback_triggered"] = True
@@ -330,16 +344,16 @@ class HybridFailoverAIProvider(AIProvider):
             res["_fallback_reason"] = f"Primary: {primary_error} | Fallback: {str(e)}"
             return res
 
-    def generate_text(self, system_prompt: str, user_prompt: str) -> str:
+    def generate_text(self, system_prompt: str, user_prompt: str, *args, **kwargs) -> str:
         try:
-            res = self.primary.generate_text(system_prompt, user_prompt)
+            res = self.primary.generate_text(system_prompt, user_prompt, *args, **kwargs)
             if res and not res.startswith("OpenRouter API key not configured") and not res.startswith("AI text response unavailable"):
                 return res
         except Exception as e:
             logger.warning(f"Primary text generation failed: {e}")
 
         try:
-            return self.fallback.generate_text(system_prompt, user_prompt)
+            return self.fallback.generate_text(system_prompt, user_prompt, *args, **kwargs)
         except Exception as e:
             logger.warning(f"Fallback text generation failed: {e}")
             return "Deterministic baseline response."

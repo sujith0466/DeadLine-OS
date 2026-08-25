@@ -73,6 +73,15 @@ def _set_agent_state(agent: str, state: str) -> None:
         _agent_status[agent]["last_run"] = _now_iso()
 
 
+def _get_ai_service():
+    from services.ai.provider import get_default_ai_provider
+    return (
+        current_app.extensions.get("gemini_service")
+        or current_app.extensions.get("ai_provider")
+        or get_default_ai_provider()
+    )
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 
 

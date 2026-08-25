@@ -183,16 +183,19 @@ def create_app(config_override=None) -> Flask:
     if not is_dev:
         logger.info("[DB] Database: %s", app.config["SQLALCHEMY_DATABASE_URI"])
 
-    # ── 4. Create database tables (idempotent) ─────────────────────────────────
+    # ── 4. Ensure Model Registration ───────────────────────────────────────────
     with app.app_context():
-        # Import all models so their metadata is registered before create_all()
+        # Import all models so their metadata is registered with SQLAlchemy
         import models  # noqa: F401
 
-        db.create_all()
         if not is_dev:
-            logger.info("[DB] Database tables ensured.")
+            logger.info("[DB] Database schema managed via Alembic migrations.")
 
-    # ── 6. Initialise Gemini Service ───────────────────────────────────────────
+    # ── 5. Initialise Central Hybrid AI Provider (OpenRouter Primary -> Gemini Fallback)
+    from services.ai.provider import get_default_ai_provider
+    app.extensions["ai_provider"] = get_default_ai_provider()
+
+    # ── 6. Initialise Gemini Service (Legacy Wrapper) ──────────────────────────
     if app.config.get("GEMINI_API_KEY"):
         gemini = GeminiService(
             api_key=app.config["GEMINI_API_KEY"],
@@ -211,9 +214,8 @@ def create_app(config_override=None) -> Flask:
                 app.config["GEMINI_MODEL"],
             )
     else:
-        logger.warning(
-            "[GEMINI] GEMINI_API_KEY not set. GeminiService disabled. "
-            "Add it to your .env file."
+        logger.info(
+            "[AI] Running with central AI Provider (OpenRouter Primary -> Gemini Fallback -> Deterministic Safe Fallback)."
         )
 
     # ── 7. Register Blueprints ─────────────────────────────────────────────────

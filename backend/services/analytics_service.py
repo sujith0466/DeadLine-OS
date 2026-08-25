@@ -230,8 +230,9 @@ class AnalyticsService:
 
     @classmethod
     def generate_chief_of_staff_briefing(cls, user_id: str = None) -> str:
-        """Generates dynamic briefing based on system telemetry."""
-        from flask import current_app, g
+        """Generates dynamic briefing based on system telemetry using Phase 6 AI Provider hierarchy."""
+        from flask import g
+        from services.ai.provider import get_default_ai_provider
 
         uid = user_id or getattr(g, "user_id", None)
 
@@ -244,31 +245,63 @@ class AnalyticsService:
         prod_score = overview.get("productivity_score", 0)
         risk_level = overview.get("future_risk_forecast", "Unknown")
 
-        gemini = current_app.extensions.get("gemini_service") if current_app else None
+        try:
+            has_interv = int(open_interventions) > 0
+        except (TypeError, ValueError):
+            has_interv = False
 
-        if gemini:
-            prompt = (
-                f"Act as an AI Chief-of-Staff. Provide a strictly 2-sentence executive briefing. "
-                f"Telemetry: Productivity={prod_score}%, Active Tasks={active_goals}, "
-                f"Open Interventions={open_interventions}, Future Risk={risk_level}. "
-                f"Tone: Professional, crisp, Palantir-esque."
-            )
+        interv_str = (
+            f" {open_interventions} open interventions require attention."
+            if has_interv
+            else " No critical interventions at this time."
+        )
+        deterministic_fallback = (
+            f"System operations are active with a productivity score of {prod_score}%. "
+            f"Future risk is currently assessed as {risk_level}.{interv_str}"
+        )
+
+        from flask import current_app
+        gemini = current_app.extensions.get("gemini_service") if current_app else None
+        if gemini and hasattr(gemini, "generate_text"):
             try:
+                prompt = (
+                    f"Act as an AI Chief-of-Staff. Provide a strictly 2-sentence executive briefing. "
+                    f"Telemetry: Productivity={prod_score}%, Active Tasks={active_goals}, "
+                    f"Open Interventions={open_interventions}, Future Risk={risk_level}. "
+                    f"Tone: Professional, crisp, Palantir-esque."
+                )
                 briefing_text = gemini.generate_text(prompt)
                 if briefing_text:
                     return briefing_text.replace("\n", " ").strip()
             except Exception as e:
                 import logging
+                logging.getLogger(__name__).warning(f"Gemini extension briefing failed: {e}")
 
-                logging.getLogger(__name__).warning(
-                    f"Failed to generate AI briefing, falling back to deterministic: {e}"
-                )
-        interv_str = (
-            f" {open_interventions} open interventions require attention."
-            if open_interventions > 0
-            else " No critical interventions at this time."
-        )
-        return f"System operations are active with a productivity score of {prod_score}%. Future risk is currently assessed as {risk_level}.{interv_str}"
+        try:
+            ai_provider = get_default_ai_provider()
+            system_prompt = (
+                "Act as an AI Chief-of-Staff for an executive productivity OS. "
+                "Provide a strictly 2-sentence executive summary. Tone: Crisp, professional, strategic."
+            )
+            user_prompt = (
+                f"Telemetry: Productivity={prod_score}%, Active Tasks={active_goals}, "
+                f"Open Interventions={open_interventions}, Future Risk={risk_level}."
+            )
+            briefing_text = ai_provider.generate_text(system_prompt, user_prompt)
+            if (
+                briefing_text
+                and not briefing_text.startswith("OpenRouter API key not configured")
+                and not briefing_text.startswith("AI text response unavailable")
+                and not briefing_text.startswith("Deterministic baseline")
+            ):
+                return briefing_text.replace("\n", " ").strip()
+        except Exception as e:
+            import logging
+            logging.getLogger(__name__).warning(
+                f"Failed to generate AI briefing, using deterministic fallback: {e}"
+            )
+
+        return deterministic_fallback
 
     @classmethod
     def get_agent_metrics(cls, agent_name: str, user_id: str = None) -> Dict[str, Any]:

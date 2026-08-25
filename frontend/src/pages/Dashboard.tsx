@@ -57,19 +57,20 @@ export const Dashboard: React.FC = () => {
   const [analytics, setAnalytics] = useState<any>(null);
   const [feed, setFeed] = useState<any[]>([]);
   const [briefing, setBriefing] = useState<string>('');
+  const [briefingLoading, setBriefingLoading] = useState<boolean>(true);
   const [agentStatus, setAgentStatus] = useState<any>({ active_agents: 0, online_agents: 12 });
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchData = async () => {
+    // 1. Fetch primary fast metrics immediately
+    const fetchPrimaryData = async () => {
       try {
-        const [tasksRes, analyticsRes, feedRes, briefingRes, agentRes] = await Promise.all([
+        const [tasksRes, analyticsRes, feedRes, agentRes] = await Promise.all([
           DeadlineOSApi.getTasks().catch(() => ({ tasks: [] })),
           DeadlineOSApi.getAnalyticsOverview().catch(() => ({ data: null })),
           DeadlineOSApi.getOrchestrationFeed().catch(() => ({ feed: [] })),
-          DeadlineOSApi.getAnalyticsBriefing().catch(() => ({ data: 'System operations are currently offline.' })),
           DeadlineOSApi.getAgentStatus().catch(() => ({ data: { active_agents: 0, online_agents: 0 } }))
         ]);
         
@@ -82,7 +83,6 @@ export const Dashboard: React.FC = () => {
           ai_confidence_score: 0
         });
         setFeed(feedRes?.feed || []);
-        setBriefing(briefingRes?.data || 'System operations are optimal. Future risk is Low.');
         setAgentStatus(agentRes?.data || { active_agents: 0, online_agents: 0 });
       } catch (err) {
         console.error("Failed to load dashboard data", err);
@@ -98,7 +98,22 @@ export const Dashboard: React.FC = () => {
         setLoading(false);
       }
     };
-    fetchData();
+
+    // 2. Fetch AI briefing asynchronously without blocking the UI
+    const fetchBriefingData = async () => {
+      setBriefingLoading(true);
+      try {
+        const briefingRes = await DeadlineOSApi.getAnalyticsBriefing();
+        setBriefing(briefingRes?.data || 'System operations are optimal. Future risk is Low.');
+      } catch {
+        setBriefing('System operations are optimal. Future risk is Low. All systems operational.');
+      } finally {
+        setBriefingLoading(false);
+      }
+    };
+
+    fetchPrimaryData();
+    fetchBriefingData();
   }, []);
 
   const handleDownloadReport = async () => {
@@ -187,9 +202,16 @@ export const Dashboard: React.FC = () => {
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_10px_rgba(52,211,153,0.8)]" />
                 <h2 className="text-xs font-black text-white uppercase tracking-[0.2em] opacity-90">AI Chief-of-Staff Briefing</h2>
               </div>
-              <p className="text-xl text-white font-semibold leading-relaxed max-w-3xl drop-shadow-md">
-                {briefing}
-              </p>
+              {briefingLoading ? (
+                <div className="space-y-2 py-1 max-w-2xl">
+                  <div className="h-4 bg-cyan-500/20 rounded animate-pulse w-3/4" />
+                  <div className="h-4 bg-cyan-500/10 rounded animate-pulse w-1/2" />
+                </div>
+              ) : (
+                <p className="text-xl text-white font-semibold leading-relaxed max-w-3xl drop-shadow-md">
+                  {briefing}
+                </p>
+              )}
             </div>
             <motion.button 
               whileHover={{ scale: 1.02 }}
