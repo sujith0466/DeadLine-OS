@@ -650,4 +650,48 @@ export const DeadlineOSApi = {
   getEmergencyStatus: () =>
     apiClient.get('/recovery/emergency/status').then(r => r.data),
 
+  // Phase 6: AI Intelligence
+  getDelayRisk: (entityId?: string) =>
+    apiClient.post('/ai/delay-risk', { entity_id: entityId }).then(r => r.data),
+
+  getMissPrediction: () =>
+    apiClient.post('/ai/miss-prediction', {}).then(r => r.data),
+
+  getReminderTiming: (slot_duration_minutes: number, priority_score: number) =>
+    apiClient.post('/ai/reminder-timing', { slot_duration_minutes, priority_score }).then(r => r.data),
+
+  getWorkloadBalancer: () =>
+    apiClient.post('/ai/workload-balancer', {}).then(r => r.data),
+
+  getWorkloadStrain: () =>
+    apiClient.post('/ai/workload-strain', {}).then(r => r.data),
+
+  getEnergyPreferences: () =>
+    apiClient.get('/ai/energy-preferences').then(r => r.data),
+
+  updateEnergyPreferences: (data: {
+    peak_focus_start?: string;
+    peak_focus_end?: string;
+    low_energy_start?: string;
+    low_energy_end?: string;
+    preferred_session_duration_minutes?: number;
+    preferred_break_duration_minutes?: number;
+  }) =>
+    apiClient.put('/ai/energy-preferences', data).then(r => r.data),
+
+  getDigitalTwinProfile: () =>
+    apiClient.get('/ai/digital-twin/profile').then(r => r.data),
+
+  rebuildDigitalTwinProfile: () =>
+    apiClient.post('/ai/digital-twin/rebuild', {}).then(r => r.data),
+
+  resetDigitalTwinProfile: () =>
+    apiClient.post('/ai/digital-twin/reset', {}).then(r => r.data),
+
+  getWeeklyCoachReport: (persist: boolean = true) =>
+    apiClient.post('/ai/coach/weekly', { persist }).then(r => r.data),
+
+  chatAccountabilityPartner: (message: string, history?: any[]) =>
+    apiClient.post('/ai/accountability/chat', { message, history: history || [] }).then(r => r.data),
+
 };
