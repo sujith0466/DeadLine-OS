@@ -31,17 +31,26 @@ class BaseConfig:
         "pool_size": 10,
         "pool_recycle": 1800,  # recycle connections every 30 mins to avoid Neon drops
         "pool_pre_ping": True,  # Test connections before handing out to prevent 'server closed the connection unexpectedly'
+        "pool_timeout": 10,  # Fail fast if pool is exhausted
         "max_overflow": 20,
     }
 
     # ── CORS ──────────────────────────────────────────────────
     # Comma-separated list of allowed origins.
     # Example: "http://localhost:5173,https://deadlineos.vercel.app"
-    CORS_ORIGINS: list[str] = os.getenv("CORS_ORIGINS", "http://localhost:5173").split(
-        ","
+    CORS_ORIGINS: list[str] = [
+        origin.strip()
+        for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",")
+        if origin.strip()
+    ]
+
+    # ── OpenRouter (Primary AI Provider) ──────────────────────
+    OPENROUTER_API_KEY: str = os.getenv("OPENROUTER_API_KEY", "")
+    OPENROUTER_MODEL: str = os.getenv(
+        "OPENROUTER_MODEL", "meta-llama/llama-3.3-70b-instruct:free"
     )
 
-    # ── Google AI / Gemini ────────────────────────────────────
+    # ── Google AI / Gemini (Fallback AI Provider) ─────────────
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
     GEMINI_VISION_MODEL: str = os.getenv("GEMINI_VISION_MODEL", "gemini-2.0-flash")
@@ -53,6 +62,11 @@ class BaseConfig:
     # ── Response Cache (in-memory TTL) ────────────────────────
     GEMINI_CACHE_TTL: int = int(os.getenv("GEMINI_CACHE_TTL", "300"))  # seconds
     GEMINI_CACHE_MAXSIZE: int = int(os.getenv("GEMINI_CACHE_MAXSIZE", "100"))
+
+    # ── Rate Limiting ─────────────────────────────────────────
+    RATELIMIT_STORAGE_URI: str = os.getenv("RATELIMIT_STORAGE_URI", "memory://")
+    RATELIMIT_DEFAULT: str = os.getenv("RATELIMIT_DEFAULT", "200 per minute")
+    RATELIMIT_AI: str = os.getenv("RATELIMIT_AI", "30 per minute")
 
     # ── WebSocket ─────────────────────────────────────────────
     WS_ASYNC_MODE: str = os.getenv("WS_ASYNC_MODE", "eventlet")

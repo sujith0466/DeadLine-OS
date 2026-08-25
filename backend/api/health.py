@@ -1,14 +1,16 @@
 """
-DeadlineOS — Health Check Blueprint
-======================================
-Provides system health endpoints used by monitoring tools,
-load balancers, deployment pipelines, and the frontend status indicator.
+DeadlineOS — Health & Readiness Check Blueprint
+================================================
+Provides standard system health, liveness, and readiness probes used by
+load balancers, Kubernetes, Render, deployment pipelines, and frontend monitors.
 
 Routes
 ------
-GET  /api/health          →  Basic liveness probe
-GET  /api/health/gemini   →  Gemini API connectivity check
+GET  /api/health          →  Application health summary
+GET  /api/live            →  Liveness probe (process is responsive)
+GET  /api/ready           →  Readiness probe (database & dependencies available)
 GET  /api/health/db       →  Database connectivity check
+GET  /api/health/ai       →  AI Provider hierarchy status (lightweight inspection)
 """
 
 import logging
@@ -27,26 +29,46 @@ health_bp = Blueprint("health", __name__)
 @health_bp.route("/health", methods=["GET"])
 def health():
     """
-    Basic liveness probe.
+    Standard application health probe.
+    Returns 200 with service metadata and component statuses.
+    """
+    db_ok = True
+    try:
+        db.session.execute(db.text("SELECT 1"))
+    except Exception as exc:
+        logger.warning("Health probe DB check failed: %s", exc)
+        db_ok = False
 
-    Returns 200 if the Flask application is running.
-    Used by Render / Vercel health checks and load balancers.
+    status = "healthy" if db_ok else "degraded"
+    status_code = 200 if db_ok else 503
 
-    Response
-    --------
-    {
-        "status": "healthy",
-        "service": "DeadlineOS",
-        "version": "1.0.0",
-        "timestamp": "<ISO 8601 UTC>"
-    }
+    return (
+        jsonify(
+            {
+                "status": status,
+                "service": "DeadlineOS",
+                "version": current_app.config.get("APP_VERSION", "1.0.0"),
+                "environment": current_app.config.get("FLASK_ENV", "production"),
+                "database": "connected" if db_ok else "disconnected",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+        status_code,
+    )
+
+
+@health_bp.route("/live", methods=["GET"])
+def live():
+    """
+    Liveness probe.
+    Verifies that the application process is running and able to handle HTTP traffic.
+    Never executes external network or database calls.
     """
     return (
         jsonify(
             {
-                "status": "healthy",
+                "status": "alive",
                 "service": "DeadlineOS",
-                "version": current_app.config.get("APP_VERSION", "1.0.0"),
                 "timestamp": datetime.now(timezone.utc).isoformat(),
             }
         ),
@@ -54,57 +76,75 @@ def health():
     )
 
 
-@health_bp.route("/health/gemini", methods=["GET"])
-def health_gemini():
+@health_bp.route("/ready", methods=["GET"])
+def ready():
     """
-    Gemini API connectivity check.
-
-    Sends a minimal prompt to verify that the API key is valid and
-    the Google AI endpoint is reachable.
-
-    Response
-    --------
-    {
-        "status": "ok" | "error",
-        "model": "<model name>",
-        "message": "<result or error description>"
-    }
+    Readiness probe.
+    Verifies that all essential dependencies (PostgreSQL database) are reachable
+    before receiving client traffic.
     """
-    gemini = current_app.extensions.get("gemini_service")
-
-    if gemini is None:
+    try:
+        db.session.execute(db.text("SELECT 1"))
         return (
             jsonify(
                 {
-                    "status": "error",
-                    "message": "GeminiService not initialised in app context.",
+                    "status": "ready",
+                    "service": "DeadlineOS",
+                    "dependencies": {
+                        "database": "ok",
+                    },
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            ),
+            200,
+        )
+    except Exception as exc:
+        logger.error("Readiness check failed: %s", exc)
+        return (
+            jsonify(
+                {
+                    "status": "not_ready",
+                    "service": "DeadlineOS",
+                    "dependencies": {
+                        "database": "error",
+                    },
+                    "error": "Database unavailable",
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                 }
             ),
             503,
         )
-
-    result = gemini.health_check()
-    http_status = 200 if result.get("status") == "ok" else 503
-    return jsonify(result), http_status
 
 
 @health_bp.route("/health/db", methods=["GET"])
 def health_db():
     """
     Database connectivity check.
-
-    Executes a lightweight SQL query to confirm the database is reachable.
-
-    Response
-    --------
-    {
-        "status": "ok" | "error",
-        "message": "<result or error description>"
-    }
     """
     try:
         db.session.execute(db.text("SELECT 1"))
         return jsonify({"status": "ok", "message": "Database reachable"}), 200
     except Exception as exc:
         logger.error("DB health check failed: %s", exc)
-        return jsonify({"status": "error", "message": str(exc)}), 503
+        return jsonify({"status": "error", "message": "Database unreachable"}), 503
+
+
+@health_bp.route("/health/ai", methods=["GET"])
+def health_ai():
+    """
+    Lightweight AI provider hierarchy status check.
+    Inspects provider registration without calling expensive external APIs.
+    """
+    ai_provider = current_app.extensions.get("ai_provider")
+    return (
+        jsonify(
+            {
+                "status": "ok" if ai_provider else "degraded",
+                "primary": "OpenRouter",
+                "fallback": "Gemini",
+                "deterministic": "Active",
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+            }
+        ),
+        200,
+    )

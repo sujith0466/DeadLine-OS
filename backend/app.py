@@ -270,12 +270,27 @@ def create_app(config_override=None) -> Flask:
     # ── 9. Register Request Hooks ──────────────────────────────────────────────
     _register_request_hooks(app)
 
-    # ── 10. Root Endpoint ──────────────────────────────────────────────────────
+    # ── 10. Root & Top-Level Health Endpoints ─────────────────────────────────
     @app.route("/", methods=["GET"])
     def root():
         return jsonify(
             {"name": "DeadlineOS API", "status": "healthy", "version": "1.0.0"}
         )
+
+    @app.route("/health", methods=["GET"])
+    def root_health():
+        from api.health import health
+        return health()
+
+    @app.route("/live", methods=["GET"])
+    def root_live():
+        from api.health import live
+        return live()
+
+    @app.route("/ready", methods=["GET"])
+    def root_ready():
+        from api.health import ready
+        return ready()
 
     if not is_dev:
         logger.info("[OK] DeadlineOS backend ready.")
@@ -372,8 +387,12 @@ def _register_request_hooks(app: Flask) -> None:
 
     @app.before_request
     def log_request():
-        """Log every incoming API request and inject Correlation ID."""
-        request_id = request.headers.get("X-Correlation-ID") or str(uuid.uuid4())
+        """Log incoming API requests and inject Request / Correlation ID."""
+        request_id = (
+            request.headers.get("X-Request-ID")
+            or request.headers.get("X-Correlation-ID")
+            or str(uuid.uuid4())
+        )
         g.request_id = request_id
 
         if request.path.startswith("/api"):
@@ -388,7 +407,7 @@ def _register_request_hooks(app: Flask) -> None:
 
     @app.after_request
     def log_response(response):
-        """Log every outgoing API response."""
+        """Log outgoing API response, attach security headers and correlation IDs."""
         if request.path.startswith("/api"):
             logger.debug(
                 "← %s %s %d",
@@ -408,9 +427,93 @@ def _register_request_hooks(app: Flask) -> None:
 
         request_id = getattr(g, "request_id", None)
         if request_id:
+            response.headers["X-Request-ID"] = request_id
             response.headers["X-Correlation-ID"] = request_id
 
         return response
+
+    _register_error_handlers(app)
+
+
+def _register_error_handlers(app: Flask) -> None:
+    """Register standardized JSON error handlers for API consistency."""
+    logger = logging.getLogger(__name__)
+
+    @app.errorhandler(400)
+    def handle_bad_request(e):
+        req_id = getattr(g, "request_id", str(uuid.uuid4()))
+        msg = getattr(e, "description", "Bad Request")
+        return jsonify({
+            "status": "error",
+            "error": {
+                "code": "BAD_REQUEST",
+                "message": msg,
+                "request_id": req_id
+            }
+        }), 400
+
+    @app.errorhandler(401)
+    def handle_unauthorized(e):
+        req_id = getattr(g, "request_id", str(uuid.uuid4()))
+        msg = getattr(e, "description", "Authentication required")
+        return jsonify({
+            "status": "error",
+            "error": {
+                "code": "UNAUTHORIZED",
+                "message": msg,
+                "request_id": req_id
+            }
+        }), 401
+
+    @app.errorhandler(403)
+    def handle_forbidden(e):
+        req_id = getattr(g, "request_id", str(uuid.uuid4()))
+        msg = getattr(e, "description", "Access forbidden")
+        return jsonify({
+            "status": "error",
+            "error": {
+                "code": "FORBIDDEN",
+                "message": msg,
+                "request_id": req_id
+            }
+        }), 403
+
+    @app.errorhandler(404)
+    def handle_not_found(e):
+        req_id = getattr(g, "request_id", str(uuid.uuid4()))
+        return jsonify({
+            "status": "error",
+            "error": {
+                "code": "NOT_FOUND",
+                "message": "Resource or endpoint not found",
+                "request_id": req_id
+            }
+        }), 404
+
+    @app.errorhandler(429)
+    def handle_rate_limit(e):
+        req_id = getattr(g, "request_id", str(uuid.uuid4()))
+        return jsonify({
+            "status": "error",
+            "error": {
+                "code": "RATE_LIMIT_EXCEEDED",
+                "message": "Too many requests. Please slow down and try again.",
+                "request_id": req_id
+            }
+        }), 429
+
+    @app.errorhandler(500)
+    def handle_server_error(e):
+        req_id = getattr(g, "request_id", str(uuid.uuid4()))
+        logger.error(f"Internal server error | req_id={req_id} | error={e}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "error": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "message": "An internal server error occurred. Please try again later.",
+                "request_id": req_id
+            }
+        }), 500
 
 
 # ── Development server entry-point ─────────────────────────────────────────────

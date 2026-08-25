@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: deadline-os-backend
+    env: python
+    rootDir: backend
+    region: ohio
+    buildCommand: "pip install -r requirements.txt && flask db upgrade"
+    startCommand: "gunicorn 'app:create_app()' --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT"
+    pythonVersion: 3.13.0
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: "https://deadlineos.vercel.app,http://localhost:5173"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: OPENROUTER_MODEL
+        value: "meta-llama/llama-3.3-70b-instruct:free"
+      - key: GEMINI_API_KEY
+        sync: false
