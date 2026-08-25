@@ -77,12 +77,16 @@ Thumbs.db
 # ------------------------------------------------------------------------------
 # Ignore historical phase markdown files scattered in root
 PHASE_*.md
+PHASE*.md
 *_REPORT.md
 *_CERTIFICATION.md
 *_AUDIT.md
-*_VALIDATION.md
+*_VALIDATION*.md
+*_IMPLEMENTATION_PLAN.md
 !DEPLOYMENT_AUDIT_REPORT.md
 docs/verification/
+backend/scripts/phase3/
+backend/scripts/phase4/
 
 # ------------------------------------------------------------------------------
 # 7. Deployment / Services Artifacts
@@ -100,3 +104,4 @@ frontend/strip_mock.py
 frontend/audit_console.cjs
 backend/scripts/seed_demo.py
 backend/tests/e2e
+scripts/

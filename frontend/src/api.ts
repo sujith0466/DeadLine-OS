@@ -130,6 +130,23 @@ export const DeadlineOSApi = {
     return response.data;
   },
 
+  async executeNotificationAction(id: string, action: string, payload?: any) {
+    const response = await apiClient.post(`/notifications/${id}/action`, { action, payload });
+    emitEvent('NOTIFICATION_READ');
+    return response.data;
+  },
+
+  async dismissNotification(id: string) {
+    const response = await apiClient.post(`/notifications/${id}/dismiss`);
+    emitEvent('NOTIFICATION_READ');
+    return response.data;
+  },
+
+  async evaluateScheduleCheckins(grace_minutes: number = 10) {
+    const response = await apiClient.post('/schedule/checkin/evaluate', { grace_minutes });
+    return response.data;
+  },
+
   
   // ── TODAY SURFACE ────────────────────────────────────────────────────────
   async getTodayActivities() {
@@ -527,5 +544,72 @@ export const DeadlineOSApi = {
       const response = await apiClient.post('/runtime/complete', { entity_id: entityId, completion_source: completionSource });
       return response.data;
     }
-  }
+  },
+
+  // ── SMART SCHEDULING (PHASE 3) ───────────────────────────────────────────
+  async getScheduleSlots(params?: { start?: string, end?: string, status?: string }) {
+    const response = await apiClient.get('/schedule/slots', { params });
+    return response.data;
+  },
+
+  async createScheduleSlot(payload: {
+    entity_type?: string,
+    entity_id?: string,
+    title?: string,
+    start_time?: string,
+    end_time?: string,
+    duration_minutes?: number,
+    priority?: number,
+    focus_block?: boolean,
+    is_break?: boolean,
+    schedule_id?: string
+  }) {
+    const response = await apiClient.post('/schedule/slots', payload);
+    emitEvent('PLANNER_UPDATED');
+    return response.data;
+  },
+
+  async deleteScheduleSlot(slotId: string) {
+    const response = await apiClient.delete(`/schedule/slots/${slotId}`);
+    emitEvent('PLANNER_UPDATED');
+    return response.data;
+  },
+
+  async validateScheduleConflicts(payload: {
+    start_time: string,
+    end_time: string,
+    entity_id?: string,
+    window_start?: string,
+    window_end?: string,
+    exclude_slot_id?: string,
+    allow_past?: boolean
+  }) {
+    const response = await apiClient.post('/schedule/validate-conflicts', payload);
+    return response.data;
+  },
+
+  async planPrioritySchedule(payload: {
+    activities: any[],
+    window_start: string,
+    window_end: string,
+    buffer_minutes?: number,
+    persist?: boolean
+  }) {
+    const response = await apiClient.post('/schedule/priority-plan', payload);
+    emitEvent('PLANNER_GENERATED');
+    return response.data;
+  },
+
+  async rescheduleSlot(payload: {
+    slot_id: string,
+    start_time: string,
+    end_time?: string,
+    duration_minutes?: number,
+    force_cascade?: boolean
+  }) {
+    const response = await apiClient.post('/schedule/reschedule', payload);
+    emitEvent('PLANNER_UPDATED');
+    return response.data;
+  },
+
 };

@@ -19,6 +19,51 @@ export const NotificationSettings: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Quiet Hours Section (Phase 4) */}
+      <SettingsSection 
+        title="Quiet Hours (Do Not Disturb)" 
+        description="Automatically defer non-critical notifications during rest hours."
+      >
+        <SettingsCard className="space-y-4">
+          <Toggle 
+            label="Enable Quiet Hours" 
+            description="Suppress and defer notifications during your specified window."
+            checked={n.quiet_hours_enabled ?? false}
+            onChange={(val) => handleUpdate('quiet_hours_enabled', val)}
+          />
+          {n.quiet_hours_enabled && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-white/5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1">Start Time</label>
+                <input
+                  type="time"
+                  value={n.quiet_hours_start || '22:00'}
+                  onChange={(e) => handleUpdate('quiet_hours_start', e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-300 mb-1">End Time</label>
+                <input
+                  type="time"
+                  value={n.quiet_hours_end || '07:00'}
+                  onChange={(e) => handleUpdate('quiet_hours_end', e.target.value)}
+                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <Toggle 
+                  label="Allow Critical Alerts" 
+                  description="High-severity and urgent escalation alerts will still ring."
+                  checked={n.quiet_hours_allow_critical ?? true}
+                  onChange={(val) => handleUpdate('quiet_hours_allow_critical', val)}
+                />
+              </div>
+            </div>
+          )}
+        </SettingsCard>
+      </SettingsSection>
+
       <SettingsSection 
         title="Delivery Methods" 
         description="Choose how you receive notifications from DeadlineOS."

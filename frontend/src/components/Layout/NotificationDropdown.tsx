@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { AlertTriangle, ShieldAlert, Target, Activity, RefreshCw, CheckCircle2, Trash2 } from 'lucide-react';
+import { AlertTriangle, Activity, RefreshCw, CheckCircle2, Trash2, Clock, Play, X, Bell } from 'lucide-react';
 import { DeadlineOSApi } from '../../api';
 import { useNavigate } from 'react-router-dom';
 import { useSync } from '../../hooks/useSync';
@@ -15,6 +15,7 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
@@ -27,8 +28,10 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
         unread_only: filter === 'unread'
       });
       if (res && res.data) {
-        setNotifications(res.data.notifications || []);
-        setUnreadCount(res.data.unread_count || 0);
+        const notifData = res.data.data ? res.data.data.notifications : (res.data.notifications || []);
+        const unread = res.data.data ? res.data.data.unread_count : (res.data.unread_count || 0);
+        setNotifications(notifData);
+        setUnreadCount(unread);
       }
     } catch (err: any) {
       console.error("Failed to load notifications", err);
@@ -38,7 +41,6 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
     }
   }, [setUnreadCount, filter]);
 
-  // Use the new SystemEventBus for real-time synchronization instead of polling
   useSync('NOTIFICATION_CREATED', fetchNotifications);
   useSync('SYSTEM_HEALTH_CHANGED', fetchNotifications);
   useSync('THREAT_DETECTED', fetchNotifications);
@@ -79,6 +81,19 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
     }
   };
 
+  const handleAction = async (e: React.MouseEvent, notifId: string, actionType: string) => {
+    e.stopPropagation();
+    try {
+      setActionLoading(notifId);
+      await DeadlineOSApi.executeNotificationAction(notifId, actionType);
+      await fetchNotifications();
+    } catch (err) {
+      console.error("Failed to execute action", err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleNotificationClick = async (notif: any) => {
     if (!notif.read) {
       try {
@@ -99,10 +114,11 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
   if (!isOpen) return null;
 
   return (
-    <div ref={dropdownRef} className="absolute top-16 right-4 sm:right-8 w-[calc(100vw-2rem)] sm:w-96 max-h-[32rem] flex flex-col bg-black/80 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
+    <div ref={dropdownRef} className="absolute top-16 right-4 sm:right-8 w-[calc(100vw-2rem)] sm:w-96 max-h-[34rem] flex flex-col bg-black/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl z-50 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/10 bg-white/5">
         <h3 className="text-sm font-bold text-white flex items-center gap-2">
-          Notifications
+          <Bell className="w-4 h-4 text-primary" />
+          Notification Intelligence
           {notifications.filter(n => !n.read).length > 0 && (
             <span className="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-bold">
               {notifications.filter(n => !n.read).length} new
@@ -158,52 +174,88 @@ export const NotificationDropdown: React.FC<NotificationDropdownProps> = ({ isOp
             <p className="text-gray-500 text-xs mt-1">No {filter === 'unread' ? 'unread ' : ''}notifications right now.</p>
           </div>
         ) : (
-          <div className="space-y-1">
+          <div className="space-y-2">
             {notifications.map((n) => {
               let Icon = Activity;
               let iconColor = 'text-gray-400';
+              let badgeColor = 'bg-gray-500/20 text-gray-400';
               
-              if (n.icon === 'AlertTriangle' || n.severity === 'critical') {
+              if (n.notification_type === 'ESCALATION' || n.severity === 'critical') {
                 Icon = AlertTriangle;
                 iconColor = 'text-rose-500';
-              } else if (n.icon === 'ShieldAlert' || n.severity === 'high') {
-                Icon = ShieldAlert;
+                badgeColor = 'bg-rose-500/20 text-rose-400';
+              } else if (n.notification_type === 'CHECKIN' || n.severity === 'high') {
+                Icon = Clock;
                 iconColor = 'text-amber-500';
-              } else if (n.icon === 'Target' || n.category === 'Goals') {
-                Icon = Target;
+                badgeColor = 'bg-amber-500/20 text-amber-400';
+              } else if (n.notification_type === 'PRE_ALERT') {
+                Icon = Clock;
+                iconColor = 'text-blue-400';
+                badgeColor = 'bg-blue-500/20 text-blue-400';
+              } else if (n.notification_type === 'CONFIRMATION') {
+                Icon = CheckCircle2;
                 iconColor = 'text-emerald-500';
+                badgeColor = 'bg-emerald-500/20 text-emerald-400';
               }
 
               return (
                 <div 
                   key={n.id} 
                   onClick={() => handleNotificationClick(n)}
-                  className={`flex gap-3 p-3 rounded-lg hover:bg-white/10 transition-colors cursor-pointer border-l-2 ${n.read ? 'border-transparent opacity-70' : 'border-primary bg-white/5'}`}
+                  className={`flex flex-col gap-2 p-3 rounded-lg hover:bg-white/10 transition-colors cursor-pointer border-l-2 ${n.read ? 'border-transparent opacity-70' : 'border-primary bg-white/5'}`}
                 >
-                  <div className={`mt-0.5 ${iconColor}`}>
-                    <Icon className="w-4 h-4" />
+                  <div className="flex items-start gap-3">
+                    <div className={`mt-0.5 ${iconColor}`}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase ${badgeColor}`}>
+                          {n.notification_type || 'SYSTEM'}
+                        </span>
+                        {n.group_id && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-purple-500/20 text-purple-400">
+                            GROUP
+                          </span>
+                        )}
+                        <p className={`text-xs font-bold truncate flex-1 ${n.read ? 'text-gray-400' : 'text-gray-200'}`}>
+                          {n.title}
+                        </p>
+                      </div>
+                      <p className={`text-xs mt-1 line-clamp-2 ${n.read ? 'text-gray-500' : 'text-gray-400'}`}>
+                        {n.description || n.message}
+                      </p>
+                      <p className="text-[10px] text-gray-600 mt-2 flex items-center gap-2">
+                        {new Date(n.created_at || n.timestamp).toLocaleString(undefined, {
+                          month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                        })}
+                      </p>
+                    </div>
+                    {!n.read && (
+                      <div className="w-2 h-2 rounded-full bg-primary mt-1 flex-shrink-0" />
+                    )}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-xs font-bold truncate ${n.read ? 'text-gray-400' : 'text-gray-200'}`}>
-                      {n.title}
-                    </p>
-                    <p className={`text-xs mt-1 line-clamp-2 ${n.read ? 'text-gray-500' : 'text-gray-400'}`}>
-                      {n.description || n.message}
-                    </p>
-                    <p className="text-[10px] text-gray-600 mt-2 flex items-center gap-2">
-                      {new Date(n.created_at || n.timestamp).toLocaleString(undefined, {
-                        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
-                      })}
-                      {n.category && (
-                        <>
-                          <span>•</span>
-                          <span>{n.category}</span>
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  {!n.read && (
-                    <div className="w-2 h-2 rounded-full bg-primary mt-1 flex-shrink-0" />
+
+                  {/* Inline Action Buttons for Check-ins and Confirmations */}
+                  {n.requires_confirmation && (
+                    <div className="flex items-center gap-2 pt-2 border-t border-white/5 mt-1">
+                      <button
+                        onClick={(e) => handleAction(e, n.id, 'START_ACTIVITY')}
+                        disabled={actionLoading === n.id}
+                        className="flex items-center gap-1 px-3 py-1 bg-primary text-black rounded text-xs font-bold hover:bg-primary/90 transition-colors"
+                      >
+                        <Play className="w-3 h-3 fill-current" />
+                        Start Now
+                      </button>
+                      <button
+                        onClick={(e) => handleAction(e, n.id, 'DISMISS')}
+                        disabled={actionLoading === n.id}
+                        className="flex items-center gap-1 px-3 py-1 bg-white/10 text-gray-300 rounded text-xs font-medium hover:bg-white/20 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                        Dismiss
+                      </button>
+                    </div>
                   )}
                 </div>
               );
