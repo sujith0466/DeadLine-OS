@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DeadlineOSApi } from '../api';
+import { useAuth } from './AuthContext';
 
 interface RuntimeState {
   active: boolean;
@@ -21,26 +22,36 @@ interface RuntimeContextType {
 const RuntimeContext = createContext<RuntimeContextType | undefined>(undefined);
 
 export const RuntimeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
   const [runtimeState, setRuntimeState] = useState<RuntimeState | null>(null);
 
   const refreshRuntime = async () => {
+    if (!user) {
+      setRuntimeState(null);
+      return;
+    }
     try {
       const data = await DeadlineOSApi.runtime.getActive();
-      if (data.active) {
+      if (data?.active) {
         setRuntimeState(data);
       } else {
         setRuntimeState(null);
       }
-    } catch (err) {
-      console.error("Failed to fetch runtime state", err);
+    } catch {
+      // Ignored if unauthenticated or no active session
+      setRuntimeState(null);
     }
   };
 
   useEffect(() => {
+    if (!user) {
+      setRuntimeState(null);
+      return;
+    }
     refreshRuntime();
     const interval = setInterval(refreshRuntime, 30000); // Check every 30s
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   const startActivity = async (entityId: string, entityType: string, duration?: number) => {
     await DeadlineOSApi.runtime.start(entityId, entityType, duration);
