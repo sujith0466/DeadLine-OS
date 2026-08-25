@@ -188,9 +188,9 @@ def create_app(config_override=None) -> Flask:
         # Import all models so their metadata is registered before create_all()
         import models  # noqa: F401
 
-        # db.create_all() removed for Alembic
+        db.create_all()
         if not is_dev:
-            logger.info("[DB] Database tables ensured via Alembic.")
+            logger.info("[DB] Database tables ensured.")
 
     # ── 6. Initialise Gemini Service ───────────────────────────────────────────
     if app.config.get("GEMINI_API_KEY"):
