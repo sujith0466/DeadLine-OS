@@ -20,4 +20,5 @@ from .business import (
     InvoiceLineItem,
     BusinessTransaction,
     PaymentAllocation,
+    CollectionReminder,
 )

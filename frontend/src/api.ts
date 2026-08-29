@@ -845,6 +845,22 @@ export const DeadlineOSApi = {
 
   getBusinessBridgeFeed: (windowDays?: number) =>
     apiClient.get('/business/bridge/feed', { params: { window_days: windowDays } }).then(r => r.data),
+
+  // Phase B5: Rescue, Collection Reminders & Accountant Export
+  getRescueAgingSummary: () =>
+    apiClient.get('/business/rescue/aging').then(r => r.data),
+
+  getPriorityReceivables: (limit?: number) =>
+    apiClient.get('/business/rescue/priorities', { params: { limit } }).then(r => r.data),
+
+  draftCollectionReminder: (invoiceId: string, tone?: string) =>
+    apiClient.post('/business/reminders/draft', { invoice_id: invoiceId, tone }).then(r => r.data),
+
+  sendCollectionReminder: (reminderId: string, customMessage?: string) =>
+    apiClient.post(`/business/reminders/${reminderId}/send`, { custom_message: customMessage }).then(r => r.data),
+
+  listCollectionReminders: (invoiceId?: string) =>
+    apiClient.get('/business/reminders', { params: { invoice_id: invoiceId } }).then(r => r.data),
 };
 
 export const api = DeadlineOSApi;

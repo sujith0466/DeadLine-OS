@@ -19,6 +19,9 @@ from .financial_converter_service import FinancialConverterService
 from .copilot_service import CopilotService
 from .cash_risk_service import CashRiskService
 from .bridge_service import BridgeService
+from .rescue_service import RescueService
+from .reminder_service import ReminderService
+from .export_service import ExportService
 
 __all__ = [
     'AuditService',
@@ -38,4 +41,7 @@ __all__ = [
     'CopilotService',
     'CashRiskService',
     'BridgeService',
+    'RescueService',
+    'ReminderService',
+    'ExportService',
 ]

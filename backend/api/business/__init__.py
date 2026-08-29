@@ -18,6 +18,9 @@ from .financial import financial_bp
 from .copilot import copilot_bp
 from .risk import risk_bp
 from .bridge import bridge_bp
+from .rescue import rescue_bp
+from .reminders import reminders_bp
+from .exports import exports_bp
 
 business_bp = Blueprint('business', __name__, url_prefix='/api/business')
 
@@ -35,5 +38,8 @@ business_bp.register_blueprint(financial_bp)
 business_bp.register_blueprint(copilot_bp)
 business_bp.register_blueprint(risk_bp)
 business_bp.register_blueprint(bridge_bp)
+business_bp.register_blueprint(rescue_bp)
+business_bp.register_blueprint(reminders_bp)
+business_bp.register_blueprint(exports_bp)
 
 __all__ = ['business_bp']
