@@ -26,6 +26,7 @@ from .recurring_obligation_service import RecurringObligationService
 from .automation_runner_service import AutomationRunnerService
 from .entity_service import EntityService
 from .consolidation_service import ConsolidationService
+from .health_service import BusinessHealthService
 
 __all__ = [
     'AuditService',
@@ -52,4 +53,5 @@ __all__ = [
     'AutomationRunnerService',
     'EntityService',
     'ConsolidationService',
+    'BusinessHealthService',
 ]
