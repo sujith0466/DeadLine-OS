@@ -9,4 +9,4 @@ from models.recurrence_rule import RecurrenceRule
 
 from models.recovery import RecoveryRecord, RecoveryActionType
 
-from .business import Workspace, WorkspaceMember, CommercialPartner, AuditEvent
+from .business import Workspace, WorkspaceMember, CommercialPartner, AuditEvent, IngestionArtifact, StagedExtraction

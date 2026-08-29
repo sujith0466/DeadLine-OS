@@ -14,8 +14,9 @@
 - **Personal OS Certified Tag:** `personal-os-v1.0-certified`
 - **B0 Architecture Status:** **FROZEN + COMMITTED + TAGGED (`business-os-b0-frozen`)**
 - **B1 Implementation Status:** **COMPLETED / IMPLEMENTATION VERIFIED (172/172 tests passing)**
-- **Current Program Gate:** **B1 CERTIFIED / READY FOR B2 CAPTURE PLANNING**
-- **Implementation Status:** **BUSINESS OS B1 FOUNDATION FULLY IMPLEMENTED**
+- **B2 Implementation Status:** **COMPLETED / IMPLEMENTATION VERIFIED (181/181 tests passing)**
+- **Current Program Gate:** **B2 CERTIFIED / READY FOR B3 LEDGER PLANNING**
+- **Implementation Status:** **BUSINESS OS B2 CAPTURE & STAGING FULLY IMPLEMENTED**
 
 ---
 
@@ -41,7 +42,7 @@
 |:---:|---|---|:---:|:---:|
 | **B0** | **Architecture & Validation** | Product definition, multi-tenancy, RBAC, financial truth, decimal arithmetic, AI boundaries, requirements traceability, and red-team review. | **DESIGN ONLY (NO CODE)** | **FROZEN / PASSED** |
 | **B1** | **Business Foundation** | Workspace provisioning, member management, 5-tier RBAC middleware, partner registry, base schema migrations. | **IMPLEMENTED (172 TESTS)** | **PASSED / CERTIFIED** |
-| **B2** | **Capture & Staging** | Document/voice/text capture, Supabase Storage integration, AI extraction, staging review barrier, entity disambiguation. | **NOT STARTED** | **GATED** |
+| **B2** | **Capture & Staging** | Document/voice/text capture, Supabase Storage integration, AI extraction, staging review barrier, entity disambiguation. | **IMPLEMENTED (181 TESTS)** | **PASSED / CERTIFIED** |
 | **B3** | **Execution & Ledger** | Invoices, payments, allocations, append-only adjustments, Cash Reality hierarchy, Runway Days math. | **NOT STARTED** | **GATED** |
 | **B4** | **Intelligence & Copilot** | Zero-bypass Business Copilot, cash risk engine, polymorphic Personal OS Today/Calendar bridge adapter. | **NOT STARTED** | **GATED** |
 | **B5** | **Rescue & Accountant Export** | Overdue receivable workflows, collection reminders, CSV/ZIP accountant audit export package. | **NOT STARTED** | **GATED** |

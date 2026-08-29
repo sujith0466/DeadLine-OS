@@ -771,6 +771,30 @@ export const DeadlineOSApi = {
 
   getBusinessAuditLogs: (params?: { entity_type?: string; entity_id?: string; limit?: number; offset?: number }) =>
     apiClient.get('/business/audit', { params }).then(r => r.data),
+
+  // Phase B2: Capture & Staging
+  captureText: (text: string) =>
+    apiClient.post('/business/capture/text', { text }).then(r => r.data),
+
+  captureUpload: (formData: FormData) =>
+    apiClient.post('/business/capture/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(r => r.data),
+
+  listStagedItems: (params?: { status?: string; candidate_type?: string; limit?: number; offset?: number }) =>
+    apiClient.get('/business/staging', { params }).then(r => r.data),
+
+  getStagedItem: (stagingId: string) =>
+    apiClient.get(`/business/staging/${stagingId}`).then(r => r.data),
+
+  updateStagedItem: (stagingId: string, data: any) =>
+    apiClient.patch(`/business/staging/${stagingId}`, data).then(r => r.data),
+
+  confirmStagedItem: (stagingId: string) =>
+    apiClient.post(`/business/staging/${stagingId}/confirm`).then(r => r.data),
+
+  rejectStagedItem: (stagingId: string, reason?: string) =>
+    apiClient.post(`/business/staging/${stagingId}/reject`, { reason }).then(r => r.data),
 };
 
 export const api = DeadlineOSApi;

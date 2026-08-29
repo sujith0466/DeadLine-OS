@@ -9,6 +9,8 @@ from .workspaces import workspaces_bp
 from .members import members_bp
 from .partners import partners_bp
 from .audit import audit_bp
+from .capture import capture_bp
+from .staging import staging_bp
 
 business_bp = Blueprint('business', __name__, url_prefix='/api/business')
 
@@ -17,5 +19,7 @@ business_bp.register_blueprint(workspaces_bp)
 business_bp.register_blueprint(members_bp)
 business_bp.register_blueprint(partners_bp)
 business_bp.register_blueprint(audit_bp)
+business_bp.register_blueprint(capture_bp)
+business_bp.register_blueprint(staging_bp)
 
 __all__ = ['business_bp']
