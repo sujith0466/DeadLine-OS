@@ -24,6 +24,8 @@ from .reminder_service import ReminderService
 from .export_service import ExportService
 from .recurring_obligation_service import RecurringObligationService
 from .automation_runner_service import AutomationRunnerService
+from .entity_service import EntityService
+from .consolidation_service import ConsolidationService
 
 __all__ = [
     'AuditService',
@@ -48,4 +50,6 @@ __all__ = [
     'ExportService',
     'RecurringObligationService',
     'AutomationRunnerService',
+    'EntityService',
+    'ConsolidationService',
 ]

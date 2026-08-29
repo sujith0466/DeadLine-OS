@@ -13,6 +13,7 @@ from .transaction import BusinessTransaction
 from .allocation import PaymentAllocation
 from .reminder import CollectionReminder
 from .recurring import RecurringObligation, AutomationExecutionLog
+from .entity import BusinessEntity, InterEntityTransfer
 
 __all__ = [
     'Workspace',
@@ -28,4 +29,6 @@ __all__ = [
     'CollectionReminder',
     'RecurringObligation',
     'AutomationExecutionLog',
+    'BusinessEntity',
+    'InterEntityTransfer',
 ]

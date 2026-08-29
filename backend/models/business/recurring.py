@@ -16,6 +16,7 @@ class RecurringObligation(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     workspace_id = db.Column(db.String(36), db.ForeignKey('business_workspaces.id', ondelete='CASCADE'), nullable=False, index=True)
     partner_id = db.Column(db.String(36), db.ForeignKey('business_commercial_partners.id', ondelete='SET NULL'), nullable=True, index=True)
+    entity_id = db.Column(db.String(36), db.ForeignKey('business_entities.id', ondelete='SET NULL'), nullable=True, index=True)
 
     title = db.Column(db.String(255), nullable=False)
     obligation_type = db.Column(db.String(30), nullable=False)  # 'RECEIVABLE', 'PAYABLE', 'TAX_COMPLIANCE', 'PAYROLL'
@@ -45,6 +46,7 @@ class RecurringObligation(db.Model):
             'id': self.id,
             'workspace_id': self.workspace_id,
             'partner_id': self.partner_id,
+            'entity_id': self.entity_id,
             'partner_name': self.partner.name if self.partner else None,
             'title': self.title,
             'obligation_type': self.obligation_type,

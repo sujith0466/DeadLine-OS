@@ -23,6 +23,8 @@ from .reminders import reminders_bp
 from .exports import exports_bp
 from .recurring import recurring_bp
 from .automation import automation_bp
+from .entities import entities_bp
+from .consolidation import consolidation_bp
 
 business_bp = Blueprint('business', __name__, url_prefix='/api/business')
 
@@ -45,5 +47,7 @@ business_bp.register_blueprint(reminders_bp)
 business_bp.register_blueprint(exports_bp)
 business_bp.register_blueprint(recurring_bp)
 business_bp.register_blueprint(automation_bp)
+business_bp.register_blueprint(entities_bp)
+business_bp.register_blueprint(consolidation_bp)
 
 __all__ = ['business_bp']

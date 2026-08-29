@@ -889,6 +889,22 @@ export const DeadlineOSApi = {
 
   getAutomationLogs: (params?: any) =>
     apiClient.get('/business/automation/logs', { params }).then(r => r.data),
+
+  // Phase B7: Commercial Multi-Entity & Cross-Workspace Consolidation
+  createBusinessEntity: (data: any) =>
+    apiClient.post('/business/entities', data).then(r => r.data),
+
+  listBusinessEntities: (params?: any) =>
+    apiClient.get('/business/entities', { params }).then(r => r.data),
+
+  getBusinessEntity: (id: string) =>
+    apiClient.get(`/business/entities/${id}`).then(r => r.data),
+
+  createInterEntityTransfer: (data: any) =>
+    apiClient.post('/business/transfers', data).then(r => r.data),
+
+  getConsolidatedOverview: (workspaceIds?: string[]) =>
+    apiClient.post('/business/consolidation/overview', { workspace_ids: workspaceIds }).then(r => r.data),
 };
 
 export const api = DeadlineOSApi;

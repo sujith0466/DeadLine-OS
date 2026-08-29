@@ -28,6 +28,12 @@ class Invoice(db.Model):
         nullable=True,
         index=True
     )
+    entity_id = db.Column(
+        db.String(36),
+        db.ForeignKey('business_entities.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True
+    )
     issue_date = db.Column(db.Date, nullable=False)
     due_date = db.Column(db.Date, nullable=False)
     currency = db.Column(db.String(3), nullable=False, default='INR')
@@ -89,6 +95,7 @@ class Invoice(db.Model):
             'invoice_number': self.invoice_number,
             'invoice_type': self.invoice_type,
             'partner_id': self.partner_id,
+            'entity_id': self.entity_id,
             'partner_name': self.partner.name if self.partner else None,
             'issue_date': self.issue_date.isoformat() if self.issue_date else None,
             'due_date': self.due_date.isoformat() if self.due_date else None,

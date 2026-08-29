@@ -30,6 +30,12 @@ class BusinessTransaction(db.Model):
         nullable=True,
         index=True
     )
+    entity_id = db.Column(
+        db.String(36),
+        db.ForeignKey('business_entities.id', ondelete='SET NULL'),
+        nullable=True,
+        index=True
+    )
     payment_method = db.Column(db.String(50), nullable=True)  # BANK_TRANSFER, UPI, CARD, CASH, CHEQUE
     reference_number = db.Column(db.String(100), nullable=True)
     status = db.Column(db.String(20), nullable=False, default='CONFIRMED', index=True)  # CONFIRMED, REVERSED
@@ -80,6 +86,7 @@ class BusinessTransaction(db.Model):
             'transaction_date': self.transaction_date.isoformat() if self.transaction_date else None,
             'settlement_date': self.settlement_date.isoformat() if self.settlement_date else None,
             'partner_id': self.partner_id,
+            'entity_id': self.entity_id,
             'partner_name': self.partner.name if self.partner else None,
             'payment_method': self.payment_method,
             'reference_number': self.reference_number,
