@@ -16,6 +16,9 @@ from .transaction_service import TransactionService
 from .allocation_service import AllocationService
 from .financial_truth_service import FinancialTruthService
 from .financial_converter_service import FinancialConverterService
+from .copilot_service import CopilotService
+from .cash_risk_service import CashRiskService
+from .bridge_service import BridgeService
 
 __all__ = [
     'AuditService',
@@ -32,4 +35,7 @@ __all__ = [
     'AllocationService',
     'FinancialTruthService',
     'FinancialConverterService',
+    'CopilotService',
+    'CashRiskService',
+    'BridgeService',
 ]

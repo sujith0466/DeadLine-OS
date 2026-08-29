@@ -15,6 +15,9 @@ from .invoices import invoices_bp
 from .transactions import transactions_bp
 from .allocations import allocations_bp
 from .financial import financial_bp
+from .copilot import copilot_bp
+from .risk import risk_bp
+from .bridge import bridge_bp
 
 business_bp = Blueprint('business', __name__, url_prefix='/api/business')
 
@@ -29,5 +32,8 @@ business_bp.register_blueprint(invoices_bp)
 business_bp.register_blueprint(transactions_bp)
 business_bp.register_blueprint(allocations_bp)
 business_bp.register_blueprint(financial_bp)
+business_bp.register_blueprint(copilot_bp)
+business_bp.register_blueprint(risk_bp)
+business_bp.register_blueprint(bridge_bp)
 
 __all__ = ['business_bp']

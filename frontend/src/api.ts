@@ -835,6 +835,16 @@ export const DeadlineOSApi = {
 
   getRunway: () =>
     apiClient.get('/business/financial/runway').then(r => r.data),
+
+  // Phase B4: Intelligence, Copilot & Polymorphic Bridge
+  askBusinessCopilot: (prompt: string) =>
+    apiClient.post('/business/copilot/query', { prompt }).then(r => r.data),
+
+  getBusinessRisks: () =>
+    apiClient.get('/business/financial/risks').then(r => r.data),
+
+  getBusinessBridgeFeed: (windowDays?: number) =>
+    apiClient.get('/business/bridge/feed', { params: { window_days: windowDays } }).then(r => r.data),
 };
 
 export const api = DeadlineOSApi;
