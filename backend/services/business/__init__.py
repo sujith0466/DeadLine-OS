@@ -22,6 +22,8 @@ from .bridge_service import BridgeService
 from .rescue_service import RescueService
 from .reminder_service import ReminderService
 from .export_service import ExportService
+from .recurring_obligation_service import RecurringObligationService
+from .automation_runner_service import AutomationRunnerService
 
 __all__ = [
     'AuditService',
@@ -44,4 +46,6 @@ __all__ = [
     'RescueService',
     'ReminderService',
     'ExportService',
+    'RecurringObligationService',
+    'AutomationRunnerService',
 ]

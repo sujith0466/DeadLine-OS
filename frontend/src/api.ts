@@ -861,6 +861,34 @@ export const DeadlineOSApi = {
 
   listCollectionReminders: (invoiceId?: string) =>
     apiClient.get('/business/reminders', { params: { invoice_id: invoiceId } }).then(r => r.data),
+
+  // Phase B6: Advanced Automation & Recurring Obligations
+  createRecurringObligation: (data: any) =>
+    apiClient.post('/business/recurring', data).then(r => r.data),
+
+  listRecurringObligations: (params?: any) =>
+    apiClient.get('/business/recurring', { params }).then(r => r.data),
+
+  getRecurringObligation: (id: string) =>
+    apiClient.get(`/business/recurring/${id}`).then(r => r.data),
+
+  pauseRecurringObligation: (id: string) =>
+    apiClient.post(`/business/recurring/${id}/pause`).then(r => r.data),
+
+  resumeRecurringObligation: (id: string) =>
+    apiClient.post(`/business/recurring/${id}/resume`).then(r => r.data),
+
+  cancelRecurringObligation: (id: string) =>
+    apiClient.post(`/business/recurring/${id}/cancel`).then(r => r.data),
+
+  triggerRecurringObligation: (id: string) =>
+    apiClient.post(`/business/recurring/${id}/trigger`).then(r => r.data),
+
+  runBatchAutomations: (asOfDate?: string) =>
+    apiClient.post('/business/automation/run', { as_of_date: asOfDate }).then(r => r.data),
+
+  getAutomationLogs: (params?: any) =>
+    apiClient.get('/business/automation/logs', { params }).then(r => r.data),
 };
 
 export const api = DeadlineOSApi;
