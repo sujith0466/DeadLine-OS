@@ -226,8 +226,8 @@ def create_app(config_override=None) -> Flask:
         app,
         resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", "*")}},
         supports_credentials=True,
-        allow_headers=["Content-Type", "Authorization", "apikey", "X-Correlation-ID"],
-        expose_headers=["Content-Type", "Authorization"],
+        allow_headers=["Content-Type", "Authorization", "apikey", "X-Correlation-ID", "X-Request-ID", "X-Workspace-Id", "Idempotency-Key"],
+        expose_headers=["Content-Type", "Authorization", "X-Request-ID", "X-Correlation-ID"],
         methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
     )
     if not is_dev:
@@ -368,6 +368,11 @@ def _register_blueprints(app: Flask) -> None:
     app.register_blueprint(schedule_bp, url_prefix="/api")
     app.register_blueprint(recovery_bp, url_prefix="/api")
     app.register_blueprint(ai_intelligence_bp)
+
+    from api.business import business_bp
+    app.register_blueprint(business_bp)
+    limiter.exempt(business_bp)
+
     limiter.exempt(ai_intelligence_bp)
     limiter.exempt(recovery_bp)
     limiter.exempt(schedule_bp)

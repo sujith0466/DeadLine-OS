@@ -84,6 +84,7 @@ PHASE*.md
 *_VALIDATION*.md
 *_IMPLEMENTATION_PLAN.md
 !DEPLOYMENT_AUDIT_REPORT.md
+!docs/business_os/*.md
 docs/verification/
 backend/scripts/phase3/
 backend/scripts/phase4/

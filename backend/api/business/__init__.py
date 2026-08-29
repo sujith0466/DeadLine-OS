@@ -1,0 +1,21 @@
+"""
+DeadlineOS Business OS — Blueprint Registration
+===============================================
+Mounts all Business OS sub-blueprints under unified /api/business.
+"""
+
+from flask import Blueprint
+from .workspaces import workspaces_bp
+from .members import members_bp
+from .partners import partners_bp
+from .audit import audit_bp
+
+business_bp = Blueprint('business', __name__, url_prefix='/api/business')
+
+# Register modular sub-blueprints without prefix (routes inherit /api/business)
+business_bp.register_blueprint(workspaces_bp)
+business_bp.register_blueprint(members_bp)
+business_bp.register_blueprint(partners_bp)
+business_bp.register_blueprint(audit_bp)
+
+__all__ = ['business_bp']

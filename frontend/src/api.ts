@@ -33,6 +33,12 @@ apiClient.interceptors.request.use(async (config) => {
   // Inject Correlation ID
   config.headers['X-Correlation-ID'] = crypto.randomUUID();
 
+  // Inject Active Business Workspace ID if present
+  const activeWorkspaceId = localStorage.getItem('active_workspace_id');
+  if (activeWorkspaceId) {
+    config.headers['X-Workspace-Id'] = activeWorkspaceId;
+  }
+
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`;
@@ -725,4 +731,46 @@ export const DeadlineOSApi = {
 
   interpretAnalytics: (days: number = 7) =>
     apiClient.post('/analytics/ai/interpret', { days }).then(r => r.data),
+
+  // Phase B1: Business OS Foundation
+  createWorkspace: (data: { name: string; legal_name?: string; tax_identifier?: string; base_currency?: string; timezone?: string }) =>
+    apiClient.post('/business/workspaces', data).then(r => r.data),
+
+  listWorkspaces: () =>
+    apiClient.get('/business/workspaces').then(r => r.data),
+
+  getCurrentWorkspace: () =>
+    apiClient.get('/business/workspaces/current').then(r => r.data),
+
+  updateCurrentWorkspace: (data: { name?: string; legal_name?: string; tax_identifier?: string; base_currency?: string; timezone?: string }) =>
+    apiClient.patch('/business/workspaces/current', data).then(r => r.data),
+
+  listWorkspaceMembers: () =>
+    apiClient.get('/business/members').then(r => r.data),
+
+  inviteWorkspaceMember: (data: { email: string; role?: string }) =>
+    apiClient.post('/business/members/invite', data).then(r => r.data),
+
+  updateWorkspaceMemberRole: (memberId: string, role: string) =>
+    apiClient.patch(`/business/members/${memberId}/role`, { role }).then(r => r.data),
+
+  listCommercialPartners: (params?: { type?: string; search?: string; status?: string; limit?: number; offset?: number }) =>
+    apiClient.get('/business/partners', { params }).then(r => r.data),
+
+  createCommercialPartner: (data: { partner_type: string; name: string; legal_name?: string; phone?: string; email?: string; tax_identifier?: string; credit_period_days?: number }) =>
+    apiClient.post('/business/partners', data).then(r => r.data),
+
+  getCommercialPartner: (partnerId: string) =>
+    apiClient.get(`/business/partners/${partnerId}`).then(r => r.data),
+
+  updateCommercialPartner: (partnerId: string, data: any) =>
+    apiClient.patch(`/business/partners/${partnerId}`, data).then(r => r.data),
+
+  archiveCommercialPartner: (partnerId: string, reason?: string) =>
+    apiClient.post(`/business/partners/${partnerId}/archive`, { reason }).then(r => r.data),
+
+  getBusinessAuditLogs: (params?: { entity_type?: string; entity_id?: string; limit?: number; offset?: number }) =>
+    apiClient.get('/business/audit', { params }).then(r => r.data),
 };
+
+export const api = DeadlineOSApi;
