@@ -20,7 +20,7 @@ def capture_text():
     """
     Ingests natural-language business notes/transactions and generates a staged candidate.
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     text = data.get('text')
     if not text or not str(text).strip():
         return error_response("Field 'text' is required.", "VALIDATION_ERROR", 400)

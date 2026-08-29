@@ -8,6 +8,9 @@ from .partner import CommercialPartner
 from .audit import AuditEvent
 from .artifact import IngestionArtifact
 from .staging import StagedExtraction
+from .invoice import Invoice, InvoiceLineItem
+from .transaction import BusinessTransaction
+from .allocation import PaymentAllocation
 
 __all__ = [
     'Workspace',
@@ -16,4 +19,8 @@ __all__ = [
     'AuditEvent',
     'IngestionArtifact',
     'StagedExtraction',
+    'Invoice',
+    'InvoiceLineItem',
+    'BusinessTransaction',
+    'PaymentAllocation',
 ]

@@ -58,7 +58,7 @@ def update_staged_item(staging_id):
     """
     Updates candidate fields (amount, date, partner_id, candidate_type) during human review.
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     try:
         updated = StagingService.update_staged_item(
             workspace_id=g.workspace_id,
@@ -108,7 +108,7 @@ def reject_staged_item(staging_id):
     """
     Rejects the staged candidate with a reason.
     """
-    data = request.get_json() or {}
+    data = request.get_json(silent=True) or {}
     reason = data.get('reason')
     try:
         rejected = StagingService.reject_staged_item(
@@ -122,6 +122,33 @@ def reject_staged_item(staging_id):
         return success_response(
             data={"staged_extraction": rejected.serialize()},
             message="Candidate rejected successfully."
+        )
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+@staging_bp.route('/staging/<staging_id>/commit', methods=['POST'])
+@require_workspace('transaction:create')
+def commit_staged_item(staging_id):
+    """
+    Bridges confirmed staging candidate into authoritative Invoice or Transaction ledger.
+    """
+    data = request.get_json(silent=True) or {}
+    target_domain = data.get('target_domain')
+    try:
+        from services.business.financial_converter_service import FinancialConverterService
+        res = FinancialConverterService.commit_staged_item(
+            workspace_id=g.workspace_id,
+            staging_id=staging_id,
+            user_id=g.user_id,
+            target_domain=target_domain,
+            ip_address=request.remote_addr,
+            user_agent=request.user_agent.string if request.user_agent else None
+        )
+        return success_response(
+            data=res,
+            message="Staged candidate successfully committed to financial ledger.",
+            status_code=201
         )
     except APIError as e:
         return error_response(e.message, e.code, e.status)

@@ -11,15 +11,23 @@ from .partners import partners_bp
 from .audit import audit_bp
 from .capture import capture_bp
 from .staging import staging_bp
+from .invoices import invoices_bp
+from .transactions import transactions_bp
+from .allocations import allocations_bp
+from .financial import financial_bp
 
 business_bp = Blueprint('business', __name__, url_prefix='/api/business')
 
-# Register modular sub-blueprints without prefix (routes inherit /api/business)
+# Register modular sub-blueprints
 business_bp.register_blueprint(workspaces_bp)
 business_bp.register_blueprint(members_bp)
 business_bp.register_blueprint(partners_bp)
 business_bp.register_blueprint(audit_bp)
 business_bp.register_blueprint(capture_bp)
 business_bp.register_blueprint(staging_bp)
+business_bp.register_blueprint(invoices_bp)
+business_bp.register_blueprint(transactions_bp)
+business_bp.register_blueprint(allocations_bp)
+business_bp.register_blueprint(financial_bp)
 
 __all__ = ['business_bp']

@@ -795,6 +795,46 @@ export const DeadlineOSApi = {
 
   rejectStagedItem: (stagingId: string, reason?: string) =>
     apiClient.post(`/business/staging/${stagingId}/reject`, { reason }).then(r => r.data),
+
+  commitStagedItem: (stagingId: string, targetDomain?: string) =>
+    apiClient.post(`/business/staging/${stagingId}/commit`, { target_domain: targetDomain }).then(r => r.data),
+
+  // Phase B3: Ledger, Invoicing & Financial Truth
+  listInvoices: (params?: { status?: string; invoice_type?: string; partner_id?: string; limit?: number; offset?: number }) =>
+    apiClient.get('/business/invoices', { params }).then(r => r.data),
+
+  createInvoice: (data: any) =>
+    apiClient.post('/business/invoices', data).then(r => r.data),
+
+  getInvoice: (invoiceId: string) =>
+    apiClient.get(`/business/invoices/${invoiceId}`).then(r => r.data),
+
+  issueInvoice: (invoiceId: string) =>
+    apiClient.post(`/business/invoices/${invoiceId}/issue`).then(r => r.data),
+
+  voidInvoice: (invoiceId: string, reason?: string) =>
+    apiClient.post(`/business/invoices/${invoiceId}/void`, { reason }).then(r => r.data),
+
+  listTransactions: (params?: { transaction_type?: string; status?: string; partner_id?: string; limit?: number; offset?: number }) =>
+    apiClient.get('/business/transactions', { params }).then(r => r.data),
+
+  recordTransaction: (data: any) =>
+    apiClient.post('/business/transactions', data).then(r => r.data),
+
+  getTransaction: (transactionId: string) =>
+    apiClient.get(`/business/transactions/${transactionId}`).then(r => r.data),
+
+  reverseTransaction: (transactionId: string, reason: string) =>
+    apiClient.post(`/business/transactions/${transactionId}/reverse`, { reason }).then(r => r.data),
+
+  allocatePayment: (data: { transaction_id: string; allocations: Array<{ invoice_id: string; allocated_amount: string; notes?: string }> }) =>
+    apiClient.post('/business/allocations', data).then(r => r.data),
+
+  getCashPosition: (windowDays?: number) =>
+    apiClient.get('/business/financial/cash-position', { params: { window_days: windowDays } }).then(r => r.data),
+
+  getRunway: () =>
+    apiClient.get('/business/financial/runway').then(r => r.data),
 };
 
 export const api = DeadlineOSApi;

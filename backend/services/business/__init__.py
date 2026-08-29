@@ -11,6 +11,11 @@ from .normalizer_service import NormalizerService
 from .entity_resolution_service import EntityResolutionService
 from .extraction_service import ExtractionService
 from .staging_service import StagingService
+from .invoice_service import InvoiceService
+from .transaction_service import TransactionService
+from .allocation_service import AllocationService
+from .financial_truth_service import FinancialTruthService
+from .financial_converter_service import FinancialConverterService
 
 __all__ = [
     'AuditService',
@@ -22,4 +27,9 @@ __all__ = [
     'EntityResolutionService',
     'ExtractionService',
     'StagingService',
+    'InvoiceService',
+    'TransactionService',
+    'AllocationService',
+    'FinancialTruthService',
+    'FinancialConverterService',
 ]
