@@ -190,24 +190,10 @@ export const TrustedMetrics: React.FC<TrustedMetricsProps> = ({ mode }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
         {/* System Pulse Control Header */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-6 border-b border-white/10 gap-4">
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold uppercase tracking-wider ${
-                  isPersonal
-                    ? 'bg-indigo-500/10 border border-indigo-500/25 text-indigo-400'
-                    : 'bg-emerald-500/10 border border-emerald-500/25 text-emerald-400'
-                }`}
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span>LIVE SYSTEM PULSE • CONTINUOUS OPERATING INTELLIGENCE</span>
-              </span>
-            </div>
-            <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
-              {isPersonal ? 'One Interconnected Cognitive System.' : 'One Unified Commercial Operating Core.'}
-            </h2>
-          </div>
+        <div className="mb-8 pb-6 border-b border-white/10">
+          <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+            {isPersonal ? 'One Interconnected Cognitive System.' : 'One Unified Commercial Operating Core.'}
+          </h2>
         </div>
 
         {/* Central Unified Telemetry Surface */}
