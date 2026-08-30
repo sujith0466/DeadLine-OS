@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Brain, ShieldCheck } from 'lucide-react';
 import type { ProductMode } from './ProductModeSwitcher';
 
@@ -27,8 +28,9 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ mode: _mode }) => 
           <div className="flex items-center gap-6">
             <a href="#features" className="hover:text-white transition-colors">Capabilities</a>
             <a href="#workflow" className="hover:text-white transition-colors">Pipeline</a>
+            <a href="#agents" className="hover:text-white transition-colors">Intelligence</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
-            <a href="/login" className="hover:text-white transition-colors">Sign In</a>
+            <Link to="/login" className="hover:text-white transition-colors">Sign In</Link>
           </div>
 
           <div className="flex items-center gap-2 text-gray-500">

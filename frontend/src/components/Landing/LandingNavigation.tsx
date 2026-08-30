@@ -129,9 +129,17 @@ export const LandingNavigation: React.FC = () => {
               <div className="pt-4 border-t border-white/10 flex flex-col gap-3 px-3">
                 <Link
                   to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
                   className="w-full text-center text-sm font-medium text-gray-300 hover:text-white py-2"
                 >
                   Login
+                </Link>
+                <Link
+                  to="/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full text-center text-sm font-semibold bg-white text-gray-900 hover:bg-gray-100 py-2.5 rounded-full shadow-lg"
+                >
+                  Get Started
                 </Link>
               </div>
             </div>
