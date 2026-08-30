@@ -208,19 +208,6 @@ export const TrustedMetrics: React.FC<TrustedMetricsProps> = ({ mode }) => {
               {isPersonal ? 'One Interconnected Cognitive System.' : 'One Unified Commercial Operating Core.'}
             </h2>
           </div>
-
-          <div className="flex items-center gap-3 text-xs font-mono text-gray-400">
-            <span className="hidden sm:inline">Representative telemetry state:</span>
-            <span
-              className={`px-2.5 py-1 rounded-md text-[11px] font-bold border ${
-                isPersonal
-                  ? 'bg-indigo-950/40 border-indigo-500/30 text-indigo-300'
-                  : 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
-              }`}
-            >
-              ● 4 NODES SYNCHRONIZED
-            </span>
-          </div>
         </div>
 
         {/* Central Unified Telemetry Surface */}
