@@ -200,6 +200,17 @@ class WorkspaceService:
             raise APIError("Workspace member not found.", code="MEMBER_NOT_FOUND", status=404)
 
         before_state = member.serialize()
+
+        # Prevent demoting the last active OWNER
+        if member.role == 'OWNER' and new_role != 'OWNER':
+            active_owners = WorkspaceMember.query.filter_by(
+                workspace_id=workspace_id,
+                role='OWNER',
+                status='ACTIVE'
+            ).count()
+            if active_owners <= 1:
+                raise APIError("Cannot demote the last active OWNER of the workspace.", code="LAST_OWNER_PROTECTION", status=400)
+
         member.role = new_role
         db.session.commit()
 
@@ -217,8 +228,119 @@ class WorkspaceService:
         return member
 
     @staticmethod
+    def update_member_status(
+        workspace_id: str,
+        member_id: str,
+        actor_user_id: str,
+        new_status: str,
+        ip_address: str = None,
+        user_agent: str = None
+    ) -> WorkspaceMember:
+        new_status = new_status.upper() if new_status else ''
+        if new_status not in ('ACTIVE', 'SUSPENDED'):
+            raise APIError(f"Invalid status '{new_status}'. Allowed: ACTIVE, SUSPENDED", code="VALIDATION_ERROR", status=400)
+
+        member = WorkspaceMember.query.filter_by(
+            id=member_id,
+            workspace_id=workspace_id
+        ).first()
+        if not member:
+            raise APIError("Workspace member not found.", code="MEMBER_NOT_FOUND", status=404)
+
+        if member.user_id == actor_user_id and new_status == 'SUSPENDED':
+            raise APIError("You cannot suspend your own workspace membership.", code="SELF_SUSPENSION_BLOCKED", status=400)
+
+        if member.role == 'OWNER' and new_status == 'SUSPENDED':
+            active_owners = WorkspaceMember.query.filter_by(
+                workspace_id=workspace_id,
+                role='OWNER',
+                status='ACTIVE'
+            ).count()
+            if active_owners <= 1:
+                raise APIError("Cannot suspend the last active OWNER of the workspace.", code="LAST_OWNER_PROTECTION", status=400)
+
+        before_state = member.serialize()
+        member.status = new_status
+        db.session.commit()
+
+        AuditService.log_event(
+            workspace_id=workspace_id,
+            actor_user_id=actor_user_id,
+            action='MEMBER_STATUS_UPDATED',
+            entity_type='WORKSPACE_MEMBER',
+            entity_id=member.id,
+            before_state=before_state,
+            after_state=member.serialize(),
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        return member
+
+    @staticmethod
+    def remove_member(
+        workspace_id: str,
+        member_id: str,
+        actor_user_id: str,
+        ip_address: str = None,
+        user_agent: str = None
+    ) -> bool:
+        member = WorkspaceMember.query.filter_by(
+            id=member_id,
+            workspace_id=workspace_id
+        ).first()
+        if not member:
+            raise APIError("Workspace member not found.", code="MEMBER_NOT_FOUND", status=404)
+
+        if member.user_id == actor_user_id:
+            raise APIError("You cannot remove yourself via member administration. Use workspace leave if supported.", code="SELF_REMOVAL_BLOCKED", status=400)
+
+        if member.role == 'OWNER':
+            active_owners = WorkspaceMember.query.filter_by(
+                workspace_id=workspace_id,
+                role='OWNER',
+                status='ACTIVE'
+            ).count()
+            if active_owners <= 1:
+                raise APIError("Cannot remove the last active OWNER of the workspace.", code="LAST_OWNER_PROTECTION", status=400)
+
+        before_state = member.serialize()
+        db.session.delete(member)
+        db.session.commit()
+
+        AuditService.log_event(
+            workspace_id=workspace_id,
+            actor_user_id=actor_user_id,
+            action='MEMBER_REMOVED',
+            entity_type='WORKSPACE_MEMBER',
+            entity_id=member_id,
+            before_state=before_state,
+            after_state={"status": "REMOVED"},
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+        return True
+
+    @staticmethod
     def get_workspace_members(workspace_id: str):
         members = WorkspaceMember.query.filter_by(
             workspace_id=workspace_id
         ).all()
         return [m.serialize() for m in members]
+
+    @staticmethod
+    def get_workspace_by_id_for_user(workspace_id: str, user_id: str) -> dict:
+        member = WorkspaceMember.query.filter_by(
+            workspace_id=workspace_id,
+            user_id=user_id
+        ).first()
+        if not member or member.status != 'ACTIVE':
+            raise APIError("Workspace not found or you do not have permission to view it.", code="WORKSPACE_ACCESS_DENIED", status=403)
+
+        workspace = Workspace.query.filter_by(id=workspace_id).first()
+        if not workspace or workspace.status != 'ACTIVE':
+            raise APIError("Workspace not found or inactive.", code="WORKSPACE_NOT_FOUND", status=404)
+
+        ws_data = workspace.serialize()
+        ws_data['member_role'] = member.role
+        ws_data['member_status'] = member.status
+        return ws_data
