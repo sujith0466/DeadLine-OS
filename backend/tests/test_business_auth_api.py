@@ -240,9 +240,10 @@ def test_b7_invitation_info_lookup_and_acceptance_api(client, auth_users):
         "X-Workspace-Id": ws_a_id
     }
 
-    # 1. Create invitation for user_c
+    # 1. Create invitation for user_c — email MUST match user_c's actual email
+    #    (R2 remediation: acceptance now enforces email binding)
     res_inv = client.post("/api/business/workspaces/invitations", json={
-        "email": "invitee_b7@enterprise.com",
+        "email": "user_c@enterprise.com",
         "role": "ACCOUNTANT"
     }, headers=headers_a)
     assert res_inv.status_code == 201
@@ -254,20 +255,37 @@ def test_b7_invitation_info_lookup_and_acceptance_api(client, auth_users):
     info_data = res_info.get_json()["data"]
     assert info_data["workspace_name"] == "Enterprise Alpha"
     assert info_data["role"] == "ACCOUNTANT"
-    assert info_data["email"] == "invitee_b7@enterprise.com"
+    assert info_data["email"] == "user_c@enterprise.com"
     assert info_data["status"] == "PENDING"
 
     # 3. Invalid token returns 404
     res_bad = client.get("/api/business/workspaces/invitations/info?token=invalid_crypto_token_123456789")
     assert res_bad.status_code == 404
 
-    # 4. Accept invitation as User C
+    # 4. Accept invitation as User C (email matches → should succeed)
     headers_c = {"Authorization": f"Bearer {u_c}"}
     res_accept = client.post("/api/business/workspaces/invitations/accept", json={
         "token": token
     }, headers=headers_c)
     assert res_accept.status_code == 200
     assert res_accept.get_json()["data"]["workspace"]["id"] == ws_a_id
+
+    # 4b. Verify email-mismatch rejection — a different user cannot steal the invite
+    headers_a_steal = {"Authorization": f"Bearer {auth_users['user_a_id']}"}
+    # (invitation is now ACCEPTED so we'd get 409, but if we create a fresh invite and
+    #  try with user_a whose email is user_a@enterprise.com, we should get 403)
+    res_inv2 = client.post("/api/business/workspaces/invitations", json={
+        "email": "different_invitee@enterprise.com",
+        "role": "VIEWER"
+    }, headers=headers_a)
+    if res_inv2.status_code == 201:
+        token2 = res_inv2.get_json()["data"]["token"]
+        # user_c trying to accept an invite meant for different_invitee → 403
+        res_mismatch = client.post("/api/business/workspaces/invitations/accept", json={
+            "token": token2
+        }, headers=headers_c)
+        assert res_mismatch.status_code == 403
+        assert res_mismatch.get_json()["error"]["code"] == "INVITATION_EMAIL_MISMATCH"
 
     # 5. Replay attempt returns 409
     res_replay = client.post("/api/business/workspaces/invitations/accept", json={

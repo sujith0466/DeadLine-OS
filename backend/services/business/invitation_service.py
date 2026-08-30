@@ -139,12 +139,35 @@ class InvitationService:
     ) -> Dict[str, Any]:
         """
         Accept an invitation atomically and provision the WorkspaceMember record.
+
+        Security: The authenticated user's email MUST match the invitation's
+        target email (case-insensitive, whitespace-normalized). This binding
+        prevents a user who obtained a token from accepting an invitation
+        intended for a different email address.
+
+        Remediation: FINDING-008 / P1 — Final B1–B12 Release Audit 2026-08-30.
         """
         inv = InvitationService.get_invitation_by_token(token)
 
         user = User.query.get(user_id)
         if not user:
             raise APIError("User identity not found in application database.", "USER_NOT_FOUND", 404)
+
+        # ── EMAIL BINDING VALIDATION (FINDING-008 remediation) ─────────────────
+        # Normalize both addresses: strip whitespace, lowercase.
+        # This matches the normalization applied in create_invitation().
+        user_email_normalized = (user.email or "").strip().lower()
+        inv_email_normalized = (inv.email or "").strip().lower()
+
+        if user_email_normalized != inv_email_normalized:
+            # Use a generic error message to avoid leaking invitation details
+            # (i.e., which email was invited) to a caller with a wrong identity.
+            raise APIError(
+                "This invitation is not associated with your account.",
+                "INVITATION_EMAIL_MISMATCH",
+                403
+            )
+        # ───────────────────────────────────────────────────────────────────────
 
         workspace = Workspace.query.filter_by(id=inv.workspace_id).first()
         if not workspace or workspace.status != 'ACTIVE':
@@ -194,6 +217,9 @@ class InvitationService:
                 "member": member.serialize(),
                 "role": member.role
             }
+        except APIError:
+            db.session.rollback()
+            raise
         except Exception as e:
             db.session.rollback()
             raise APIError(f"Failed to accept invitation: {str(e)}", "INTERNAL_ERROR", 500)
