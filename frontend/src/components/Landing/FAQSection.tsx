@@ -37,15 +37,15 @@ export const FAQSection: React.FC<FAQSectionProps> = ({ mode = 'personal' }) => 
     },
     {
       question: 'Can I manage multiple commercial entities or subsidiaries?',
-      answer: 'Yes. Certified under Phase B7, DeadlineOS provides multi-entity group consolidation with automatic detection and elimination of inter-company transfers, delivering unified group-level cash reality.',
+      answer: 'Yes. DeadlineOS provides multi-entity group consolidation with automatic detection and elimination of inter-company transfers, delivering unified group-level cash reality across all your organizations.',
     },
     {
       question: 'How does the Overdue Collection Rescue engine operate?',
-      answer: 'Certified under Phase B5, the Rescue Engine tracks invoice aging buckets and triggers 1-click multi-channel payment reminders (via WhatsApp and Email) with full audit provenance.',
+      answer: 'The Collection Rescue Engine tracks invoice aging buckets and coordinates 1-click multi-channel payment reminders via WhatsApp and Email while maintaining a complete, auditable activity record.',
     },
     {
       question: 'Is there any data leakage between Business workspaces and Personal OS?',
-      answer: 'None. DeadlineOS maintains strict tenant isolation with 5-tier server-side RBAC. Personal OS schemas and business financial records remain 100% segregated with zero database contamination.',
+      answer: 'None. Business workspaces are designed with strict access boundaries so team members only interact with the business data and permissions authorized for their role, keeping personal and commercial workspaces entirely isolated.',
     },
   ];
 
@@ -77,7 +77,7 @@ export const FAQSection: React.FC<FAQSectionProps> = ({ mode = 'personal' }) => 
               >
                 <button
                   onClick={() => setOpenIndex(openIndex === idx ? null : idx)}
-                  className="w-full px-6 py-4 flex items-center justify-between text-left focus:outline-none"
+                  className="w-full px-6 py-4 flex items-center justify-between text-left outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#0A0A0B] rounded-2xl transition-all cursor-pointer"
                 >
                   <span className="font-bold text-white text-sm md:text-base">{faq.question}</span>
                   <ChevronDown

@@ -1,18 +1,27 @@
 import React, { useEffect, useRef } from 'react';
-import { motion, useInView, useSpring, useTransform } from 'framer-motion';
+import { motion, useInView, useSpring, useTransform, useReducedMotion } from 'framer-motion';
 import type { ProductMode } from './ProductModeSwitcher';
 
 const AnimatedCounter: React.FC<{ value: number; duration?: number }> = ({ value, duration = 2 }) => {
+  const shouldReduceMotion = useReducedMotion();
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true, margin: '-80px' });
-  const spring = useSpring(0, { duration: duration * 1000, bounce: 0 });
+  const spring = useSpring(shouldReduceMotion ? value : 0, { duration: shouldReduceMotion ? 0 : duration * 1000, bounce: 0 });
   const displayValue = useTransform(spring, (current) => Math.floor(current).toLocaleString());
 
   useEffect(() => {
+    if (shouldReduceMotion) {
+      spring.set(value);
+      return;
+    }
     if (inView) {
       spring.set(value);
     }
-  }, [inView, spring, value]);
+  }, [inView, spring, value, shouldReduceMotion]);
+
+  if (shouldReduceMotion) {
+    return <span>{value.toLocaleString()}</span>;
+  }
 
   return <motion.span ref={ref}>{displayValue}</motion.span>;
 };

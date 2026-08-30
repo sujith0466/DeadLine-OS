@@ -3,7 +3,7 @@ import { DollarSign, Layers, ShieldCheck, ArrowUpRight, TrendingUp, RefreshCw, C
 
 export const BusinessHeroVisual: React.FC = () => {
   return (
-    <div className="w-full relative">
+    <div className="w-full relative" aria-hidden="true">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/10 to-transparent blur-3xl" />
       <div className="relative aspect-[21/10] md:aspect-[21/9] rounded-2xl border border-white/10 bg-[#0B0C10]/90 backdrop-blur-2xl shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
         

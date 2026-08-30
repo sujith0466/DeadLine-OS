@@ -133,8 +133,16 @@ export const ProductShowcase: React.FC<ProductShowcaseProps> = ({ mode }) => {
   return (
     <section id="features" className="py-32 bg-[#0A0A0B] relative overflow-hidden">
       {/* Ambient background glows */}
-      <div className="absolute top-1/4 -right-1/4 w-[500px] h-[500px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 -left-1/4 w-[500px] h-[500px] bg-purple-500/10 rounded-full blur-[120px] pointer-events-none" />
+      <div
+        className={`absolute top-1/4 -right-1/4 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none transition-colors duration-700 ${
+          isPersonal ? 'bg-indigo-500/10' : 'bg-emerald-500/10'
+        }`}
+      />
+      <div
+        className={`absolute bottom-1/4 -left-1/4 w-[500px] h-[500px] rounded-full blur-[120px] pointer-events-none transition-colors duration-700 ${
+          isPersonal ? 'bg-purple-500/10' : 'bg-cyan-500/10'
+        }`}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center max-w-3xl mx-auto mb-20">

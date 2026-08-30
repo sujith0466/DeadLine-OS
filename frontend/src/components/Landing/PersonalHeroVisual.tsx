@@ -1,10 +1,12 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { Target, Activity, Zap, BarChart2, BrainCircuit, ShieldAlert } from 'lucide-react';
 
 export const PersonalHeroVisual: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
-    <div className="w-full relative">
+    <div className="w-full relative" aria-hidden="true">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-indigo-500/10 to-transparent blur-3xl" />
       <div className="relative aspect-[21/10] md:aspect-[21/9] rounded-2xl border border-white/10 bg-[#0B0C10]/90 backdrop-blur-2xl shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden">
         
@@ -26,7 +28,7 @@ export const PersonalHeroVisual: React.FC = () => {
             {/* Goal Card */}
             <div className="bg-white/5 border border-white/5 rounded-xl p-4 flex flex-col gap-3 relative overflow-hidden">
               <div className="absolute top-0 right-0 p-3">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse block" />
+                <span className={`w-2 h-2 rounded-full bg-emerald-500 block ${shouldReduceMotion ? '' : 'animate-pulse'}`} />
               </div>
               <div className="flex items-center gap-2 text-sm font-bold text-white">
                 <Target className="w-4 h-4 text-emerald-400" />
@@ -34,8 +36,8 @@ export const PersonalHeroVisual: React.FC = () => {
               </div>
               <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
                 <motion.div 
-                  animate={{ width: ['40%', '75%'] }}
-                  transition={{ duration: 5, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+                  animate={shouldReduceMotion ? { width: '75%' } : { width: ['40%', '75%'] }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 5, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
                   className="h-full bg-gradient-to-r from-emerald-500 to-green-400" 
                 />
               </div>
@@ -56,9 +58,9 @@ export const PersonalHeroVisual: React.FC = () => {
                 ].map((item, i) => (
                   <motion.div 
                     key={i} 
-                    initial={{ opacity: 0, x: -10 }}
+                    initial={shouldReduceMotion ? false : { opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
+                    transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.3 + i * 0.1 }}
                     className="flex items-center gap-3 bg-black/20 p-2 rounded-lg border border-white/5"
                   >
                     <span className="text-xs font-mono text-gray-500">{item.t}</span>
@@ -75,12 +77,12 @@ export const PersonalHeroVisual: React.FC = () => {
             {/* Twin Simulation */}
             <div className="flex-1 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 rounded-xl p-4 flex flex-col items-center justify-center relative overflow-hidden group">
               <motion.div 
-                animate={{ rotate: 360 }}
-                transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+                animate={shouldReduceMotion ? { rotate: 0 } : { rotate: 360 }}
+                transition={shouldReduceMotion ? { duration: 0 } : { duration: 20, repeat: Infinity, ease: 'linear' }}
                 className="absolute w-64 h-64 border border-indigo-500/10 rounded-full"
               />
               <div className="relative z-10 w-16 h-16 rounded-full bg-black/50 border border-indigo-500/30 flex items-center justify-center backdrop-blur-md shadow-[0_0_30px_rgba(99,102,241,0.2)]">
-                <Activity className="w-8 h-8 text-indigo-400 animate-pulse" />
+                <Activity className={`w-8 h-8 text-indigo-400 ${shouldReduceMotion ? '' : 'animate-pulse'}`} />
               </div>
               <div className="mt-4 text-center z-10">
                 <div className="text-xs font-bold text-white mb-1">Digital Twin V2</div>
@@ -125,9 +127,9 @@ export const PersonalHeroVisual: React.FC = () => {
               <div className="text-xs font-bold text-gray-500 tracking-wider mb-3">AGENT ORCHESTRATION</div>
               <div className="flex flex-col gap-3 relative z-10">
                 <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ repeat: Infinity, repeatDelay: 4, duration: 0.5 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { repeat: Infinity, repeatDelay: 4, duration: 0.5 }}
                   className="flex items-start gap-2"
                 >
                   <BrainCircuit className="w-3.5 h-3.5 text-purple-400 shrink-0 mt-0.5" />
@@ -138,9 +140,9 @@ export const PersonalHeroVisual: React.FC = () => {
                 </motion.div>
                 
                 <motion.div 
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 2, repeat: Infinity, repeatDelay: 4, duration: 0.5 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { delay: 2, repeat: Infinity, repeatDelay: 4, duration: 0.5 }}
                   className="flex items-start gap-2"
                 >
                   <ShieldAlert className="w-3.5 h-3.5 text-rose-400 shrink-0 mt-0.5" />

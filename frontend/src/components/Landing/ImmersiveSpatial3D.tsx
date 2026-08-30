@@ -44,13 +44,17 @@ export const ImmersiveSpatial3D: React.FC<ImmersiveSpatial3DProps> = ({ mode }) 
     });
 
     let rotation = 0;
+    let isReducedMotion = false;
+    const mediaQuery = typeof window !== 'undefined' && window.matchMedia ? window.matchMedia('(prefers-reduced-motion: reduce)') : null;
+    if (mediaQuery) {
+      isReducedMotion = mediaQuery.matches;
+    }
 
-    const render = () => {
+    const drawScene = (currentRotation: number) => {
       ctx.clearRect(0, 0, width, height);
 
       const centerX = width / 2;
       const centerY = height * 0.42;
-      rotation += 0.004;
 
       const isPersonal = mode === 'personal';
       const nodeColor = isPersonal ? 'rgba(129, 140, 248, ' : 'rgba(52, 211, 153, ';
@@ -59,15 +63,15 @@ export const ImmersiveSpatial3D: React.FC<ImmersiveSpatial3DProps> = ({ mode }) 
       // Render connecting lines
       for (let i = 0; i < particles.length; i++) {
         const p1 = particles[i];
-        const a1 = p1.angle + rotation;
+        const a1 = p1.angle + currentRotation;
         const x1 = centerX + Math.cos(a1) * p1.radius;
-        const y1 = centerY + Math.sin(a1) * (p1.radius * 0.42) + Math.sin(rotation + i) * 15;
+        const y1 = centerY + Math.sin(a1) * (p1.radius * 0.42) + Math.sin(currentRotation + i) * 15;
 
         for (let j = i + 1; j < particles.length; j++) {
           const p2 = particles[j];
-          const a2 = p2.angle + rotation;
+          const a2 = p2.angle + currentRotation;
           const x2 = centerX + Math.cos(a2) * p2.radius;
-          const y2 = centerY + Math.sin(a2) * (p2.radius * 0.42) + Math.sin(rotation + j) * 15;
+          const y2 = centerY + Math.sin(a2) * (p2.radius * 0.42) + Math.sin(currentRotation + j) * 15;
 
           const dist = Math.hypot(x2 - x1, y2 - y1);
           if (dist < 130) {
@@ -84,9 +88,9 @@ export const ImmersiveSpatial3D: React.FC<ImmersiveSpatial3DProps> = ({ mode }) 
 
       // Render particle nodes
       particles.forEach((p, idx) => {
-        const currentAngle = p.angle + rotation;
+        const currentAngle = p.angle + currentRotation;
         const px = centerX + Math.cos(currentAngle) * p.radius;
-        const py = centerY + Math.sin(currentAngle) * (p.radius * 0.42) + Math.sin(rotation + idx) * 15;
+        const py = centerY + Math.sin(currentAngle) * (p.radius * 0.42) + Math.sin(currentRotation + idx) * 15;
         const depthAlpha = 0.3 + (Math.sin(currentAngle) + 1) * 0.35;
 
         ctx.fillStyle = `${nodeColor}${depthAlpha})`;
@@ -101,14 +105,48 @@ export const ImmersiveSpatial3D: React.FC<ImmersiveSpatial3DProps> = ({ mode }) 
         ctx.arc(px, py, p.size * 2.2, 0, Math.PI * 2);
         ctx.stroke();
       });
+    };
 
+    const render = () => {
+      if (isReducedMotion) {
+        drawScene(0);
+        return;
+      }
+
+      rotation += 0.004;
+      drawScene(rotation);
       animationFrameId = requestAnimationFrame(render);
     };
+
+    const handleMediaChange = (e: MediaQueryListEvent) => {
+      isReducedMotion = e.matches;
+      if (isReducedMotion) {
+        cancelAnimationFrame(animationFrameId);
+        drawScene(0);
+      } else {
+        render();
+      }
+    };
+
+    if (mediaQuery) {
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handleMediaChange);
+      } else if ('addListener' in mediaQuery) {
+        (mediaQuery as { addListener: (cb: (e: MediaQueryListEvent) => void) => void }).addListener(handleMediaChange);
+      }
+    }
 
     render();
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      if (mediaQuery) {
+        if (mediaQuery.removeEventListener) {
+          mediaQuery.removeEventListener('change', handleMediaChange);
+        } else if ('removeListener' in mediaQuery) {
+          (mediaQuery as { removeListener: (cb: (e: MediaQueryListEvent) => void) => void }).removeListener(handleMediaChange);
+        }
+      }
       cancelAnimationFrame(animationFrameId);
     };
   }, [mode]);

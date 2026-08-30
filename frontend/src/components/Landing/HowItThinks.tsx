@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Cpu, Network, Database, Lock, ShieldCheck, RefreshCw } from 'lucide-react';
 import type { ProductMode } from './ProductModeSwitcher';
 
@@ -9,9 +9,10 @@ interface HowItThinksProps {
 
 export const HowItThinks: React.FC<HowItThinksProps> = ({ mode }) => {
   const isPersonal = mode === 'personal';
+  const shouldReduceMotion = useReducedMotion();
 
   return (
-    <section className="py-28 bg-[#0A0A0B] relative overflow-hidden border-t border-white/5">
+    <section id="agents" className="py-28 bg-[#0A0A0B] relative overflow-hidden border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           
@@ -26,8 +27,8 @@ export const HowItThinks: React.FC<HowItThinksProps> = ({ mode }) => {
             <div className="relative w-full max-w-md aspect-square">
               {/* Central Core */}
               <motion.div 
-                animate={{ scale: [1, 1.04, 1] }}
-                transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                animate={shouldReduceMotion ? { scale: 1 } : { scale: [1, 1.04, 1] }}
+                transition={shouldReduceMotion ? { duration: 0 } : { duration: 4, repeat: Infinity, ease: 'easeInOut' }}
                 className="absolute inset-0 m-auto w-36 h-36 rounded-2xl bg-gray-900/90 border border-white/15 shadow-2xl flex flex-col items-center justify-center z-20 backdrop-blur-xl"
               >
                 <Cpu className={`w-10 h-10 mb-2 ${isPersonal ? 'text-indigo-400' : 'text-emerald-400'}`} />
@@ -44,13 +45,13 @@ export const HowItThinks: React.FC<HowItThinksProps> = ({ mode }) => {
               ].map((node, idx) => (
                 <motion.div
                   key={`${mode}-${idx}`}
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 24, repeat: Infinity, ease: 'linear', delay: node.delay }}
+                  animate={shouldReduceMotion ? { rotate: idx * 90 } : { rotate: 360 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 24, repeat: Infinity, ease: 'linear', delay: node.delay }}
                   className="absolute inset-0 w-full h-full"
                 >
                   <div
                     className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 rounded-xl bg-gray-900 border border-white/10 shadow-xl flex flex-col items-center justify-center z-30"
-                    style={{ transform: 'rotate(-360deg)' }}
+                    style={{ transform: shouldReduceMotion ? `rotate(-${idx * 90}deg)` : 'rotate(-360deg)' }}
                   >
                     <node.icon className={`w-5 h-5 mb-1 ${isPersonal ? 'text-purple-400' : 'text-cyan-400'}`} />
                     <span className="text-[9px] font-bold text-gray-300 text-center px-1">{node.label}</span>
