@@ -30,7 +30,7 @@ export const WorkspaceSelector: React.FC = () => {
       setSelectionError(null);
       setSelectingId(ws.id);
       await selectWorkspace(ws.id);
-      navigate('/dashboard'); // or /business/dashboard
+      navigate('/business/dashboard');
     } catch (err: any) {
       setSelectionError(err?.message || 'Failed to select workspace.');
       setSelectingId(null);

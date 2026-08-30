@@ -107,7 +107,7 @@ export const BusinessRegister: React.FC = () => {
       });
 
       await refreshWorkspaces();
-      navigate('/dashboard'); // or /business/dashboard
+      navigate('/business/dashboard');
     } catch (err: any) {
       setErrorMessage(err?.response?.data?.error?.message || err?.message || 'Failed to create business workspace.');
     } finally {

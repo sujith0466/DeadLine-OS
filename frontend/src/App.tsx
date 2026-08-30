@@ -11,6 +11,7 @@ import { BusinessAuthProvider } from './context/BusinessAuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { RuntimeProvider } from './context/RuntimeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { BusinessProtectedRoute } from './components/BusinessProtectedRoute';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { BusinessLogin } from './pages/auth/BusinessLogin';
@@ -57,6 +58,12 @@ const AnimatedRoutes = () => {
         <Route path="/business/register" element={<BusinessRegister />} />
         <Route path="/business/select" element={<WorkspaceSelector />} />
         
+        {/* Business Protected Routes */}
+        <Route element={<BusinessProtectedRoute />}>
+          <Route path="/business/dashboard" element={<PageReveal><Dashboard /></PageReveal>} />
+        </Route>
+
+        {/* Personal Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<PageReveal><Dashboard /></PageReveal>} />

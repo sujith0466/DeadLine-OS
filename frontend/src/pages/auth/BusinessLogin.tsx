@@ -24,7 +24,7 @@ export const BusinessLogin: React.FC = () => {
         navigate('/business/register');
       } else if (workspaces.length === 1 && workspaces[0].status === 'ACTIVE') {
         selectWorkspace(workspaces[0].id).then(() => {
-          navigate('/dashboard'); // or /business/dashboard
+          navigate('/business/dashboard');
         });
       } else if (workspaces.length > 1) {
         navigate('/business/select');
