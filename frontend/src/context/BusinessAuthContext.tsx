@@ -37,7 +37,7 @@ export interface BusinessAuthContextType {
   loading: boolean;
   error: string | null;
 
-  refreshWorkspaces: () => Promise<void>;
+  refreshWorkspaces: () => Promise<BusinessWorkspace[]>;
   selectWorkspace: (workspaceId: string) => Promise<void>;
   createWorkspace: (data: {
     name: string;
@@ -121,7 +121,7 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, [persistWorkspaceId]);
 
   // Discover user's active workspaces
-  const refreshWorkspaces = useCallback(async () => {
+  const refreshWorkspaces = useCallback(async (): Promise<BusinessWorkspace[]> => {
     if (!user) {
       setWorkspaces([]);
       setActiveWorkspace(null);
@@ -130,7 +130,7 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
       setPermissions([]);
       setLoading(false);
       setError(null);
-      return;
+      return [];
     }
 
     try {
@@ -148,7 +148,7 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setPermissions([]);
         persistWorkspaceId(null);
         setLoading(false);
-        return;
+        return [];
       }
 
       // Check stored workspace ID
@@ -176,8 +176,11 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
           persistWorkspaceId(null);
         }
       }
+      return userWorkspaces;
     } catch (err: any) {
-      setError(err?.response?.data?.error?.message || err?.message || 'Failed to discover workspaces.');
+      const errMsg = err?.response?.data?.error?.message || err?.message || 'Failed to discover workspaces.';
+      setError(errMsg);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -186,7 +189,7 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Initial hydration when user identity changes
   useEffect(() => {
     if (authLoading) return;
-    refreshWorkspaces();
+    refreshWorkspaces().catch(() => {});
   }, [user, authLoading, refreshWorkspaces]);
 
   // Select an active workspace

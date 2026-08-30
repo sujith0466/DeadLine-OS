@@ -22,8 +22,11 @@ export const Sidebar: React.FC = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
+    try {
+      localStorage.setItem('deadlineos-landing-mode', 'personal');
+    } catch {}
     await signOut();
-    navigate('/login');
+    navigate('/?mode=personal');
   };
 
   return (

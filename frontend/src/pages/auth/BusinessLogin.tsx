@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Building2, ArrowRight, Lock, Mail, Eye, EyeOff, AlertCircle, ShieldCheck, Briefcase } from 'lucide-react';
@@ -22,9 +22,12 @@ export const BusinessLogin: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // If already authenticated with Supabase, evaluate Business workspaces and route appropriately
+  // Ref to prevent premature routing from useEffect during active form submission
+  const isSubmitting = useRef(false);
+
+  // If already authenticated with Supabase on mount/entry, evaluate Business workspaces after discovery completes
   useEffect(() => {
-    if (!authLoading && user && !bizLoading) {
+    if (!authLoading && user && !bizLoading && !isSubmitting.current) {
       if (safeNext) {
         navigate(safeNext);
       } else if (workspaces.length === 0) {
@@ -51,12 +54,15 @@ export const BusinessLogin: React.FC = () => {
 
     try {
       setLoading(true);
+      isSubmitting.current = true;
+
       const { data, error: signInError } = await supabase.auth.signInWithPassword({
         email: cleanEmail,
         password,
       });
 
       if (signInError) {
+        isSubmitting.current = false;
         if (signInError.message.toLowerCase().includes('invalid login credentials')) {
           setErrorMessage('Invalid commercial credentials. Please verify your email and password.');
         } else if (signInError.message.toLowerCase().includes('email not confirmed')) {
@@ -69,11 +75,31 @@ export const BusinessLogin: React.FC = () => {
       }
 
       if (data?.user) {
-        // Trigger BusinessAuthContext to discover workspaces for the authenticated user
-        await refreshWorkspaces();
-        // Routing is handled in the effect or directly based on workspace discovery
+        // Trigger authoritative workspace discovery and WAIT for server result
+        try {
+          const freshWorkspaces = await refreshWorkspaces();
+
+          if (safeNext) {
+            navigate(safeNext);
+          } else if (!freshWorkspaces || freshWorkspaces.length === 0) {
+            // Scenario B: Legitimate 0 Business workspaces -> BusinessRegister Step 1
+            navigate('/business/register');
+          } else if (freshWorkspaces.length === 1 && freshWorkspaces[0].status === 'ACTIVE') {
+            // Scenario A: Exactly 1 active workspace -> select and navigate to dashboard
+            await selectWorkspace(freshWorkspaces[0].id);
+            navigate('/business/dashboard');
+          } else {
+            // Scenario C: Multiple workspaces -> select workspace screen
+            navigate('/business/select');
+          }
+        } catch (discoverErr: any) {
+          isSubmitting.current = false;
+          setErrorMessage(discoverErr?.response?.data?.error?.message || discoverErr?.message || 'Failed to discover business workspaces. Please try again.');
+          setLoading(false);
+        }
       }
     } catch (err: any) {
+      isSubmitting.current = false;
       setErrorMessage(err?.message || 'An unexpected error occurred during business sign in.');
       setLoading(false);
     }

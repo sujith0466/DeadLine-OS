@@ -89,13 +89,18 @@ export const LandingNavigation: React.FC<LandingNavigationProps> = ({ mode = 'pe
             {user ? (
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={() => signOut()}
+                  onClick={async () => {
+                    try {
+                      localStorage.setItem('deadlineos-landing-mode', mode);
+                    } catch {}
+                    await signOut();
+                  }}
                   className="text-sm font-semibold text-gray-300 hover:text-white flex items-center gap-2 transition-colors px-3 py-2 cursor-pointer"
                 >
                   <LogOut className="w-4 h-4" /> Logout
                 </button>
                 <Link
-                  to="/dashboard"
+                  to={isPersonal ? "/dashboard" : "/business/dashboard"}
                   className="text-sm font-semibold bg-white text-gray-900 hover:bg-gray-100 px-5 py-2.5 rounded-full transition-all shadow-lg shadow-white/10 hover:scale-105"
                 >
                   Dashboard

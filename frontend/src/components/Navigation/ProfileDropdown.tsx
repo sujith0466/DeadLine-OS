@@ -60,8 +60,11 @@ export const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ isOpen, onClos
 
   const handleLogout = async () => {
     onClose();
+    try {
+      localStorage.setItem('deadlineos-landing-mode', 'personal');
+    } catch {}
     await signOut();
-    navigate('/login');
+    navigate('/?mode=personal');
   };
 
   return (

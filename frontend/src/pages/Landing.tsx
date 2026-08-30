@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSearchParams, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { LandingNavigation } from '../components/Landing/LandingNavigation';
 import { HeroSection } from '../components/Landing/HeroSection';
@@ -17,10 +18,20 @@ import { ProductModeSwitcher, type ProductMode } from '../components/Landing/Pro
 const STORAGE_KEY = 'deadlineos-landing-mode';
 
 export const Landing: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
   const shouldReduceMotion = useReducedMotion();
 
-  // Mode state with localStorage persistence
+  // Mode state with query parameter, location state, and localStorage persistence
   const [mode, setMode] = useState<ProductMode>(() => {
+    const urlMode = searchParams.get('mode');
+    if (urlMode === 'personal' || urlMode === 'business') {
+      return urlMode;
+    }
+    const stateMode = (location.state as any)?.mode;
+    if (stateMode === 'personal' || stateMode === 'business') {
+      return stateMode;
+    }
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved === 'personal' || saved === 'business') {
@@ -34,6 +45,25 @@ export const Landing: React.FC = () => {
 
   // Track visibility of the primary hero switcher
   const [isPrimaryVisible, setIsPrimaryVisible] = useState(true);
+
+  // Sync mode if query parameters or location state update
+  useEffect(() => {
+    const urlMode = searchParams.get('mode');
+    if (urlMode === 'personal' || urlMode === 'business') {
+      setMode(urlMode);
+      try {
+        localStorage.setItem(STORAGE_KEY, urlMode);
+      } catch {}
+    } else {
+      const stateMode = (location.state as any)?.mode;
+      if (stateMode === 'personal' || stateMode === 'business') {
+        setMode(stateMode);
+        try {
+          localStorage.setItem(STORAGE_KEY, stateMode);
+        } catch {}
+      }
+    }
+  }, [searchParams, location.state]);
 
   const handleModeChange = (newMode: ProductMode) => {
     setMode(newMode);

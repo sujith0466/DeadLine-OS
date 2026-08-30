@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { Building2, ArrowRight, Lock, Mail, User, ShieldCheck, AlertCircle, CheckCircle2, XCircle, Sparkles, Globe, DollarSign, FileText, ArrowLeft, Eye, EyeOff, Check, Dot } from 'lucide-react';
+import { Building2, ArrowRight, Lock, Mail, User, ShieldCheck, AlertCircle, CheckCircle2, XCircle, Sparkles, Globe, DollarSign, FileText, ArrowLeft, Eye, EyeOff, Check, Dot, ChevronDown } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../context/AuthContext';
 import { useBusinessAuth } from '../../context/BusinessAuthContext';
@@ -16,8 +16,8 @@ export const BusinessRegister: React.FC = () => {
   const rawNext = searchParams.get('next');
   const safeNext = (rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.includes('\\')) ? rawNext : null;
 
-  // Form State
-  const [step, setStep] = useState<'account' | 'workspace' | 'verification'>(user ? 'workspace' : 'account');
+  // Form State: Always start at Step 1 (Account details)
+  const [step, setStep] = useState<'account' | 'workspace' | 'verification'>('account');
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +34,33 @@ export const BusinessRegister: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Authoritative email verification check from Supabase identity
+  const isEmailVerified = Boolean(
+    user?.email_confirmed_at ||
+    (user as any)?.confirmed_at ||
+    (user?.app_metadata && user.app_metadata.provider && user.app_metadata.provider !== 'email')
+  );
+
+  // Prefill existing Supabase identity details when user is authenticated
+  useEffect(() => {
+    if (user) {
+      if (user.email && !email) {
+        setEmail(user.email);
+      }
+      const metaName = (user.user_metadata?.full_name || user.user_metadata?.name || '') as string;
+      if (metaName && !fullName) {
+        setFullName(metaName);
+      }
+    }
+  }, [user, email, fullName]);
+
+  // If safeNext exists, navigate accordingly
+  useEffect(() => {
+    if (user && safeNext) {
+      navigate(safeNext);
+    }
+  }, [user, safeNext, navigate]);
 
   // 5-tier password strength model
   const evaluatePasswordStrength = (pass: string) => {
@@ -66,21 +93,32 @@ export const BusinessRegister: React.FC = () => {
   const strength = evaluatePasswordStrength(password);
   const passwordsMatch = password && confirmPassword ? password === confirmPassword : null;
 
-  // If user is already authenticated, check if safeNext exists or skip account step and proceed to workspace creation
-  useEffect(() => {
-    if (user) {
-      if (safeNext) {
-        navigate(safeNext);
-      } else if (step === 'account') {
-        setStep('workspace');
-      }
-    }
-  }, [user, step, safeNext, navigate]);
-
   const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
+    // SCENARIO A: Existing authenticated user
+    if (user) {
+      if (!fullName.trim()) {
+        setErrorMessage('Please provide your Administrator Full Name.');
+        return;
+      }
+      // Non-blocking metadata sync if full_name was entered or updated
+      try {
+        if (fullName.trim() !== (user.user_metadata?.full_name || user.user_metadata?.name)) {
+          await supabase.auth.updateUser({
+            data: { full_name: fullName.trim() },
+          });
+        }
+      } catch {
+        // Continue seamlessly to workspace details
+      }
+      // Advance to Step 2 (Workspace Details) without creating duplicate identity or calling signUp
+      setStep('workspace');
+      return;
+    }
+
+    // SCENARIO B: New unauthenticated user
     const cleanEmail = email.trim().toLowerCase();
     if (!fullName.trim() || !cleanEmail || !password) {
       setErrorMessage('Please fill in all required account fields.');
@@ -270,6 +308,30 @@ export const BusinessRegister: React.FC = () => {
           {/* STEP 1: Account Registration */}
           {step === 'account' && (
             <form className="space-y-4" onSubmit={handleAccountSubmit} noValidate>
+              {/* Informational Message for Existing Authenticated User */}
+              {user && (
+                <motion.div
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: -4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mb-5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 p-4 flex items-start gap-3 text-emerald-300 text-xs sm:text-sm shadow-inner"
+                >
+                  <ShieldCheck className="w-5 h-5 shrink-0 text-emerald-400 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-bold text-white tracking-wide">
+                      Existing DeadlineOS account detected
+                    </p>
+                    <p className="text-slate-300 text-xs leading-relaxed">
+                      Your Personal OS account is already connected. Complete your Business Workspace setup using this identity.
+                      {isEmailVerified && (
+                        <span className="block text-emerald-400 font-semibold mt-1">
+                          Your account is already verified.
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+
               <div>
                 <label htmlFor="full-name" className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
                   Administrator Full Name
@@ -304,141 +366,159 @@ export const BusinessRegister: React.FC = () => {
                     type="email"
                     required
                     autoComplete="email"
-                    value={email}
+                    value={user ? (user.email || email) : email}
                     onChange={(e) => setEmail(e.target.value)}
+                    readOnly={Boolean(user)}
                     placeholder="alex@enterprise.com"
-                    className="block w-full pl-10 pr-3.5 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner"
+                    className={`block w-full pl-10 pr-3.5 py-3 border rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all shadow-inner ${
+                      user
+                        ? 'bg-slate-900/80 border-slate-700/60 text-slate-300 cursor-not-allowed'
+                        : 'bg-slate-950/70 border-slate-700/80 focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500'
+                    }`}
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Password Field with Independent Toggle */}
-                <div>
-                  <label htmlFor="business-reg-password" className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Password (8+ chars)
-                  </label>
-                  <div className="relative rounded-xl shadow-sm group">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
-                      <Lock className="h-4.5 w-4.5" />
-                    </div>
-                    <input
-                      id="business-reg-password"
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      autoComplete="new-password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      className="block w-full pl-10 pr-11 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer focus:outline-none focus:text-emerald-400"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
-                      title={showPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Confirm Password Field with Independent Toggle */}
-                <div>
-                  <label htmlFor="business-reg-confirm" className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
-                    Confirm Password
-                  </label>
-                  <div className="relative rounded-xl shadow-sm group">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
-                      <Lock className="h-4.5 w-4.5" />
-                    </div>
-                    <input
-                      id="business-reg-confirm"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      required
-                      autoComplete="new-password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="••••••••••••"
-                      className={`block w-full pl-10 pr-11 py-3 bg-slate-950/70 border rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-inner ${
-                        passwordsMatch === false ? 'border-rose-500/80 focus:border-rose-500' : passwordsMatch === true ? 'border-emerald-500/80 focus:border-emerald-500' : 'border-slate-700/80 focus:border-emerald-500'
-                      }`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer focus:outline-none focus:text-emerald-400"
-                      aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                      title={showConfirmPassword ? 'Hide password' : 'Show password'}
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Password Strength Indicator & Match Indicators */}
-              {(password || confirmPassword) && (
-                <div className="space-y-2 pt-1">
-                  {password && (
-                    <AnimatePresence mode="wait">
-                      <motion.div
-                        initial={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        className="space-y-1.5 overflow-hidden"
-                      >
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex gap-1.5 w-full max-w-[140px]">
-                            {[1, 2, 3, 4].map((stepIdx) => (
-                              <div
-                                key={stepIdx}
-                                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
-                                  strength.score >= stepIdx ? strength.color : 'bg-slate-800'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                          <span className={`text-[11px] font-bold tracking-wider uppercase ${strength.textColor}`}>
-                            {strength.label}
-                          </span>
+              {/* Password Section: Rendered for new users, secured notice for existing authenticated users */}
+              {!user ? (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Password Field with Independent Toggle */}
+                    <div>
+                      <label htmlFor="business-reg-password" className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                        Password (8+ chars)
+                      </label>
+                      <div className="relative rounded-xl shadow-sm group">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                          <Lock className="h-4.5 w-4.5" />
                         </div>
+                        <input
+                          id="business-reg-password"
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          autoComplete="new-password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          placeholder="••••••••••••"
+                          className="block w-full pl-10 pr-11 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer focus:outline-none focus:text-emerald-400"
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                          title={showPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                        </button>
+                      </div>
+                    </div>
 
-                        {/* Subtle Criteria Verification Pills */}
-                        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500 pt-0.5">
-                          <span className={`flex items-center gap-1 transition-colors ${password.length >= 8 ? 'text-emerald-400 font-medium' : ''}`}>
-                            {password.length >= 8 ? <Check className="w-3 h-3" /> : <Dot className="w-3 h-3" />} 8+ chars
-                          </span>
-                          <span className={`flex items-center gap-1 transition-colors ${/[A-Z]/.test(password) ? 'text-emerald-400 font-medium' : ''}`}>
-                            {/[A-Z]/.test(password) ? <Check className="w-3 h-3" /> : <Dot className="w-3 h-3" />} Uppercase
-                          </span>
-                          <span className={`flex items-center gap-1 transition-colors ${/[0-9]/.test(password) ? 'text-emerald-400 font-medium' : ''}`}>
-                            {/[0-9]/.test(password) ? <Check className="w-3 h-3" /> : <Dot className="w-3 h-3" />} Number
-                          </span>
-                          <span className={`flex items-center gap-1 transition-colors ${/[^A-Za-z0-9]/.test(password) ? 'text-emerald-400 font-medium' : ''}`}>
-                            {/[^A-Za-z0-9]/.test(password) ? <Check className="w-3 h-3" /> : <Dot className="w-3 h-3" />} Symbol
-                          </span>
+                    {/* Confirm Password Field with Independent Toggle */}
+                    <div>
+                      <label htmlFor="business-reg-confirm" className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
+                        Confirm Password
+                      </label>
+                      <div className="relative rounded-xl shadow-sm group">
+                        <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                          <Lock className="h-4.5 w-4.5" />
                         </div>
-                      </motion.div>
-                    </AnimatePresence>
-                  )}
+                        <input
+                          id="business-reg-confirm"
+                          type={showConfirmPassword ? 'text' : 'password'}
+                          required
+                          autoComplete="new-password"
+                          value={confirmPassword}
+                          onChange={(e) => setConfirmPassword(e.target.value)}
+                          placeholder="••••••••••••"
+                          className={`block w-full pl-10 pr-11 py-3 bg-slate-950/70 border rounded-xl text-slate-100 placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all shadow-inner ${
+                            passwordsMatch === false ? 'border-rose-500/80 focus:border-rose-500' : passwordsMatch === true ? 'border-emerald-500/80 focus:border-emerald-500' : 'border-slate-700/80 focus:border-emerald-500'
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-200 transition-colors cursor-pointer focus:outline-none focus:text-emerald-400"
+                          aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                          title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                        >
+                          {showConfirmPassword ? <EyeOff className="h-4.5 w-4.5" /> : <Eye className="h-4.5 w-4.5" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
 
-                  {confirmPassword && (
-                    <div className="flex items-center gap-1.5">
-                      {passwordsMatch ? (
-                        <>
-                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                          <span className="text-xs text-emerald-400 font-medium">Passwords match</span>
-                        </>
-                      ) : (
-                        <>
-                          <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
-                          <span className="text-xs text-rose-400 font-medium">Passwords do not match</span>
-                        </>
+                  {/* Password Strength Indicator & Match Indicators */}
+                  {(password || confirmPassword) && (
+                    <div className="space-y-2 pt-1">
+                      {password && (
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            initial={shouldReduceMotion ? false : { opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="space-y-1.5 overflow-hidden"
+                          >
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex gap-1.5 w-full max-w-[140px]">
+                                {[1, 2, 3, 4].map((stepIdx) => (
+                                  <div
+                                    key={stepIdx}
+                                    className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                                      strength.score >= stepIdx ? strength.color : 'bg-slate-800'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                              <span className={`text-[11px] font-bold tracking-wider uppercase ${strength.textColor}`}>
+                                {strength.label}
+                              </span>
+                            </div>
+
+                            {/* Subtle Criteria Verification Pills */}
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-slate-500 pt-0.5">
+                              <span className={`flex items-center gap-1 transition-colors ${password.length >= 8 ? 'text-emerald-400 font-medium' : ''}`}>
+                                {password.length >= 8 ? <Check className="w-3 h-3" /> : <Dot className="w-3 h-3" />} 8+ chars
+                              </span>
+                              <span className={`flex items-center gap-1 transition-colors ${/[A-Z]/.test(password) ? 'text-emerald-400 font-medium' : ''}`}>
+                                {/[A-Z]/.test(password) ? <Check className="w-3 h-3" /> : <Dot className="w-3 h-3" />} Uppercase
+                              </span>
+                              <span className={`flex items-center gap-1 transition-colors ${/[0-9]/.test(password) ? 'text-emerald-400 font-medium' : ''}`}>
+                                {/[0-9]/.test(password) ? <Check className="w-3 h-3" /> : <Dot className="w-3 h-3" />} Number
+                              </span>
+                              <span className={`flex items-center gap-1 transition-colors ${/[^A-Za-z0-9]/.test(password) ? 'text-emerald-400 font-medium' : ''}`}>
+                                {/[^A-Za-z0-9]/.test(password) ? <Check className="w-3 h-3" /> : <Dot className="w-3 h-3" />} Symbol
+                              </span>
+                            </div>
+                          </motion.div>
+                        </AnimatePresence>
+                      )}
+
+                      {confirmPassword && (
+                        <div className="flex items-center gap-1.5">
+                          {passwordsMatch ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                              <span className="text-xs text-emerald-400 font-medium">Passwords match</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                              <span className="text-xs text-rose-400 font-medium">Passwords do not match</span>
+                            </>
+                          )}
+                        </div>
                       )}
                     </div>
                   )}
+                </>
+              ) : (
+                <div className="rounded-xl bg-slate-950/60 border border-slate-800/80 p-3.5 flex items-center justify-between text-xs text-slate-400">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-emerald-400/80" />
+                    <span>Password secured via active DeadlineOS session</span>
+                  </div>
+                  <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Connected</span>
                 </div>
               )}
 
@@ -451,7 +531,7 @@ export const BusinessRegister: React.FC = () => {
                   {loading ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin" />
-                      <span>Creating Administrator Account...</span>
+                      <span>{user ? 'Proceeding to Workspace Setup...' : 'Creating Administrator Account...'}</span>
                     </div>
                   ) : (
                     <>
@@ -527,21 +607,25 @@ export const BusinessRegister: React.FC = () => {
                   <label htmlFor="base-currency" className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
                     Base Currency
                   </label>
-                  <div className="relative rounded-xl shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <div className="relative rounded-xl shadow-sm group">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
                       <DollarSign className="h-4.5 w-4.5" />
                     </div>
                     <select
                       id="base-currency"
                       value={baseCurrency}
                       onChange={(e) => setBaseCurrency(e.target.value)}
-                      className="block w-full pl-10 pr-3.5 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner"
+                      style={{ colorScheme: 'dark' }}
+                      className="block w-full pl-10 pr-10 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 hover:border-slate-600 transition-all shadow-inner appearance-none cursor-pointer"
                     >
-                      <option value="INR">INR (₹) - Indian Rupee</option>
-                      <option value="USD">USD ($) - US Dollar</option>
-                      <option value="EUR">EUR (€) - Euro</option>
-                      <option value="GBP">GBP (£) - British Pound</option>
+                      <option value="INR" className="bg-slate-900 text-slate-100 py-1.5">INR (₹) - Indian Rupee</option>
+                      <option value="USD" className="bg-slate-900 text-slate-100 py-1.5">USD ($) - US Dollar</option>
+                      <option value="EUR" className="bg-slate-900 text-slate-100 py-1.5">EUR (€) - Euro</option>
+                      <option value="GBP" className="bg-slate-900 text-slate-100 py-1.5">GBP (£) - British Pound</option>
                     </select>
+                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-400 transition-colors">
+                      <ChevronDown className="h-4 w-4" />
+                    </div>
                   </div>
                 </div>
 
@@ -549,24 +633,28 @@ export const BusinessRegister: React.FC = () => {
                   <label htmlFor="ws-timezone" className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-1.5">
                     Operating Timezone
                   </label>
-                  <div className="relative rounded-xl shadow-sm">
-                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+                  <div className="relative rounded-xl shadow-sm group">
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
                       <Globe className="h-4.5 w-4.5" />
                     </div>
                     <select
                       id="ws-timezone"
                       value={timezone}
                       onChange={(e) => setTimezone(e.target.value)}
-                      className="block w-full pl-10 pr-3.5 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all shadow-inner"
+                      style={{ colorScheme: 'dark' }}
+                      className="block w-full pl-10 pr-10 py-3 bg-slate-950/70 border border-slate-700/80 rounded-xl text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 hover:border-slate-600 transition-all shadow-inner appearance-none cursor-pointer"
                     >
-                      <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                      <option value="America/New_York">America/New_York (EST)</option>
-                      <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
-                      <option value="Europe/London">Europe/London (GMT)</option>
-                      <option value="Europe/Berlin">Europe/Berlin (CET)</option>
-                      <option value="Asia/Singapore">Asia/Singapore (SGT)</option>
-                      <option value="Asia/Dubai">Asia/Dubai (GST)</option>
+                      <option value="Asia/Kolkata" className="bg-slate-900 text-slate-100 py-1.5">Asia/Kolkata (IST)</option>
+                      <option value="America/New_York" className="bg-slate-900 text-slate-100 py-1.5">America/New_York (EST)</option>
+                      <option value="America/Los_Angeles" className="bg-slate-900 text-slate-100 py-1.5">America/Los_Angeles (PST)</option>
+                      <option value="Europe/London" className="bg-slate-900 text-slate-100 py-1.5">Europe/London (GMT)</option>
+                      <option value="Europe/Berlin" className="bg-slate-900 text-slate-100 py-1.5">Europe/Berlin (CET)</option>
+                      <option value="Asia/Singapore" className="bg-slate-900 text-slate-100 py-1.5">Asia/Singapore (SGT)</option>
+                      <option value="Asia/Dubai" className="bg-slate-900 text-slate-100 py-1.5">Asia/Dubai (GST)</option>
                     </select>
+                    <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400 group-focus-within:text-emerald-400 transition-colors">
+                      <ChevronDown className="h-4 w-4" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -590,16 +678,14 @@ export const BusinessRegister: React.FC = () => {
                   )}
                 </button>
 
-                {!user && (
-                  <button
-                    type="button"
-                    onClick={() => setStep('account')}
-                    disabled={loading}
-                    className="w-full flex justify-center items-center gap-1.5 py-2 px-4 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3.5 h-3.5" /> Back to Account Details
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setStep('account')}
+                  disabled={loading}
+                  className="w-full flex justify-center items-center gap-1.5 py-2 px-4 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors cursor-pointer"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" /> Back to Account Details
+                </button>
               </div>
             </form>
           )}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { Building2, ArrowRight, ShieldCheck, Plus, CheckCircle2, AlertTriangle, LogOut } from 'lucide-react';
@@ -16,6 +16,12 @@ export const WorkspaceSelector: React.FC = () => {
     loading: bizLoading,
     error,
   } = useBusinessAuth();
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('deadlineos-landing-mode', 'business');
+    } catch {}
+  }, []);
 
   const [selectingId, setSelectingId] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
@@ -81,7 +87,13 @@ export const WorkspaceSelector: React.FC = () => {
             <div className="flex items-center gap-3">
               <span className="text-xs text-slate-400 hidden sm:inline">{user.email}</span>
               <button
-                onClick={() => signOut()}
+                onClick={async () => {
+                  try {
+                    localStorage.setItem('deadlineos-landing-mode', 'business');
+                  } catch {}
+                  await signOut();
+                  navigate('/?mode=business');
+                }}
                 className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white px-2.5 py-1.5 rounded-lg hover:bg-slate-800/60 transition-colors cursor-pointer"
                 title="Sign Out"
               >
