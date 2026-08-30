@@ -19,7 +19,7 @@ export const Landing: React.FC = () => {
   return (
     <div className="bg-[#020617] min-h-screen text-gray-50 font-sans selection:bg-indigo-500/30 relative">
       <Background />
-      <LandingNavigation />
+      <LandingNavigation mode={mode} onModeChange={setMode} />
       <main>
         <HeroSection mode={mode} onModeChange={setMode} />
         <TrustedMetrics mode={mode} />

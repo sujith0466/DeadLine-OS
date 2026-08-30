@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   Calendar,
   Target,
@@ -25,6 +25,7 @@ interface ProductShowcaseProps {
 
 export const ProductShowcase: React.FC<ProductShowcaseProps> = ({ mode }) => {
   const isPersonal = mode === 'personal';
+  const shouldReduceMotion = useReducedMotion();
 
   const personalFeatures = [
     {
@@ -181,16 +182,20 @@ export const ProductShowcase: React.FC<ProductShowcaseProps> = ({ mode }) => {
               return (
                 <motion.div
                   key={`${mode}-${idx}`}
-                  initial={{ opacity: 0, y: 25 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 25 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true, margin: '-50px' }}
-                  transition={{ duration: 0.45, delay: idx * 0.05 }}
-                  className="group relative p-6 rounded-2xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition-all hover:-translate-y-1 overflow-hidden"
+                  transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.45, delay: idx * 0.05 }}
+                  className={`group relative p-6 rounded-2xl bg-white/[0.02] border border-white/10 hover:bg-white/[0.04] transition-all overflow-hidden ${
+                    shouldReduceMotion ? '' : 'hover:-translate-y-1'
+                  }`}
                 >
                   <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-[0.04] transition-opacity duration-500`} />
                   <div className="relative z-10">
                     <div
-                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center text-white mb-6 shadow-lg shadow-black/20 group-hover:scale-110 transition-transform duration-300`}
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.color} flex items-center justify-center text-white mb-6 shadow-lg shadow-black/20 ${
+                        shouldReduceMotion ? '' : 'group-hover:scale-110'
+                      } transition-transform duration-300`}
                     >
                       <Icon className="w-6 h-6" />
                     </div>

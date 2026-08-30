@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { ArrowRight, CheckCircle2 } from 'lucide-react';
 import type { ProductMode } from './ProductModeSwitcher';
 
@@ -9,6 +9,7 @@ interface InteractiveWorkflowProps {
 
 export const InteractiveWorkflow: React.FC<InteractiveWorkflowProps> = ({ mode }) => {
   const isPersonal = mode === 'personal';
+  const shouldReduceMotion = useReducedMotion();
 
   const personalSteps = [
     {
@@ -114,10 +115,10 @@ export const InteractiveWorkflow: React.FC<InteractiveWorkflowProps> = ({ mode }
           {steps.map((step, idx) => (
             <motion.div
               key={`${mode}-${idx}`}
-              initial={{ opacity: 0, y: 30 }}
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: idx * 0.08 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.5, delay: idx * 0.08 }}
               className="p-5 rounded-2xl bg-white/[0.02] border border-white/10 relative flex flex-col justify-between hover:border-white/20 transition-colors"
             >
               <div>
