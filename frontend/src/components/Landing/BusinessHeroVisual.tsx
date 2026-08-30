@@ -1,7 +1,10 @@
 import React from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { DollarSign, Layers, ShieldCheck, ArrowUpRight, TrendingUp, RefreshCw, CheckCircle2 } from 'lucide-react';
 
 export const BusinessHeroVisual: React.FC = () => {
+  const shouldReduceMotion = useReducedMotion();
+
   return (
     <div className="w-full relative" aria-hidden="true">
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/10 to-transparent blur-3xl" />
@@ -19,14 +22,24 @@ export const BusinessHeroVisual: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400 font-semibold">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4 }}
+              className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400 font-semibold"
+            >
               <ShieldCheck className="w-3 h-3" />
               <span>RUNWAY: 94 DAYS</span>
-            </div>
-            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] text-indigo-400 font-semibold hidden md:flex">
+            </motion.div>
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, delay: 0.1 }}
+              className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[10px] text-indigo-400 font-semibold hidden md:flex"
+            >
               <Layers className="w-3 h-3" />
               <span>3 CONSOLIDATED ENTITIES</span>
-            </div>
+            </motion.div>
           </div>
         </div>
 
@@ -35,10 +48,15 @@ export const BusinessHeroVisual: React.FC = () => {
           
           {/* Left Column: Receivables & Collection Rescue */}
           <div className="w-1/3 flex flex-col gap-3">
-            <div className="bg-white/5 border border-white/5 rounded-xl p-3.5 flex flex-col gap-2.5">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, delay: 0.15 }}
+              className="bg-white/5 border border-white/5 rounded-xl p-3.5 flex flex-col gap-2.5"
+            >
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase">COLLECTION RESCUE</span>
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <span className={`w-2 h-2 rounded-full bg-rose-500 block ${shouldReduceMotion ? '' : 'animate-pulse'}`} />
               </div>
 
               {/* Overdue Item */}
@@ -68,10 +86,15 @@ export const BusinessHeroVisual: React.FC = () => {
                   <span className="text-xs font-mono font-bold text-emerald-400">₹480,000</span>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Aging Buckets Mini Card */}
-            <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex-1 flex flex-col justify-between">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, delay: 0.25 }}
+              className="bg-white/5 border border-white/5 rounded-xl p-3 flex-1 flex flex-col justify-between"
+            >
               <div className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">RECEIVABLE AGING</div>
               <div className="grid grid-cols-3 gap-1.5 text-center mt-1">
                 <div className="bg-black/30 p-1.5 rounded border border-white/5">
@@ -87,13 +110,18 @@ export const BusinessHeroVisual: React.FC = () => {
                   <div className="text-xs font-bold text-rose-400 mt-0.5">₹45k</div>
                 </div>
               </div>
-            </div>
+            </motion.div>
           </div>
 
           {/* Middle Column: Cash Reality & Runway Velocity */}
           <div className="w-1/3 flex flex-col gap-3">
             {/* Cash Position Card */}
-            <div className="bg-gradient-to-br from-emerald-500/10 via-slate-900/40 to-indigo-500/10 border border-emerald-500/20 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden flex-1">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, delay: 0.2 }}
+              className="bg-gradient-to-br from-emerald-500/10 via-slate-900/40 to-indigo-500/10 border border-emerald-500/20 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden flex-1"
+            >
               <div>
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>Confirmed Cash Reality</span>
@@ -106,12 +134,14 @@ export const BusinessHeroVisual: React.FC = () => {
                 </div>
               </div>
 
-              {/* Runway Curve Visualization */}
+              {/* Runway Curve Visualization with Animated Progression */}
               <div className="my-2 h-14 w-full bg-black/40 rounded-lg p-2 flex items-end justify-between gap-1 border border-white/5">
                 {[45, 52, 48, 65, 58, 72, 85, 94].map((val, idx) => (
                   <div key={idx} className="flex-1 flex flex-col items-center gap-1 h-full justify-end">
-                    <div 
-                      style={{ height: `${(val / 94) * 100}%` }}
+                    <motion.div
+                      initial={shouldReduceMotion ? false : { height: '0%' }}
+                      animate={{ height: `${(val / 94) * 100}%` }}
+                      transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.6, delay: 0.2 + idx * 0.05, ease: 'easeOut' }}
                       className="w-full bg-gradient-to-t from-emerald-600 to-emerald-400 rounded-sm"
                     />
                   </div>
@@ -122,10 +152,15 @@ export const BusinessHeroVisual: React.FC = () => {
                 <span>Burn Velocity: ₹15,400/day</span>
                 <span className="font-semibold text-emerald-400">Verified Ledger State</span>
               </div>
-            </div>
+            </motion.div>
 
             {/* Cash Alert State */}
-            <div className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center justify-between">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, delay: 0.3 }}
+              className="bg-white/5 border border-white/5 rounded-xl p-3 flex items-center justify-between"
+            >
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-emerald-400" />
                 <div>
@@ -134,18 +169,23 @@ export const BusinessHeroVisual: React.FC = () => {
                 </div>
               </div>
               <span className="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 text-[10px] font-bold rounded">NORMAL</span>
-            </div>
+            </motion.div>
           </div>
 
           {/* Right Column: Recurring Automation & Multi-Entity Group */}
           <div className="w-1/3 flex flex-col gap-3">
             {/* Multi-Entity Group Consolidation */}
-            <div className="bg-white/5 border border-white/5 rounded-xl p-3.5">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, delay: 0.2 }}
+              className="bg-white/5 border border-white/5 rounded-xl p-3.5"
+            >
               <div className="flex items-center justify-between text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
                 <span>GROUP CONSOLIDATION</span>
                 <Layers className="w-3.5 h-3.5 text-indigo-400" />
               </div>
-              
+
               <div className="space-y-1.5">
                 <div className="flex justify-between text-xs text-gray-300">
                   <span>Mumbai HQ Entity</span>
@@ -165,35 +205,55 @@ export const BusinessHeroVisual: React.FC = () => {
                 <span className="text-gray-400">Inter-Entity Eliminated</span>
                 <span className="text-amber-400 font-mono font-bold">-₹75,000</span>
               </div>
-            </div>
+            </motion.div>
 
             {/* Recurring Automation Engine */}
-            <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-3.5 flex flex-col justify-between relative overflow-hidden">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.4, delay: 0.3 }}
+              className="flex-1 bg-black/40 border border-white/5 rounded-xl p-3.5 flex flex-col justify-between relative overflow-hidden"
+            >
               <div className="flex items-center justify-between text-[10px] font-bold text-gray-500 tracking-wider">
                 <span>AUTOMATION RUNNER</span>
-                <RefreshCw className="w-3 h-3 text-indigo-400" />
+                <RefreshCw className={`w-3 h-3 text-indigo-400 ${shouldReduceMotion ? '' : 'animate-spin'}`} style={{ animationDuration: '8s' }} />
               </div>
 
               <div className="space-y-2 my-2">
-                <div className="flex items-center gap-2 text-[10px] text-gray-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
+                <motion.div
+                  initial={shouldReduceMotion ? false : { opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.35 }}
+                  className="flex items-center gap-2 text-[10px] text-gray-300"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0" />
                   <span className="truncate">Auto-generated retainer invoice</span>
-                </div>
-                <div className="flex items-center gap-2 text-[10px] text-gray-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                </motion.div>
+                <motion.div
+                  initial={shouldReduceMotion ? false : { opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.45 }}
+                  className="flex items-center gap-2 text-[10px] text-gray-300"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
                   <span className="truncate">Reconciled payment: Stripe #TX-9021</span>
-                </div>
-                <div className="flex items-center gap-2 text-[10px] text-gray-300">
-                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                </motion.div>
+                <motion.div
+                  initial={shouldReduceMotion ? false : { opacity: 0, x: -6 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={shouldReduceMotion ? { duration: 0 } : { delay: 0.55 }}
+                  className="flex items-center gap-2 text-[10px] text-gray-300"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-purple-400 shrink-0" />
                   <span className="truncate">Copilot ledger grounding verified</span>
-                </div>
+                </motion.div>
               </div>
 
               <div className="text-[9px] font-mono text-indigo-300/80 pt-1 border-t border-white/5 flex justify-between">
                 <span>Idempotency: Guaranteed</span>
                 <span>Audit: 100% Clean</span>
               </div>
-            </div>
+            </motion.div>
           </div>
 
         </div>

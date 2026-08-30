@@ -41,10 +41,10 @@ export const TrustedMetrics: React.FC<TrustedMetricsProps> = ({ mode }) => {
         { label: 'Goals & Habits Realized', value: 12000, suffix: '+' },
       ]
     : [
-        { label: 'Operational Workflows', value: 100, suffix: '% Automated' },
-        { label: 'Average Cash Runway Visibility', value: 94, suffix: ' Days' },
+        { label: 'Automated Operations Active', value: 24, suffix: '+' },
+        { label: 'Cash Runway Visibility', value: 94, suffix: ' Days' },
         { label: 'Receivable Collection Speed', value: 3, suffix: 'x Faster' },
-        { label: 'Group Entities Consolidated', value: 100, suffix: '% Live' },
+        { label: 'Unified Group Consolidation', value: 100, suffix: '% Live' },
       ];
 
   return (

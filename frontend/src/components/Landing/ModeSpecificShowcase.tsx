@@ -16,6 +16,8 @@ export const ModeSpecificShowcase: React.FC<ModeSpecificShowcaseProps> = ({ mode
       tag: 'PREDICTIVE MODELING',
       title: 'Digital Twin Trajectory Simulation',
       desc: "See how today's choices change tomorrow. Your Digital Twin runs predictive variations of your week to identify cognitive fatigue and deadline collisions before they happen.",
+      sees: 'Detects schedule collisions & low circadian focus windows',
+      does: 'Simulates multiple weekly trajectories before committing',
       highlight: '94% Schedule Realization',
     },
     {
@@ -23,6 +25,8 @@ export const ModeSpecificShowcase: React.FC<ModeSpecificShowcaseProps> = ({ mode
       tag: 'MOMENTUM RECOVERY',
       title: 'Predictive Rescue Center',
       desc: 'When the plan breaks, DeadlineOS helps you recover. Injects restorative windows, recalibrates deadlines, and preserves habit streaks without guilt.',
+      sees: 'Identifies slipping habit streaks & focus velocity drops',
+      does: 'Restructures tasks into realistic restorative recovery blocks',
       highlight: 'Zero-Guilt Recovery',
     },
     {
@@ -30,6 +34,8 @@ export const ModeSpecificShowcase: React.FC<ModeSpecificShowcaseProps> = ({ mode
       tag: 'COORDINATED AGENTS',
       title: 'Autonomous Agent Ecosystem',
       desc: 'Your day adapts as reality changes. Specialized AI agents for planning, reflection, voice capture, and rescue coordinate continuously to protect your flow.',
+      sees: 'Monitors ongoing execution across tasks and habits',
+      does: 'Continuously adapts daily schedule & synthesizes reflection',
       highlight: 'Continuous Optimization',
     },
   ];
@@ -39,7 +45,9 @@ export const ModeSpecificShowcase: React.FC<ModeSpecificShowcaseProps> = ({ mode
       icon: ShieldAlert,
       tag: 'CASH & COLLECTIONS',
       title: 'Receivable Recovery & Collection Rescue',
-      desc: 'Know what is owed. Know what needs attention. Automated multi-stage escalation delivers 1-click WhatsApp and email payment reminders with full audit provenance.',
+      desc: 'Know what is owed. Know what needs attention. Automated multi-stage escalation coordinates 1-click WhatsApp and email payment reminders with full audit provenance.',
+      sees: 'Tracks aging buckets (1-30d, 30d+) & overdue invoice risk',
+      does: 'Coordinates 1-click reminders with full audit provenance',
       highlight: 'Accelerates Cash Collection',
     },
     {
@@ -47,13 +55,17 @@ export const ModeSpecificShowcase: React.FC<ModeSpecificShowcaseProps> = ({ mode
       tag: 'RECURRING OPERATIONS',
       title: 'Automated Obligations Engine',
       desc: 'Recurring retainers and subscriptions keep moving without becoming recurring problems. Generates invoices and matches payments with zero double-billing risk.',
-      highlight: '100% Idempotent Execution',
+      sees: 'Monitors retainer schedules & recurring billing cycles',
+      does: 'Generates invoices & reconciles payments idempotently',
+      highlight: '100% Deterministic Execution',
     },
     {
       icon: Building2,
       tag: 'MULTI-ENTITY CONTROL',
       title: 'Consolidated Group Operations',
       desc: 'One clear operational view across all companies, divisions, and subsidiaries you operate, with automatic identification and elimination of inter-company transfers.',
+      sees: 'Ingests multiple entity ledgers & regional currencies',
+      does: 'Eliminates inter-company transfers for true group cash',
       highlight: 'Group-Level Cash Reality',
     },
   ];
@@ -79,27 +91,39 @@ export const ModeSpecificShowcase: React.FC<ModeSpecificShowcaseProps> = ({ mode
               return (
                 <motion.div
                   key={`${mode}-${idx}`}
-                  initial={{ opacity: 0, y: 30 }}
+                  initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: idx * 0.1 }}
-                  className="p-8 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between"
+                  transition={{ duration: 0.45, delay: idx * 0.1 }}
+                  className="p-7 rounded-2xl bg-white/[0.02] border border-white/10 hover:border-white/20 transition-all flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-center justify-between mb-6">
-                      <div className={`p-3 rounded-xl ${isPersonal ? 'bg-indigo-500/10 text-indigo-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                        <Icon className="w-6 h-6" />
+                    <div className="flex items-center justify-between mb-5">
+                      <div className={`p-2.5 rounded-xl ${isPersonal ? 'bg-indigo-500/10 text-indigo-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                        <Icon className="w-5 h-5" />
                       </div>
                       <span className="text-[10px] font-mono font-bold tracking-wider px-2.5 py-1 rounded bg-white/5 text-gray-400">
                         {item.tag}
                       </span>
                     </div>
 
-                    <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
-                    <p className="text-sm text-gray-400 leading-relaxed mb-6">{item.desc}</p>
+                    <h3 className="text-lg font-bold text-white mb-2">{item.title}</h3>
+                    <p className="text-xs text-gray-400 leading-relaxed mb-5">{item.desc}</p>
+
+                    {/* Structured Capability Insight */}
+                    <div className="space-y-2 mb-5 p-3 rounded-xl bg-black/40 border border-white/5 text-[11px]">
+                      <div className="flex items-start gap-2">
+                        <span className="font-semibold text-gray-400 shrink-0">Detects:</span>
+                        <span className="text-gray-300">{item.sees}</span>
+                      </div>
+                      <div className="flex items-start gap-2 pt-1 border-t border-white/5">
+                        <span className={`font-semibold shrink-0 ${isPersonal ? 'text-indigo-400' : 'text-emerald-400'}`}>Action:</span>
+                        <span className="text-gray-300">{item.does}</span>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="pt-4 border-t border-white/10 flex items-center justify-between text-xs">
+                  <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
                     <span className="font-semibold text-white">{item.highlight}</span>
                     <CheckCircle2 className={`w-4 h-4 ${isPersonal ? 'text-indigo-400' : 'text-emerald-400'}`} />
                   </div>

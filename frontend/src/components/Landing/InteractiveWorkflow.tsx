@@ -136,7 +136,7 @@ export const InteractiveWorkflow: React.FC<InteractiveWorkflowProps> = ({ mode }
 
               <div className={`mt-4 pt-3 border-t border-white/5 flex items-center gap-1.5 text-[11px] ${isPersonal ? 'text-indigo-400' : 'text-emerald-400'}`}>
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Deterministic Step</span>
+                <span>{isPersonal ? 'Autonomous Lifecycle Step' : 'Deterministic Verification Step'}</span>
               </div>
             </motion.div>
           ))}

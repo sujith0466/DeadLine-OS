@@ -47,7 +47,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ mode, onModeChange }) 
                 className={`text-transparent bg-clip-text bg-gradient-to-r transition-all duration-500 ${
                   isPersonal
                     ? 'from-indigo-400 via-purple-400 to-pink-400'
-                    : 'from-emerald-400 via-cyan-400 to-indigo-400'
+                    : 'from-emerald-400 via-teal-300 to-cyan-400'
                 }`}
               >
                 {isPersonal ? 'Personal Operating System' : 'Business Operating System'}
