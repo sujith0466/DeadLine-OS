@@ -1,9 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { motion, useInView, useSpring, useTransform } from 'framer-motion';
+import type { ProductMode } from './ProductModeSwitcher';
 
 const AnimatedCounter: React.FC<{ value: number; duration?: number }> = ({ value, duration = 2 }) => {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-100px" });
+  const inView = useInView(ref, { once: true, margin: '-100px' });
   const spring = useSpring(0, { duration: duration * 1000, bounce: 0 });
   const displayValue = useTransform(spring, (current) => Math.floor(current).toLocaleString());
 
@@ -16,32 +17,49 @@ const AnimatedCounter: React.FC<{ value: number; duration?: number }> = ({ value
   return <motion.span ref={ref}>{displayValue}</motion.span>;
 };
 
-export const TrustedMetrics: React.FC = () => {
-  const metrics = [
-    { label: "AI Modules", value: 8, suffix: "+" },
-    { label: "Intelligent Agents", value: 6, suffix: "" },
-    { label: "Simulations Run", value: 24500, suffix: "+" },
-    { label: "Goals Managed", value: 12000, suffix: "+" }
-  ];
+interface TrustedMetricsProps {
+  mode: ProductMode;
+}
+
+export const TrustedMetrics: React.FC<TrustedMetricsProps> = ({ mode }) => {
+  const isPersonal = mode === 'personal';
+
+  const metrics = isPersonal
+    ? [
+        { label: 'Autonomous AI Agents', value: 6, suffix: '' },
+        { label: 'Verified Regression Tests', value: 162, suffix: ' Green' },
+        { label: 'Twin Simulations Run', value: 24500, suffix: '+' },
+        { label: 'Goals & Habits Tracked', value: 12000, suffix: '+' },
+      ]
+    : [
+        { label: 'Total Verified Tests', value: 222, suffix: ' Passing' },
+        { label: 'Commercial Blueprints', value: 19, suffix: ' Protected' },
+        { label: 'Cash Truth Determinism', value: 100, suffix: '%' },
+        { label: 'Personal OS Contamination', value: 0, suffix: ' Strict' },
+      ];
 
   return (
-    <section className="py-24 bg-[#0A0A0B] relative border-t border-white/5">
+    <section className="py-20 bg-[#0A0A0B] relative border-t border-white/5">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
           {metrics.map((metric, idx) => (
             <motion.div
-              key={idx}
+              key={`${mode}-${idx}`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 0.6, delay: idx * 0.1 }}
-              className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-sm"
+              viewport={{ once: true, margin: '-80px' }}
+              transition={{ duration: 0.5, delay: idx * 0.08 }}
+              className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-sm transition-colors hover:border-white/10"
             >
-              <div className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-indigo-400 to-purple-400 mb-2">
+              <div
+                className={`text-3xl md:text-4xl lg:text-5xl font-black mb-2 text-transparent bg-clip-text bg-gradient-to-br ${
+                  isPersonal ? 'from-indigo-400 to-purple-400' : 'from-emerald-400 to-cyan-400'
+                }`}
+              >
                 <AnimatedCounter value={metric.value} />
-                {metric.suffix}
+                <span className="text-xl md:text-2xl font-bold ml-0.5">{metric.suffix}</span>
               </div>
-              <div className="text-sm font-medium text-gray-400 uppercase tracking-wider">
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider text-center">
                 {metric.label}
               </div>
             </motion.div>

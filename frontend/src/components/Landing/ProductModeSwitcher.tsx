@@ -47,7 +47,7 @@ export const ProductModeSwitcher: React.FC<ProductModeSwitcherProps> = ({
               tabIndex={isSelected ? 0 : -1}
               onClick={() => onModeChange(mode.id)}
               onKeyDown={(e) => handleKeyDown(e, index)}
-              className={`relative z-10 flex items-center gap-2 px-5 py-2 text-xs md:text-sm font-semibold rounded-full transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
+              className={`relative z-10 flex items-center gap-2 px-6 py-2.5 text-xs md:text-sm font-semibold rounded-full transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-indigo-400 ${
                 isSelected ? 'text-slate-950 font-bold' : 'text-slate-400 hover:text-slate-200'
               }`}
             >

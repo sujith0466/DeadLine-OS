@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Play } from 'lucide-react';
@@ -8,10 +8,13 @@ import { PersonalHeroVisual } from './PersonalHeroVisual';
 import { BusinessHeroVisual } from './BusinessHeroVisual';
 import { ImmersiveSpatial3D } from './ImmersiveSpatial3D';
 
-export const HeroSection: React.FC = () => {
-  const [mode, setMode] = useState<ProductMode>('personal');
-  const { handleDemoLogin, loading: demoLoading, error: demoError } = useDemoLogin();
+interface HeroSectionProps {
+  mode: ProductMode;
+  onModeChange: (mode: ProductMode) => void;
+}
 
+export const HeroSection: React.FC<HeroSectionProps> = ({ mode, onModeChange }) => {
+  const { handleDemoLogin, loading: demoLoading, error: demoError } = useDemoLogin();
   const isPersonal = mode === 'personal';
 
   return (
@@ -22,7 +25,7 @@ export const HeroSection: React.FC = () => {
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
         
         {/* ChatGPT-Style Centered Product Mode Switcher Row */}
-        <ProductModeSwitcher activeMode={mode} onModeChange={setMode} />
+        <ProductModeSwitcher activeMode={mode} onModeChange={onModeChange} />
 
         {/* Dynamic Mode Headline & Subtitle */}
         <AnimatePresence mode="wait">
