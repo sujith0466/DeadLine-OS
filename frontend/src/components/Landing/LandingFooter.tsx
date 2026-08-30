@@ -19,7 +19,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ mode: _mode }) => 
             <div>
               <span className="text-sm font-bold text-white tracking-tight">DeadlineOS</span>
               <span className="ml-2 px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-[10px] text-gray-400 font-mono">
-                v1.0.0-production
+                v1.0.0
               </span>
             </div>
           </div>
@@ -33,7 +33,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ mode: _mode }) => 
 
           <div className="flex items-center gap-2 text-gray-500">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Personal OS (v1.0) & Business OS (B0-B8) Certified</span>
+            <span>Personal & Enterprise Operating System</span>
           </div>
 
         </div>

@@ -31,15 +31,15 @@ export const HowItThinks: React.FC<HowItThinksProps> = ({ mode }) => {
                 className="absolute inset-0 m-auto w-36 h-36 rounded-2xl bg-gray-900/90 border border-white/15 shadow-2xl flex flex-col items-center justify-center z-20 backdrop-blur-xl"
               >
                 <Cpu className={`w-10 h-10 mb-2 ${isPersonal ? 'text-indigo-400' : 'text-emerald-400'}`} />
-                <span className="text-xs font-bold text-gray-200">{isPersonal ? 'Digital Twin Core' : 'Financial Truth Engine'}</span>
-                <span className="text-[9px] font-mono text-gray-400">{isPersonal ? 'Simulation V2' : 'Double-Entry (B3)'}</span>
+                <span className="text-xs font-bold text-gray-200">{isPersonal ? 'Digital Twin Core' : 'Financial Ledger'}</span>
+                <span className="text-[9px] font-mono text-gray-400">{isPersonal ? 'Predictive Pacing' : 'Exact Double-Entry'}</span>
               </motion.div>
 
               {/* Orbiting Nodes */}
               {[
-                { icon: Network, label: isPersonal ? 'Gemini 2.0' : 'Grounded Copilot', delay: 0 },
-                { icon: Database, label: isPersonal ? 'Neon DB' : 'Postgres Ledger', delay: -2.5 },
-                { icon: Lock, label: isPersonal ? 'Encrypted Auth' : '5-Tier RBAC', delay: -5 },
+                { icon: Network, label: isPersonal ? 'Semantic AI' : 'Grounded Copilot', delay: 0 },
+                { icon: Database, label: isPersonal ? 'Private Store' : 'Immutable Logs', delay: -2.5 },
+                { icon: Lock, label: isPersonal ? 'Encrypted Context' : 'Tenant Boundaries', delay: -5 },
                 { icon: isPersonal ? RefreshCw : ShieldCheck, label: isPersonal ? 'Rescue Agent' : 'Human Staging', delay: -7.5 },
               ].map((node, idx) => (
                 <motion.div
@@ -81,35 +81,35 @@ export const HowItThinks: React.FC<HowItThinksProps> = ({ mode }) => {
                       : 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
                   }`}
                 >
-                  {isPersonal ? 'Hybrid AI Architecture' : 'Zero-Bypass Deterministic Intelligence'}
+                  {isPersonal ? 'Intelligent Architecture' : 'AI Assistance + Mathematical Truth'}
                 </div>
 
                 <h2 className="text-3xl md:text-4xl font-black text-white mb-6 leading-tight">
                   {isPersonal
                     ? 'Intelligence That Simulates Before It Commits'
-                    : 'AI Advisory with Unyielding Mathematical Truth'}
+                    : 'AI Advisory with Authoritative Financial Rigor'}
                 </h2>
 
                 <p className="text-base text-gray-400 mb-6 leading-relaxed">
                   {isPersonal
-                    ? 'Unlike static to-do lists, DeadlineOS continuously models your energy capacity, habit momentum, and deadline collisions in a sandboxed digital twin simulation.'
-                    : 'Business OS strictly separates AI advisory tasks from authoritative financial records. While Gemini assists with document extraction and risk summaries, all financial ledger writes require deterministic math and human staging verification.'}
+                    ? 'Unlike passive to-do lists, DeadlineOS continuously models your energy capacity, habit momentum, and deadline collisions in a sandboxed digital twin simulation.'
+                    : 'Business OS cleanly separates AI intelligence from authoritative financial records. While AI assists with document parsing and risk forecasting, all ledger writes require deterministic math and explicit human confirmation.'}
                 </p>
 
                 <div className="space-y-4">
                   {(isPersonal
                     ? [
-                        { title: 'Zero Hallucination Scheduling', desc: 'Schedules are locked against real calendar physics and hard deadlines.' },
-                        { title: 'Predictive Burnout Detection', desc: 'Monitors cognitive velocity to suggest breaks before fatigue sets in.' },
-                        { title: 'Multi-Agent Autonomous Orchestration', desc: 'Planner, Rescue, and Accountability agents coordinate behind the scenes.' },
+                        { title: 'Zero-Hallucination Scheduling', desc: 'Schedules adapt to real calendar physics, circadian limits, and hard deadlines.' },
+                        { title: 'Predictive Burnout Detection', desc: 'Monitors work velocity to suggest restorative interventions before fatigue takes hold.' },
+                        { title: 'Autonomous Multi-Agent Coordination', desc: 'Planner, Rescue, and Accountability agents work behind the scenes.' },
                       ]
                     : [
-                        { title: 'Staging Drawer Verification Barrier', desc: 'No invoice or payment enters the ledger without explicit human confirmation.' },
-                        { title: 'Deterministic Decimal Arithmetic', desc: 'Zero floating-point rounding errors on multi-currency financial records.' },
-                        { title: 'Grounded Business Copilot', desc: 'AI queries the ledger via structured read-only interfaces without hallucinating cash.' },
+                        { title: 'Human Verification Barrier', desc: 'No invoice or payment enters the ledger without explicit human confirmation.' },
+                        { title: 'Deterministic Decimal Arithmetic', desc: 'Zero floating-point rounding errors across multi-currency records.' },
+                        { title: 'Grounded Copilot Reasoning', desc: 'AI queries real ledger state without guessing or hallucinating cash positions.' },
                       ]
                   ).map((item, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/5">
+                    <div key={idx} className="flex items-start gap-3 p-3.5 rounded-xl bg-white/[0.02] border border-white/5">
                       <div className={`p-1.5 rounded-lg mt-0.5 ${isPersonal ? 'bg-indigo-500/10 text-indigo-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
                         <ShieldCheck className="w-4 h-4" />
                       </div>

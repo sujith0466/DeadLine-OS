@@ -46,7 +46,7 @@ export const CTASection: React.FC<CTASectionProps> = ({ mode }) => {
             <p className="text-lg text-gray-400 mb-10 leading-relaxed font-medium">
               {isPersonal
                 ? 'Join high-agency individuals using DeadlineOS to orchestrate goals, conquer daily deadlines, and eliminate burnout.'
-                : 'Empower your organization with deterministic financial truth, automated collections, and multi-entity intelligence.'}
+                : 'Empower your organization with authoritative financial truth, automated collections, and multi-entity intelligence.'}
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -60,7 +60,7 @@ export const CTASection: React.FC<CTASectionProps> = ({ mode }) => {
               <button
                 onClick={handleDemoLogin}
                 disabled={demoLoading}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-white/5 border border-white/10 text-white rounded-full font-bold text-lg backdrop-blur-xl hover:bg-white/10 transition-all disabled:opacity-60"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-white/5 border border-white/10 text-white rounded-full font-bold text-lg backdrop-blur-xl hover:bg-white/10 transition-all disabled:opacity-60 cursor-pointer"
               >
                 <Play className="w-5 h-5 fill-current opacity-80" />
                 {demoLoading ? 'Launching...' : 'Watch Demo'}

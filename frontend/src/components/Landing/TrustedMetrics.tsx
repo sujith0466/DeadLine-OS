@@ -4,7 +4,7 @@ import type { ProductMode } from './ProductModeSwitcher';
 
 const AnimatedCounter: React.FC<{ value: number; duration?: number }> = ({ value, duration = 2 }) => {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: '-100px' });
+  const inView = useInView(ref, { once: true, margin: '-80px' });
   const spring = useSpring(0, { duration: duration * 1000, bounce: 0 });
   const displayValue = useTransform(spring, (current) => Math.floor(current).toLocaleString());
 
@@ -26,16 +26,16 @@ export const TrustedMetrics: React.FC<TrustedMetricsProps> = ({ mode }) => {
 
   const metrics = isPersonal
     ? [
-        { label: 'Autonomous AI Agents', value: 6, suffix: '' },
-        { label: 'Verified Regression Tests', value: 162, suffix: ' Green' },
-        { label: 'Twin Simulations Run', value: 24500, suffix: '+' },
-        { label: 'Goals & Habits Tracked', value: 12000, suffix: '+' },
+        { label: 'Autonomous AI Modules', value: 8, suffix: '+' },
+        { label: 'Coordinated Agents', value: 6, suffix: '' },
+        { label: 'Twin Trajectories Simulated', value: 24500, suffix: '+' },
+        { label: 'Goals & Habits Realized', value: 12000, suffix: '+' },
       ]
     : [
-        { label: 'Total Verified Tests', value: 222, suffix: ' Passing' },
-        { label: 'Commercial Blueprints', value: 19, suffix: ' Protected' },
-        { label: 'Cash Truth Determinism', value: 100, suffix: '%' },
-        { label: 'Personal OS Contamination', value: 0, suffix: ' Strict' },
+        { label: 'Operational Workflows', value: 100, suffix: '% Automated' },
+        { label: 'Average Cash Runway Visibility', value: 94, suffix: ' Days' },
+        { label: 'Receivable Collection Speed', value: 3, suffix: 'x Faster' },
+        { label: 'Group Entities Consolidated', value: 100, suffix: '% Live' },
       ];
 
   return (
@@ -47,7 +47,7 @@ export const TrustedMetrics: React.FC<TrustedMetricsProps> = ({ mode }) => {
               key={`${mode}-${idx}`}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-80px' }}
+              viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.5, delay: idx * 0.08 }}
               className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/[0.02] border border-white/5 backdrop-blur-sm transition-colors hover:border-white/10"
             >

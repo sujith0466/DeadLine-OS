@@ -14,7 +14,7 @@ export const BusinessHeroVisual: React.FC = () => {
             <div className="w-3 h-3 rounded-full bg-yellow-500/80" />
             <div className="w-3 h-3 rounded-full bg-green-500/80" />
             <span className="ml-2 font-mono text-xs text-gray-400 font-bold tracking-widest hidden sm:inline">
-              DEADLINE BUSINESS OS — ENTERPRISE LIVE VIEW
+              DEADLINE BUSINESS OS — OPERATIONAL VIEW
             </span>
           </div>
 
@@ -37,7 +37,7 @@ export const BusinessHeroVisual: React.FC = () => {
           <div className="w-1/3 flex flex-col gap-3">
             <div className="bg-white/5 border border-white/5 rounded-xl p-3.5 flex flex-col gap-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase">OVERDUE RESCUE ENGINE</span>
+                <span className="text-[10px] font-bold text-gray-400 tracking-wider uppercase">COLLECTION RESCUE</span>
                 <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
               </div>
 
@@ -119,8 +119,8 @@ export const BusinessHeroVisual: React.FC = () => {
               </div>
 
               <div className="flex justify-between items-center text-[10px] text-gray-400 pt-1 border-t border-white/5">
-                <span>ADBR: ₹15,400/day</span>
-                <span className="font-semibold text-emerald-400">Deterministic Truth (B3)</span>
+                <span>Burn Velocity: ₹15,400/day</span>
+                <span className="font-semibold text-emerald-400">Verified Ledger State</span>
               </div>
             </div>
 
@@ -170,14 +170,14 @@ export const BusinessHeroVisual: React.FC = () => {
             {/* Recurring Automation Engine */}
             <div className="flex-1 bg-black/40 border border-white/5 rounded-xl p-3.5 flex flex-col justify-between relative overflow-hidden">
               <div className="flex items-center justify-between text-[10px] font-bold text-gray-500 tracking-wider">
-                <span>AUTOMATION RUNNER (B6)</span>
+                <span>AUTOMATION RUNNER</span>
                 <RefreshCw className="w-3 h-3 text-indigo-400" />
               </div>
 
               <div className="space-y-2 my-2">
                 <div className="flex items-center gap-2 text-[10px] text-gray-300">
                   <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                  <span className="truncate">Auto-generated AWS retainer invoice</span>
+                  <span className="truncate">Auto-generated retainer invoice</span>
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-gray-300">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
@@ -185,13 +185,13 @@ export const BusinessHeroVisual: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2 text-[10px] text-gray-300">
                   <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
-                  <span className="truncate">Copilot context assembly verified</span>
+                  <span className="truncate">Copilot ledger grounding verified</span>
                 </div>
               </div>
 
               <div className="text-[9px] font-mono text-indigo-300/80 pt-1 border-t border-white/5 flex justify-between">
-                <span>Idempotency: `rec-gen-0829`</span>
-                <span>Audit: 100% Green</span>
+                <span>Idempotency: Guaranteed</span>
+                <span>Audit: 100% Clean</span>
               </div>
             </div>
           </div>

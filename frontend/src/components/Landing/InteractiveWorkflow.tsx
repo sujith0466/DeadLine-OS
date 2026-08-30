@@ -13,66 +13,66 @@ export const InteractiveWorkflow: React.FC<InteractiveWorkflowProps> = ({ mode }
   const personalSteps = [
     {
       num: '01',
-      title: 'Capture & Ingestion',
-      subtitle: 'Multimodal Input',
+      title: 'Capture',
+      subtitle: 'Multimodal Ingestion',
       desc: 'Drop raw thoughts, voice notes, PDFs, or photos into the Command Center.',
     },
     {
       num: '02',
-      title: 'Dynamic Planning',
-      subtitle: 'Energy-Aware Schedule',
-      desc: 'Autonomous AI schedules tasks around circadian focus windows and real deadlines.',
+      title: 'Plan',
+      subtitle: 'Circadian Intelligence',
+      desc: 'AI schedules tasks around high-energy focus windows and hard deadlines.',
     },
     {
       num: '03',
-      title: 'Execution & Momentum',
-      subtitle: 'Cognitive Flow',
+      title: 'Execute',
+      subtitle: 'Focused Flow',
       desc: 'Work through structured deep work blocks with real-time focus analytics.',
     },
     {
       num: '04',
-      title: 'Predictive Recovery',
+      title: 'Recover',
       subtitle: 'Burnout Prevention',
-      desc: 'Digital Twin simulates trajectory to inject restorative interventions before fatigue sets in.',
+      desc: 'Digital Twin simulates trajectory to inject restorative breaks before fatigue sets in.',
     },
     {
       num: '05',
-      title: 'Compounding Mastery',
-      subtitle: 'Daily Reflection',
-      desc: 'Evening reflection synthesizes wins to continuously calibrate tomorrow’s baseline.',
+      title: 'Learn',
+      subtitle: 'Compounding Mastery',
+      desc: 'Evening reflection synthesizes daily wins to calibrate tomorrow’s baseline.',
     },
   ];
 
   const businessSteps = [
     {
       num: '01',
-      title: 'Commercial Ingestion',
-      subtitle: 'PDF / Audio / OCR',
-      desc: 'Upload invoices, vendor receipts, or spoken agreements into the capture drawer.',
+      title: 'Capture',
+      subtitle: 'Inbound Stream',
+      desc: 'Upload invoices, receipts, contracts, or spoken billing agreements.',
     },
     {
       num: '02',
-      title: 'Staging & Verification',
-      subtitle: 'Human-in-the-Loop Barrier',
-      desc: 'Side-by-side verification validates extracted amounts before any ledger modification.',
+      title: 'Stage',
+      subtitle: 'Human Verification',
+      desc: 'Review side-by-side extracted drafts with one-click verification before recording.',
     },
     {
       num: '03',
-      title: 'Deterministic Ledger',
-      subtitle: 'Double-Entry Truth',
-      desc: 'Strict append-only transaction logs and automatic invoice payment allocations.',
+      title: 'Record',
+      subtitle: 'Authoritative Ledger',
+      desc: 'Immutable double-entry transaction logs with automatic payment allocations.',
     },
     {
       num: '04',
-      title: 'Operational Intelligence',
-      subtitle: 'Cash Reality & Risk',
-      desc: 'Deterministic burn rates compute Runway Days and trigger collection rescue workflows.',
+      title: 'Understand',
+      subtitle: 'Cash & Risk Reality',
+      desc: 'Real-time burn rates compute exact Runway Days and flag overdue receivables.',
     },
     {
       num: '05',
-      title: 'Automate & Consolidate',
-      subtitle: 'Multi-Entity Group',
-      desc: 'Recurring obligations execute automatically while inter-company transfers eliminate cleanly.',
+      title: 'Act',
+      subtitle: 'Automated Operations',
+      desc: 'Automate collection reminders, recurring billings, and multi-entity eliminations.',
     },
   ];
 
@@ -97,14 +97,14 @@ export const InteractiveWorkflow: React.FC<InteractiveWorkflowProps> = ({ mode }
                   </>
                 ) : (
                   <>
-                    The Deterministic <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Financial Pipeline</span>
+                    How Operations Turn into <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Clear Truth</span>
                   </>
                 )}
               </h2>
               <p className="text-lg text-gray-400">
                 {isPersonal
                   ? 'A closed-loop execution lifecycle that transforms chaotic ambition into predictable daily achievements.'
-                  : 'An unyielding commercial pipeline that bridges raw invoices to verifiable ledger truth and automated collections.'}
+                  : 'A structured commercial pipeline that bridges raw inputs to verified ledger truth and automated collections.'}
               </p>
             </motion.div>
           </AnimatePresence>
@@ -122,19 +122,21 @@ export const InteractiveWorkflow: React.FC<InteractiveWorkflowProps> = ({ mode }
             >
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <span className="text-xs font-mono font-bold px-2 py-1 rounded bg-white/5 text-gray-400">{step.num}</span>
+                  <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-white/5 text-gray-300">{step.num}</span>
                   {idx < steps.length - 1 && (
                     <ArrowRight className="w-4 h-4 text-gray-600 hidden md:block" />
                   )}
                 </div>
-                <div className="text-xs font-semibold text-indigo-400 mb-1">{step.subtitle}</div>
+                <div className={`text-xs font-semibold mb-1 ${isPersonal ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                  {step.subtitle}
+                </div>
                 <h3 className="text-lg font-bold text-white mb-2">{step.title}</h3>
                 <p className="text-xs text-gray-400 leading-relaxed">{step.desc}</p>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-white/5 flex items-center gap-1.5 text-[11px] text-emerald-400">
+              <div className={`mt-4 pt-3 border-t border-white/5 flex items-center gap-1.5 text-[11px] ${isPersonal ? 'text-indigo-400' : 'text-emerald-400'}`}>
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Deterministic Gate</span>
+                <span>Deterministic Step</span>
               </div>
             </motion.div>
           ))}

@@ -6,7 +6,7 @@ import { ProductShowcase } from '../components/Landing/ProductShowcase';
 import { InteractiveWorkflow } from '../components/Landing/InteractiveWorkflow';
 import { HowItThinks } from '../components/Landing/HowItThinks';
 import { ModeSpecificShowcase } from '../components/Landing/ModeSpecificShowcase';
-import { TrustSecuritySection } from '../components/Landing/TrustSecuritySection';
+import { CustomerConfidenceSection } from '../components/Landing/CustomerConfidenceSection';
 import { FAQSection } from '../components/Landing/FAQSection';
 import { CTASection } from '../components/Landing/CTASection';
 import { LandingFooter } from '../components/Landing/LandingFooter';
@@ -27,7 +27,7 @@ export const Landing: React.FC = () => {
         <InteractiveWorkflow mode={mode} />
         <HowItThinks mode={mode} />
         <ModeSpecificShowcase mode={mode} />
-        <TrustSecuritySection mode={mode} />
+        <CustomerConfidenceSection mode={mode} />
         <FAQSection mode={mode} />
         <CTASection mode={mode} />
       </main>
