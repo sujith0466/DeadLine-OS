@@ -25,7 +25,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ mode, onModeChange }) 
       <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
         
         {/* ChatGPT-Style Centered Product Mode Switcher Row */}
-        <ProductModeSwitcher activeMode={mode} onModeChange={onModeChange} />
+        <ProductModeSwitcher id="primary-mode-switcher" activeMode={mode} onModeChange={onModeChange} variant="hero" />
 
         {/* Dynamic Mode Headline & Subtitle */}
         <AnimatePresence mode="wait">

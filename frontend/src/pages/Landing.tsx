@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { LandingNavigation } from '../components/Landing/LandingNavigation';
 import { HeroSection } from '../components/Landing/HeroSection';
 import { TrustedMetrics } from '../components/Landing/TrustedMetrics';
@@ -11,17 +12,66 @@ import { FAQSection } from '../components/Landing/FAQSection';
 import { CTASection } from '../components/Landing/CTASection';
 import { LandingFooter } from '../components/Landing/LandingFooter';
 import { Background } from '../components/Landing/Background';
-import type { ProductMode } from '../components/Landing/ProductModeSwitcher';
+import { ProductModeSwitcher, type ProductMode } from '../components/Landing/ProductModeSwitcher';
+
+const STORAGE_KEY = 'deadlineos-landing-mode';
 
 export const Landing: React.FC = () => {
-  const [mode, setMode] = useState<ProductMode>('personal');
+  const shouldReduceMotion = useReducedMotion();
+
+  // Mode state with localStorage persistence
+  const [mode, setMode] = useState<ProductMode>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved === 'personal' || saved === 'business') {
+        return saved;
+      }
+    } catch {
+      // In case localStorage is blocked or restricted
+    }
+    return 'personal';
+  });
+
+  // Track visibility of the primary hero switcher
+  const [isPrimaryVisible, setIsPrimaryVisible] = useState(true);
+
+  const handleModeChange = (newMode: ProductMode) => {
+    setMode(newMode);
+    try {
+      localStorage.setItem(STORAGE_KEY, newMode);
+    } catch {
+      // Ignore storage errors
+    }
+  };
+
+  useEffect(() => {
+    const primaryEl = document.getElementById('primary-mode-switcher');
+    if (!primaryEl) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsPrimaryVisible(entry.isIntersecting);
+      },
+      {
+        threshold: 0.05,
+        rootMargin: '-30px 0px 0px 0px',
+      }
+    );
+
+    observer.observe(primaryEl);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, []);
 
   return (
     <div className="bg-[#020617] min-h-screen text-gray-50 font-sans selection:bg-indigo-500/30 relative">
       <Background />
-      <LandingNavigation mode={mode} onModeChange={setMode} />
+      <LandingNavigation />
+
       <main>
-        <HeroSection mode={mode} onModeChange={setMode} />
+        <HeroSection mode={mode} onModeChange={handleModeChange} />
         <TrustedMetrics mode={mode} />
         <ProductShowcase mode={mode} />
         <InteractiveWorkflow mode={mode} />
@@ -31,6 +81,26 @@ export const Landing: React.FC = () => {
         <FAQSection mode={mode} />
         <CTASection mode={mode} />
       </main>
+
+      {/* Floating Vertical Mode Switcher (Visible only when primary switcher is scrolled out of viewport) */}
+      <AnimatePresence>
+        {!isPrimaryVisible && (
+          <motion.div
+            initial={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 20, scale: 0.94 }}
+            animate={shouldReduceMotion ? { opacity: 1 } : { opacity: 1, x: 0, scale: 1 }}
+            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, x: 20, scale: 0.94 }}
+            transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="fixed right-3 sm:right-6 top-1/2 -translate-y-1/2 z-40"
+          >
+            <ProductModeSwitcher
+              activeMode={mode}
+              onModeChange={handleModeChange}
+              variant="floating"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <LandingFooter mode={mode} />
     </div>
   );

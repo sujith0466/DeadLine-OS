@@ -3,14 +3,8 @@ import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-
 import { Link } from 'react-router-dom';
 import { Brain, Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { ProductModeSwitcher, type ProductMode } from './ProductModeSwitcher';
 
-interface LandingNavigationProps {
-  mode: ProductMode;
-  onModeChange: (mode: ProductMode) => void;
-}
-
-export const LandingNavigation: React.FC<LandingNavigationProps> = ({ mode, onModeChange }) => {
+export const LandingNavigation: React.FC = () => {
   const { user, signOut } = useAuth();
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
@@ -65,7 +59,7 @@ export const LandingNavigation: React.FC<LandingNavigationProps> = ({ mode, onMo
           </div>
 
           {/* Desktop Navigation Links */}
-          <div className="hidden lg:flex items-center space-x-7">
+          <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
               <a
                 key={link.name}
@@ -77,15 +71,8 @@ export const LandingNavigation: React.FC<LandingNavigationProps> = ({ mode, onMo
             ))}
           </div>
 
-          {/* Persistent Mode Switcher & CTA Actions */}
-          <div className="hidden md:flex items-center space-x-4 shrink-0">
-            <ProductModeSwitcher
-              activeMode={mode}
-              onModeChange={onModeChange}
-              variant="compact"
-              className="mr-1"
-            />
-
+          {/* Actions */}
+          <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-3">
                 <button
@@ -102,22 +89,25 @@ export const LandingNavigation: React.FC<LandingNavigationProps> = ({ mode, onMo
                 </Link>
               </div>
             ) : (
-              <Link
-                to="/login"
-                className="text-sm font-semibold bg-white text-gray-900 hover:bg-gray-100 px-5 py-2.5 rounded-full transition-all shadow-lg shadow-white/10 hover:scale-105"
-              >
-                Login
-              </Link>
+              <div className="flex items-center space-x-3">
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-gray-300 hover:text-white px-4 py-2 transition-colors"
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/register"
+                  className="text-sm font-semibold bg-white text-gray-900 hover:bg-gray-100 px-5 py-2.5 rounded-full transition-all shadow-lg shadow-white/10 hover:scale-105"
+                >
+                  Get Started
+                </Link>
+              </div>
             )}
           </div>
 
-          {/* Mobile Right Controls: Compact Switcher + Hamburger */}
-          <div className="md:hidden flex items-center gap-2">
-            <ProductModeSwitcher
-              activeMode={mode}
-              onModeChange={onModeChange}
-              variant="compact"
-            />
+          {/* Mobile Hamburger */}
+          <div className="md:hidden flex items-center">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 text-gray-300 hover:text-white rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400"
@@ -140,18 +130,6 @@ export const LandingNavigation: React.FC<LandingNavigationProps> = ({ mode, onMo
             className="md:hidden bg-[#0A0C12]/98 backdrop-blur-2xl border-b border-white/10 overflow-hidden"
           >
             <div className="px-5 pt-3 pb-6 space-y-4">
-              {/* Mobile Mode Switcher In-Drawer */}
-              <div className="pt-1 pb-3 flex justify-center border-b border-white/10">
-                <ProductModeSwitcher
-                  activeMode={mode}
-                  onModeChange={(newMode) => {
-                    onModeChange(newMode);
-                    setMobileMenuOpen(false);
-                  }}
-                  variant="hero"
-                />
-              </div>
-
               {navLinks.map((link) => (
                 <a
                   key={link.name}
