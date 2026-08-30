@@ -227,3 +227,50 @@ def test_b2_rbac_member_administration_and_last_owner_protection(app, client, au
 
     res_remove_owner = client.delete(f"/api/business/members/{member_a['id']}", headers=headers_a)
     assert res_remove_owner.status_code == 400
+
+
+def test_b7_invitation_info_lookup_and_acceptance_api(client, auth_users):
+    """B7-AUTH-01: Public invitation info lookup and authenticated acceptance flow."""
+    u_a = auth_users["user_a_id"]
+    u_c = auth_users["user_c_id"]
+    ws_a_id = auth_users["ws_a_id"]
+
+    headers_a = {
+        "Authorization": f"Bearer {u_a}",
+        "X-Workspace-Id": ws_a_id
+    }
+
+    # 1. Create invitation for user_c
+    res_inv = client.post("/api/business/workspaces/invitations", json={
+        "email": "invitee_b7@enterprise.com",
+        "role": "ACCOUNTANT"
+    }, headers=headers_a)
+    assert res_inv.status_code == 201
+    token = res_inv.get_json()["data"]["token"]
+
+    # 2. Public lookup via GET /workspaces/invitations/info?token=...
+    res_info = client.get(f"/api/business/workspaces/invitations/info?token={token}")
+    assert res_info.status_code == 200
+    info_data = res_info.get_json()["data"]
+    assert info_data["workspace_name"] == "Enterprise Alpha"
+    assert info_data["role"] == "ACCOUNTANT"
+    assert info_data["email"] == "invitee_b7@enterprise.com"
+    assert info_data["status"] == "PENDING"
+
+    # 3. Invalid token returns 404
+    res_bad = client.get("/api/business/workspaces/invitations/info?token=invalid_crypto_token_123456789")
+    assert res_bad.status_code == 404
+
+    # 4. Accept invitation as User C
+    headers_c = {"Authorization": f"Bearer {u_c}"}
+    res_accept = client.post("/api/business/workspaces/invitations/accept", json={
+        "token": token
+    }, headers=headers_c)
+    assert res_accept.status_code == 200
+    assert res_accept.get_json()["data"]["workspace"]["id"] == ws_a_id
+
+    # 5. Replay attempt returns 409
+    res_replay = client.post("/api/business/workspaces/invitations/accept", json={
+        "token": token
+    }, headers=headers_c)
+    assert res_replay.status_code == 409

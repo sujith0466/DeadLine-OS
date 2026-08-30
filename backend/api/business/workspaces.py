@@ -12,6 +12,7 @@ from utils.errors import APIError
 from middleware.business_context import require_workspace, ROLE_PERMISSIONS
 from services.business.workspace_service import WorkspaceService
 from services.business.invitation_service import InvitationService
+from models.business import Workspace
 
 workspaces_bp = Blueprint('biz_workspaces', __name__)
 
@@ -146,6 +147,30 @@ def list_invitations():
     try:
         invitations = InvitationService.list_workspace_invitations(g.workspace_id)
         return success_response(data={"invitations": invitations, "total": len(invitations)})
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@workspaces_bp.route('/workspaces/invitations/info', methods=['GET', 'POST'])
+@limiter.limit("30 per minute")
+def get_invitation_info():
+    token = request.args.get('token') if request.method == 'GET' else (request.get_json() or {}).get('token')
+    if not token:
+        return error_response("Field 'token' is required.", "VALIDATION_ERROR", 400)
+    try:
+        inv = InvitationService.get_invitation_by_token(token)
+        ws = Workspace.query.get(inv.workspace_id)
+        return success_response(data={
+            "id": inv.id,
+            "workspace_id": inv.workspace_id,
+            "workspace_name": ws.name if ws else "Business Workspace",
+            "email": inv.email,
+            "role": inv.role,
+            "status": inv.status,
+            "expires_at": inv.expires_at.isoformat() if inv.expires_at else None
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
     except Exception as e:
         return error_response(str(e), "INTERNAL_ERROR", 500)
 

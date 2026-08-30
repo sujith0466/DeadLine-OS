@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Building2, ArrowRight, Lock, Mail, User, ShieldCheck, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -8,8 +8,12 @@ import { useBusinessAuth } from '../../context/BusinessAuthContext';
 
 export const BusinessRegister: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { createWorkspace, refreshWorkspaces } = useBusinessAuth();
+
+  const rawNext = searchParams.get('next');
+  const safeNext = (rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.includes('\\')) ? rawNext : null;
 
   // Form State
   const [step, setStep] = useState<'account' | 'workspace' | 'verification'>(user ? 'workspace' : 'account');
@@ -28,12 +32,16 @@ export const BusinessRegister: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // If user is already authenticated, skip account step and proceed to workspace creation
+  // If user is already authenticated, check if safeNext exists or skip account step and proceed to workspace creation
   useEffect(() => {
-    if (user && step === 'account') {
-      setStep('workspace');
+    if (user) {
+      if (safeNext) {
+        navigate(safeNext);
+      } else if (step === 'account') {
+        setStep('workspace');
+      }
     }
-  }, [user, step]);
+  }, [user, step, safeNext, navigate]);
 
   const handleAccountSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

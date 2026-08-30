@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Building2, ArrowRight, Lock, Mail, Eye, EyeOff, AlertCircle, ShieldCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
@@ -8,8 +8,12 @@ import { useBusinessAuth } from '../../context/BusinessAuthContext';
 
 export const BusinessLogin: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, loading: authLoading } = useAuth();
   const { workspaces, refreshWorkspaces, selectWorkspace, loading: bizLoading } = useBusinessAuth();
+
+  const rawNext = searchParams.get('next');
+  const safeNext = (rawNext && rawNext.startsWith('/') && !rawNext.startsWith('//') && !rawNext.includes('\\')) ? rawNext : null;
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -20,7 +24,9 @@ export const BusinessLogin: React.FC = () => {
   // If already authenticated with Supabase, evaluate Business workspaces and route appropriately
   useEffect(() => {
     if (!authLoading && user && !bizLoading) {
-      if (workspaces.length === 0) {
+      if (safeNext) {
+        navigate(safeNext);
+      } else if (workspaces.length === 0) {
         navigate('/business/register');
       } else if (workspaces.length === 1 && workspaces[0].status === 'ACTIVE') {
         selectWorkspace(workspaces[0].id).then(() => {
@@ -30,7 +36,7 @@ export const BusinessLogin: React.FC = () => {
         navigate('/business/select');
       }
     }
-  }, [user, authLoading, workspaces, bizLoading, navigate, selectWorkspace]);
+  }, [user, authLoading, workspaces, bizLoading, navigate, selectWorkspace, safeNext]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

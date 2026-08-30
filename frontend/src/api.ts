@@ -751,6 +751,9 @@ export const DeadlineOSApi = {
   listWorkspaceInvitations: () =>
     apiClient.get('/business/workspaces/invitations').then(r => r.data),
 
+  getWorkspaceInvitationInfo: (token: string) =>
+    apiClient.get('/business/workspaces/invitations/info', { params: { token } }).then(r => r.data),
+
   createWorkspaceInvitation: (data: { email: string; role?: string; expires_in_days?: number }) =>
     apiClient.post('/business/workspaces/invitations', data).then(r => r.data),
 
