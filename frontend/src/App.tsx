@@ -15,6 +15,7 @@ import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { BusinessLogin } from './pages/auth/BusinessLogin';
 import { BusinessRegister } from './pages/auth/BusinessRegister';
+import { WorkspaceSelector } from './pages/auth/WorkspaceSelector';
 
 const Landing = React.lazy(() => import('./pages/Landing').then(m => ({ default: m.Landing })));
 const Dashboard = React.lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -54,6 +55,7 @@ const AnimatedRoutes = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/business/login" element={<BusinessLogin />} />
         <Route path="/business/register" element={<BusinessRegister />} />
+        <Route path="/business/select" element={<WorkspaceSelector />} />
         
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
