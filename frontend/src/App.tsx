@@ -7,11 +7,17 @@ import { PageReveal } from './components/UI/PageReveal';
 import { AnimatePresence } from 'framer-motion';
 import { GlobalErrorToast } from './components/GlobalErrorToast';
 import { AuthProvider } from './context/AuthContext';
+import { BusinessAuthProvider } from './context/BusinessAuthContext';
 import { SettingsProvider } from './context/SettingsContext';
 import { RuntimeProvider } from './context/RuntimeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { BusinessProtectedRoute } from './components/BusinessProtectedRoute';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
+import { BusinessLogin } from './pages/auth/BusinessLogin';
+import { BusinessRegister } from './pages/auth/BusinessRegister';
+import { WorkspaceSelector } from './pages/auth/WorkspaceSelector';
+import { BusinessInvitationAccept } from './pages/auth/BusinessInvitationAccept';
 
 const Landing = React.lazy(() => import('./pages/Landing').then(m => ({ default: m.Landing })));
 const Dashboard = React.lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
@@ -49,7 +55,17 @@ const AnimatedRoutes = () => {
         <Route path="/" element={<PageReveal><Landing /></PageReveal>} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/business/login" element={<BusinessLogin />} />
+        <Route path="/business/register" element={<BusinessRegister />} />
+        <Route path="/business/select" element={<WorkspaceSelector />} />
+        <Route path="/business/invite" element={<BusinessInvitationAccept />} />
         
+        {/* Business Protected Routes */}
+        <Route element={<BusinessProtectedRoute />}>
+          <Route path="/business/dashboard" element={<PageReveal><Dashboard /></PageReveal>} />
+        </Route>
+
+        {/* Personal Protected Routes */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
             <Route path="/dashboard" element={<PageReveal><Dashboard /></PageReveal>} />
@@ -129,14 +145,16 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <SettingsProvider>
-        <RuntimeProvider>
-          <BrowserRouter>
-            <AnimatedRoutes />
-            <GlobalErrorToast />
-          </BrowserRouter>
-                </RuntimeProvider>
-</SettingsProvider>
+        <BusinessAuthProvider>
+          <SettingsProvider>
+            <RuntimeProvider>
+              <BrowserRouter>
+                <AnimatedRoutes />
+                <GlobalErrorToast />
+              </BrowserRouter>
+            </RuntimeProvider>
+          </SettingsProvider>
+        </BusinessAuthProvider>
       </AuthProvider>
     </ErrorBoundary>
   );

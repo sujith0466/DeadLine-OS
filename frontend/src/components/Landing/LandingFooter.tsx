@@ -7,7 +7,7 @@ interface LandingFooterProps {
   mode: ProductMode;
 }
 
-export const LandingFooter: React.FC<LandingFooterProps> = ({ mode: _mode }) => {
+export const LandingFooter: React.FC<LandingFooterProps> = ({ mode }) => {
   return (
     <footer className="bg-[#050608] border-t border-white/5 py-12 text-gray-400 text-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -30,7 +30,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({ mode: _mode }) => 
             <a href="#workflow" className="hover:text-white transition-colors">Pipeline</a>
             <a href="#agents" className="hover:text-white transition-colors">Intelligence</a>
             <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
-            <Link to="/login" className="hover:text-white transition-colors">Sign In</Link>
+            <Link to={mode === 'personal' ? "/login" : "/business/login"} className="hover:text-white transition-colors">Sign In</Link>
           </div>
 
           <div className="flex items-center gap-2 text-gray-500">

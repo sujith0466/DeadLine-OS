@@ -742,8 +742,26 @@ export const DeadlineOSApi = {
   getCurrentWorkspace: () =>
     apiClient.get('/business/workspaces/current').then(r => r.data),
 
+  getWorkspaceDetail: (workspaceId: string) =>
+    apiClient.get(`/business/workspaces/${workspaceId}`).then(r => r.data),
+
   updateCurrentWorkspace: (data: { name?: string; legal_name?: string; tax_identifier?: string; base_currency?: string; timezone?: string }) =>
     apiClient.patch('/business/workspaces/current', data).then(r => r.data),
+
+  listWorkspaceInvitations: () =>
+    apiClient.get('/business/workspaces/invitations').then(r => r.data),
+
+  getWorkspaceInvitationInfo: (token: string) =>
+    apiClient.get('/business/workspaces/invitations/info', { params: { token } }).then(r => r.data),
+
+  createWorkspaceInvitation: (data: { email: string; role?: string; expires_in_days?: number }) =>
+    apiClient.post('/business/workspaces/invitations', data).then(r => r.data),
+
+  acceptWorkspaceInvitation: (token: string) =>
+    apiClient.post('/business/workspaces/invitations/accept', { token }).then(r => r.data),
+
+  revokeWorkspaceInvitation: (invitationId: string) =>
+    apiClient.post(`/business/workspaces/invitations/${invitationId}/revoke`).then(r => r.data),
 
   listWorkspaceMembers: () =>
     apiClient.get('/business/members').then(r => r.data),
@@ -753,6 +771,12 @@ export const DeadlineOSApi = {
 
   updateWorkspaceMemberRole: (memberId: string, role: string) =>
     apiClient.patch(`/business/members/${memberId}/role`, { role }).then(r => r.data),
+
+  updateWorkspaceMemberStatus: (memberId: string, status: string) =>
+    apiClient.patch(`/business/members/${memberId}/status`, { status }).then(r => r.data),
+
+  removeWorkspaceMember: (memberId: string) =>
+    apiClient.delete(`/business/members/${memberId}`).then(r => r.data),
 
   listCommercialPartners: (params?: { type?: string; search?: string; status?: string; limit?: number; offset?: number }) =>
     apiClient.get('/business/partners', { params }).then(r => r.data),

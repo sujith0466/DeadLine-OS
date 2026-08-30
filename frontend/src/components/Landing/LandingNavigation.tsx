@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
 import { motion, useScroll, useMotionValueEvent, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Brain, Menu, X, LogOut } from 'lucide-react';
+import { Brain, Menu, X, LogOut, Building2 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import type { ProductMode } from './ProductModeSwitcher';
 
-export const LandingNavigation: React.FC = () => {
+interface LandingNavigationProps {
+  mode?: ProductMode;
+}
+
+export const LandingNavigation: React.FC<LandingNavigationProps> = ({ mode = 'personal' }) => {
   const { user, signOut } = useAuth();
   const { scrollY } = useScroll();
   const [hidden, setHidden] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const isPersonal = mode === 'personal';
+  const loginRoute = isPersonal ? '/login' : '/business/login';
+  const registerRoute = isPersonal ? '/register' : '/business/register';
 
   useMotionValueEvent(scrollY, "change", (latest) => {
     const previous = scrollY.getPrevious() ?? 0;
@@ -52,8 +61,12 @@ export const LandingNavigation: React.FC = () => {
         <div className="flex justify-between items-center h-20 gap-4">
           {/* Logo */}
           <div className="flex items-center gap-2.5 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20">
-              <Brain className="w-6 h-6" />
+            <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg transition-colors ${
+              isPersonal
+                ? 'bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-indigo-500/20'
+                : 'bg-gradient-to-tr from-emerald-500 to-teal-500 shadow-emerald-500/20'
+            }`}>
+              {isPersonal ? <Brain className="w-6 h-6" /> : <Building2 className="w-6 h-6" />}
             </div>
             <span className="text-xl font-bold text-white tracking-tight">DeadlineOS</span>
           </div>
@@ -91,16 +104,20 @@ export const LandingNavigation: React.FC = () => {
             ) : (
               <div className="flex items-center space-x-3">
                 <Link
-                  to="/login"
+                  to={loginRoute}
                   className="text-sm font-medium text-gray-300 hover:text-white px-4 py-2 transition-colors"
                 >
-                  Login
+                  {isPersonal ? 'Login' : 'Sign In'}
                 </Link>
                 <Link
-                  to="/register"
-                  className="text-sm font-semibold bg-white text-gray-900 hover:bg-gray-100 px-5 py-2.5 rounded-full transition-all shadow-lg shadow-white/10 hover:scale-105"
+                  to={registerRoute}
+                  className={`text-sm font-semibold px-5 py-2.5 rounded-full transition-all shadow-lg hover:scale-105 ${
+                    isPersonal
+                      ? 'bg-white text-gray-900 hover:bg-gray-100 shadow-white/10'
+                      : 'bg-emerald-400 text-slate-950 hover:bg-emerald-300 shadow-emerald-500/20 font-bold'
+                  }`}
                 >
-                  Get Started
+                  {isPersonal ? 'Get Started' : 'Open Business OS'}
                 </Link>
               </div>
             )}
@@ -143,18 +160,22 @@ export const LandingNavigation: React.FC = () => {
 
               <div className="pt-4 border-t border-white/10 flex flex-col gap-3">
                 <Link
-                  to="/login"
+                  to={loginRoute}
                   onClick={() => setMobileMenuOpen(false)}
                   className="w-full text-center text-sm font-medium text-gray-300 hover:text-white py-2"
                 >
-                  Login
+                  {isPersonal ? 'Login' : 'Sign In'}
                 </Link>
                 <Link
-                  to="/register"
+                  to={registerRoute}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="w-full text-center text-sm font-semibold bg-white text-gray-900 hover:bg-gray-100 py-2.5 rounded-full shadow-lg"
+                  className={`w-full text-center text-sm font-semibold py-2.5 rounded-full shadow-lg ${
+                    isPersonal
+                      ? 'bg-white text-gray-900 hover:bg-gray-100 shadow-white/10'
+                      : 'bg-emerald-400 text-slate-950 hover:bg-emerald-300 shadow-emerald-500/20 font-bold'
+                  }`}
                 >
-                  Get Started
+                  {isPersonal ? 'Get Started' : 'Open Business OS'}
                 </Link>
               </div>
             </div>

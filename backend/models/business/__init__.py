@@ -4,6 +4,7 @@ DeadlineOS Business OS — Domain Models Package
 
 from .workspace import Workspace
 from .membership import WorkspaceMember
+from .invitation import WorkspaceInvitation
 from .partner import CommercialPartner
 from .audit import AuditEvent
 from .artifact import IngestionArtifact
@@ -18,6 +19,7 @@ from .entity import BusinessEntity, InterEntityTransfer
 __all__ = [
     'Workspace',
     'WorkspaceMember',
+    'WorkspaceInvitation',
     'CommercialPartner',
     'AuditEvent',
     'IngestionArtifact',

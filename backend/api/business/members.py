@@ -79,3 +79,52 @@ def update_member_role(member_id):
         return error_response(e.message, e.code, e.status)
     except Exception as e:
         return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@members_bp.route('/members/<member_id>/status', methods=['PATCH'])
+@require_workspace('members:remove')
+def update_member_status(member_id):
+    data = request.get_json() or {}
+    new_status = data.get('status')
+
+    if not new_status:
+        return error_response("Field 'status' is required.", "VALIDATION_ERROR", 400)
+
+    try:
+        member = WorkspaceService.update_member_status(
+            workspace_id=g.workspace_id,
+            member_id=member_id,
+            actor_user_id=g.user_id,
+            new_status=new_status,
+            ip_address=request.remote_addr,
+            user_agent=request.user_agent.string if request.user_agent else None
+        )
+        return success_response(
+            data={"member": member.serialize()},
+            message="Member status updated successfully."
+        )
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@members_bp.route('/members/<member_id>', methods=['DELETE'])
+@require_workspace('members:remove')
+def remove_member(member_id):
+    try:
+        WorkspaceService.remove_member(
+            workspace_id=g.workspace_id,
+            member_id=member_id,
+            actor_user_id=g.user_id,
+            ip_address=request.remote_addr,
+            user_agent=request.user_agent.string if request.user_agent else None
+        )
+        return success_response(
+            data={"removed": True},
+            message="Member removed successfully."
+        )
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)

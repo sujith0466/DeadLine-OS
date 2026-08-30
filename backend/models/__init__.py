@@ -12,6 +12,7 @@ from models.recovery import RecoveryRecord, RecoveryActionType
 from .business import (
     Workspace,
     WorkspaceMember,
+    WorkspaceInvitation,
     CommercialPartner,
     AuditEvent,
     IngestionArtifact,
