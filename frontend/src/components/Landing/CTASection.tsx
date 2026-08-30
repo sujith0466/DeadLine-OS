@@ -51,7 +51,7 @@ export const CTASection: React.FC<CTASectionProps> = ({ mode }) => {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                to="/register"
+                to={isPersonal ? "/register" : "/business/register"}
                 className="w-full sm:w-auto flex items-center justify-center gap-2 px-8 py-4 bg-white text-gray-900 rounded-full font-bold text-lg hover:bg-gray-100 transition-all shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:scale-105"
               >
                 Get Started

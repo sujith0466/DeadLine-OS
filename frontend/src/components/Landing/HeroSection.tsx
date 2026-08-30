@@ -71,7 +71,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ mode, onModeChange }) 
           className="flex flex-col sm:flex-row items-center gap-4 mb-16"
         >
           <Link
-            to="/register"
+            to={isPersonal ? "/register" : "/business/register"}
             className="group flex items-center gap-2 px-8 py-4 bg-white text-gray-900 rounded-full font-bold text-lg hover:bg-gray-100 transition-all shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:shadow-[0_0_60px_rgba(255,255,255,0.2)] hover:scale-105"
           >
             Get Started
