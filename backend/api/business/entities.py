@@ -59,6 +59,53 @@ def get_entity(entity_id):
         return error_response(str(e), "INTERNAL_ERROR", 500)
 
 
+@entities_bp.route('/entities/<entity_id>', methods=['PATCH'])
+@require_workspace('transaction:create')
+def update_entity(entity_id):
+    data = request.get_json(silent=True) or {}
+    try:
+        entity = EntityService.update_entity(
+            workspace_id=g.workspace_id,
+            entity_id=entity_id,
+            user_id=g.user_id,
+            data=data,
+            ip_address=request.remote_addr,
+            user_agent=request.user_agent.string if request.user_agent else None
+        )
+        return success_response(
+            data={'entity': entity.to_dict()},
+            message="Business entity updated successfully."
+        )
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@entities_bp.route('/entities/<entity_id>/archive', methods=['POST'])
+@require_workspace('transaction:create')
+def archive_entity(entity_id):
+    data = request.get_json(silent=True) or {}
+    reason = data.get('reason')
+    try:
+        entity = EntityService.archive_entity(
+            workspace_id=g.workspace_id,
+            entity_id=entity_id,
+            user_id=g.user_id,
+            reason=reason,
+            ip_address=request.remote_addr,
+            user_agent=request.user_agent.string if request.user_agent else None
+        )
+        return success_response(
+            data={'entity': entity.to_dict()},
+            message="Business entity archived successfully."
+        )
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
 @entities_bp.route('/transfers', methods=['POST'])
 @require_workspace('transaction:create')
 def create_inter_entity_transfer():
@@ -78,5 +125,17 @@ def create_inter_entity_transfer():
         )
     except APIError as e:
         return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@entities_bp.route('/transfers', methods=['GET'])
+@require_workspace('transaction:read')
+def list_inter_entity_transfers():
+    limit = int(request.args.get('limit', 50))
+    offset = int(request.args.get('offset', 0))
+    try:
+        transfers = EntityService.get_transfers(g.workspace_id, limit=limit, offset=offset)
+        return success_response(data={'transfers': transfers, 'count': len(transfers)})
     except Exception as e:
         return error_response(str(e), "INTERNAL_ERROR", 500)

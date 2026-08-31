@@ -10,6 +10,17 @@ interface AutomationLogsDrawerProps {
 export const AutomationLogsDrawer: React.FC<AutomationLogsDrawerProps> = ({ isOpen, onClose }) => {
   const [logs, setLogs] = useState<any[]>([]);
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   useEffect(() => {
     if (isOpen) {
       api.getAutomationLogs({ limit: 30 })
@@ -22,14 +33,23 @@ export const AutomationLogsDrawer: React.FC<AutomationLogsDrawerProps> = ({ isOp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-end bg-black/60 backdrop-blur-sm">
-      <div className="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="logs-drawer-title"
+        className="bg-slate-900 border-l border-slate-800 w-full max-w-md h-full flex flex-col shadow-2xl animate-in slide-in-from-right duration-200"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/40">
           <div className="flex items-center gap-2">
             <History className="w-5 h-5 text-indigo-400" />
-            <h3 className="font-semibold text-white">Automation Execution Logs</h3>
+            <h3 id="logs-drawer-title" className="font-semibold text-white">Automation Execution Logs</h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors">
+          <button
+            onClick={onClose}
+            aria-label="Close automation logs drawer"
+            className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+          >
             <X className="w-5 h-5" />
           </button>
         </div>

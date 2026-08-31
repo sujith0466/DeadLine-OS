@@ -12,6 +12,7 @@ import { SettingsProvider } from './context/SettingsContext';
 import { RuntimeProvider } from './context/RuntimeContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { BusinessProtectedRoute } from './components/BusinessProtectedRoute';
+import { BusinessShell } from './components/Business/BusinessShell';
 import { Login } from './pages/auth/Login';
 import { Register } from './pages/auth/Register';
 import { BusinessLogin } from './pages/auth/BusinessLogin';
@@ -21,6 +22,20 @@ import { BusinessInvitationAccept } from './pages/auth/BusinessInvitationAccept'
 
 const Landing = React.lazy(() => import('./pages/Landing').then(m => ({ default: m.Landing })));
 const Dashboard = React.lazy(() => import('./pages/Dashboard').then(m => ({ default: m.Dashboard })));
+const BusinessDashboard = React.lazy(() => import('./pages/business/BusinessDashboard').then(m => ({ default: m.BusinessDashboard })));
+const BusinessIntelligence = React.lazy(() => import('./pages/business/BusinessIntelligence').then(m => ({ default: m.BusinessIntelligence })));
+const BusinessInvoices = React.lazy(() => import('./pages/business/BusinessInvoices').then(m => ({ default: m.BusinessInvoices })));
+const BusinessTransactions = React.lazy(() => import('./pages/business/BusinessTransactions').then(m => ({ default: m.BusinessTransactions })));
+const BusinessPartners = React.lazy(() => import('./pages/business/BusinessPartners').then(m => ({ default: m.BusinessPartners })));
+const BusinessStaging = React.lazy(() => import('./pages/business/BusinessStaging').then(m => ({ default: m.BusinessStaging })));
+const BusinessRescue = React.lazy(() => import('./pages/business/BusinessRescue').then(m => ({ default: m.BusinessRescue })));
+const BusinessRecurring = React.lazy(() => import('./pages/business/BusinessRecurring').then(m => ({ default: m.BusinessRecurring })));
+const BusinessEntities = React.lazy(() => import('./pages/business/BusinessEntities').then(m => ({ default: m.BusinessEntities })));
+const BusinessConsolidation = React.lazy(() => import('./pages/business/BusinessConsolidation').then(m => ({ default: m.BusinessConsolidation })));
+const BusinessTeam = React.lazy(() => import('./pages/business/BusinessTeam').then(m => ({ default: m.BusinessTeam })));
+const BusinessAudit = React.lazy(() => import('./pages/business/BusinessAudit').then(m => ({ default: m.BusinessAudit })));
+const BusinessSettings = React.lazy(() => import('./pages/business/BusinessSettings').then(m => ({ default: m.BusinessSettings })));
+const BusinessHealth = React.lazy(() => import('./pages/business/BusinessHealth').then(m => ({ default: m.BusinessHealth })));
 const Today = React.lazy(() => import('./pages/Today/Today').then(m => ({ default: m.Today })));
 const Planner = React.lazy(() => import('./pages/Planner').then(m => ({ default: m.Planner })));
 const Rescue = React.lazy(() => import('./pages/Rescue').then(m => ({ default: m.Rescue })));
@@ -62,7 +77,22 @@ const AnimatedRoutes = () => {
         
         {/* Business Protected Routes */}
         <Route element={<BusinessProtectedRoute />}>
-          <Route path="/business/dashboard" element={<PageReveal><Dashboard /></PageReveal>} />
+          <Route element={<BusinessShell />}>
+            <Route path="/business/dashboard" element={<PageReveal><BusinessDashboard /></PageReveal>} />
+            <Route path="/business/intelligence" element={<PageReveal><BusinessIntelligence /></PageReveal>} />
+            <Route path="/business/invoices" element={<PageReveal><BusinessInvoices /></PageReveal>} />
+            <Route path="/business/transactions" element={<PageReveal><BusinessTransactions /></PageReveal>} />
+            <Route path="/business/partners" element={<PageReveal><BusinessPartners /></PageReveal>} />
+            <Route path="/business/staging" element={<PageReveal><BusinessStaging /></PageReveal>} />
+            <Route path="/business/rescue" element={<PageReveal><BusinessRescue /></PageReveal>} />
+            <Route path="/business/recurring" element={<PageReveal><BusinessRecurring /></PageReveal>} />
+            <Route path="/business/entities" element={<PageReveal><BusinessEntities /></PageReveal>} />
+            <Route path="/business/consolidation" element={<PageReveal><BusinessConsolidation /></PageReveal>} />
+            <Route path="/business/team" element={<PageReveal><BusinessTeam /></PageReveal>} />
+            <Route path="/business/audit" element={<PageReveal><BusinessAudit /></PageReveal>} />
+            <Route path="/business/settings" element={<PageReveal><BusinessSettings /></PageReveal>} />
+            <Route path="/business/health" element={<PageReveal><BusinessHealth /></PageReveal>} />
+          </Route>
         </Route>
 
         {/* Personal Protected Routes */}

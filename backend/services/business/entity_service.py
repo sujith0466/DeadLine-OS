@@ -141,3 +141,106 @@ class EntityService:
         )
 
         return transfer
+
+    @staticmethod
+    def update_entity(
+        workspace_id: str,
+        entity_id: str,
+        user_id: str,
+        data: dict,
+        ip_address: str = None,
+        user_agent: str = None
+    ) -> BusinessEntity:
+        entity = EntityService.get_entity(workspace_id, entity_id)
+        before_state = entity.to_dict()
+
+        if 'name' in data:
+            name = data['name'].strip() if data['name'] else ''
+            if not name:
+                raise APIError("Entity name cannot be empty.", code="INVALID_NAME", status=400)
+            entity.name = name
+
+        if 'legal_name' in data:
+            entity.legal_name = data['legal_name'].strip() if data['legal_name'] else None
+
+        if 'entity_code' in data:
+            entity.entity_code = data['entity_code'].strip().upper() if data['entity_code'] else None
+
+        if 'tax_identifier' in data:
+            tax_id = data['tax_identifier']
+            if tax_id:
+                EntityService.validate_tax_id(tax_id)
+                entity.tax_identifier = tax_id.strip().upper()
+            else:
+                entity.tax_identifier = None
+
+        if 'currency' in data and data['currency']:
+            entity.currency = data['currency'].strip().upper()
+
+        if 'status' in data and data['status'] in ('ACTIVE', 'INACTIVE'):
+            entity.status = data['status']
+
+        if data.get('is_default') is True:
+            # Unset all other defaults in this workspace
+            BusinessEntity.query.filter_by(workspace_id=workspace_id, is_default=True).update({'is_default': False})
+            entity.is_default = True
+        elif 'is_default' in data and data['is_default'] is False:
+            entity.is_default = False
+
+        db.session.commit()
+
+        AuditService.log_event(
+            workspace_id=workspace_id,
+            actor_user_id=user_id,
+            action='ENTITY_UPDATED',
+            entity_type='BUSINESS_ENTITY',
+            entity_id=entity.id,
+            before_state=before_state,
+            after_state=entity.to_dict(),
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        return entity
+
+    @staticmethod
+    def archive_entity(
+        workspace_id: str,
+        entity_id: str,
+        user_id: str,
+        reason: str = None,
+        ip_address: str = None,
+        user_agent: str = None
+    ) -> BusinessEntity:
+        entity = EntityService.get_entity(workspace_id, entity_id)
+        before_state = entity.to_dict()
+
+        entity.status = 'INACTIVE'
+        if entity.is_default:
+            entity.is_default = False
+
+        db.session.commit()
+
+        AuditService.log_event(
+            workspace_id=workspace_id,
+            actor_user_id=user_id,
+            action='ENTITY_ARCHIVED',
+            entity_type='BUSINESS_ENTITY',
+            entity_id=entity.id,
+            before_state=before_state,
+            after_state=entity.to_dict(),
+            reason=reason,
+            ip_address=ip_address,
+            user_agent=user_agent
+        )
+
+        return entity
+
+    @staticmethod
+    def get_transfers(workspace_id: str, limit: int = 50, offset: int = 0) -> list:
+        transfers = InterEntityTransfer.query.filter(
+            (InterEntityTransfer.source_workspace_id == workspace_id) |
+            (InterEntityTransfer.destination_workspace_id == workspace_id)
+        ).order_by(InterEntityTransfer.created_at.desc()).offset(offset).limit(limit).all()
+
+        return [t.to_dict() for t in transfers]

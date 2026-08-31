@@ -25,7 +25,7 @@ export const BusinessProtectedRoute: React.FC<BusinessProtectedRouteProps> = ({
   } = useBusinessAuth();
 
   // STATE 1: Auth & Business Context Hydrating (Prevent premature redirect & flash)
-  if (authLoading || bizLoading) {
+  if ((authLoading || bizLoading) && !activeWorkspace) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#020617] text-slate-300">
         <div className="flex flex-col items-center gap-4">

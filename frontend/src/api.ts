@@ -745,7 +745,7 @@ export const DeadlineOSApi = {
   getWorkspaceDetail: (workspaceId: string) =>
     apiClient.get(`/business/workspaces/${workspaceId}`).then(r => r.data),
 
-  updateCurrentWorkspace: (data: { name?: string; legal_name?: string; tax_identifier?: string; base_currency?: string; timezone?: string }) =>
+  updateCurrentWorkspace: (data: { name?: string; legal_name?: string; tax_identifier?: string; base_currency?: string; timezone?: string; fiscal_year_start_month?: number }) =>
     apiClient.patch('/business/workspaces/current', data).then(r => r.data),
 
   listWorkspaceInvitations: () =>
@@ -914,7 +914,7 @@ export const DeadlineOSApi = {
   getAutomationLogs: (params?: any) =>
     apiClient.get('/business/automation/logs', { params }).then(r => r.data),
 
-  // Phase B7: Commercial Multi-Entity & Cross-Workspace Consolidation
+  // Phase B5: Commercial Multi-Entity & Cross-Workspace Consolidation
   createBusinessEntity: (data: any) =>
     apiClient.post('/business/entities', data).then(r => r.data),
 
@@ -924,11 +924,43 @@ export const DeadlineOSApi = {
   getBusinessEntity: (id: string) =>
     apiClient.get(`/business/entities/${id}`).then(r => r.data),
 
+  updateBusinessEntity: (id: string, data: any) =>
+    apiClient.patch(`/business/entities/${id}`, data).then(r => r.data),
+
+  archiveBusinessEntity: (id: string, reason?: string) =>
+    apiClient.post(`/business/entities/${id}/archive`, { reason }).then(r => r.data),
+
   createInterEntityTransfer: (data: any) =>
     apiClient.post('/business/transfers', data).then(r => r.data),
 
+  listInterEntityTransfers: (params?: any) =>
+    apiClient.get('/business/transfers', { params }).then(r => r.data),
+
   getConsolidatedOverview: (workspaceIds?: string[]) =>
     apiClient.post('/business/consolidation/overview', { workspace_ids: workspaceIds }).then(r => r.data),
+
+  // Phase B6: Business Intelligence, Planning & Decision Support
+  getHistoricalTrends: (params?: { months?: number }) =>
+    apiClient.get('/business/intelligence/trends', { params }).then(r => r.data),
+
+  getCashForecast: (params?: { horizon_days?: number }) =>
+    apiClient.get('/business/intelligence/forecast', { params }).then(r => r.data),
+
+  simulateScenarios: (data?: { custom_params?: any; horizon_days?: number }) =>
+    apiClient.post('/business/intelligence/scenarios', data).then(r => r.data),
+
+  getDecisionBrief: () =>
+    apiClient.get('/business/intelligence/brief').then(r => r.data),
+
+  // Phase B8: Production Health, Observability & Release Certification
+  getBusinessHealth: () =>
+    apiClient.get('/business/health').then(r => r.data),
+
+  getBusinessLiveness: () =>
+    apiClient.get('/business/health/liveness').then(r => r.data),
+
+  getBusinessReadiness: () =>
+    apiClient.get('/business/health/readiness').then(r => r.data),
 };
 
 export const api = DeadlineOSApi;

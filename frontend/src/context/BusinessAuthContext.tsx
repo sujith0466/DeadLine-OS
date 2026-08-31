@@ -11,6 +11,7 @@ export interface BusinessWorkspace {
   tax_identifier?: string | null;
   base_currency: string;
   timezone: string;
+  fiscal_year_start_month?: number | null;
   status: 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
   member_role?: BusinessRole;
   member_status?: 'ACTIVE' | 'SUSPENDED' | 'INVITED';
@@ -61,16 +62,60 @@ const BusinessAuthContext = createContext<BusinessAuthContextType | undefined>(u
 
 const WORKSPACE_STORAGE_KEY = 'active_workspace_id';
 const NAMESPACED_STORAGE_KEY = 'deadlineos_business_active_workspace_id';
+const WORKSPACE_CACHE_KEY = 'deadlineos_business_workspace_cache';
+
+interface CachedWorkspaceSnapshot {
+  userId?: string | null;
+  workspaces: BusinessWorkspace[];
+  activeWorkspace: BusinessWorkspace | null;
+  currentMember: BusinessMember | null;
+  role: BusinessRole | null;
+  permissions: string[];
+  savedAt: number;
+}
+
+const getCachedSnapshot = (): CachedWorkspaceSnapshot | null => {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const saveCachedSnapshot = (snapshot: CachedWorkspaceSnapshot | null) => {
+  try {
+    if (snapshot) {
+      localStorage.setItem(WORKSPACE_CACHE_KEY, JSON.stringify(snapshot));
+    } else {
+      localStorage.removeItem(WORKSPACE_CACHE_KEY);
+    }
+  } catch {
+    // Storage write safety
+  }
+};
 
 export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading: authLoading } = useAuth();
 
-  const [workspaces, setWorkspaces] = useState<BusinessWorkspace[]>([]);
-  const [activeWorkspace, setActiveWorkspace] = useState<BusinessWorkspace | null>(null);
-  const [currentMember, setCurrentMember] = useState<BusinessMember | null>(null);
-  const [role, setRole] = useState<BusinessRole | null>(null);
-  const [permissions, setPermissions] = useState<string[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  // Synchronously restore cached snapshot if available and active
+  const cached = useMemo(() => getCachedSnapshot(), []);
+  const initialActive = cached?.activeWorkspace ?? null;
+  const hasValidCachedContext = Boolean(
+    initialActive &&
+    initialActive.status === 'ACTIVE' &&
+    initialActive.member_status === 'ACTIVE'
+  );
+
+  const [workspaces, setWorkspaces] = useState<BusinessWorkspace[]>(() => cached?.workspaces || []);
+  const [activeWorkspace, setActiveWorkspace] = useState<BusinessWorkspace | null>(() => initialActive);
+  const [currentMember, setCurrentMember] = useState<BusinessMember | null>(() => cached?.currentMember || null);
+  const [role, setRole] = useState<BusinessRole | null>(() => cached?.role || null);
+  const [permissions, setPermissions] = useState<string[]>(() => cached?.permissions || []);
+
+  // If valid cached workspace context already exists, do not block UI with a loading state on startup/reload
+  const [loading, setLoading] = useState<boolean>(() => !hasValidCachedContext);
   const [error, setError] = useState<string | null>(null);
 
   // Helper to persist active workspace ID in localStorage
@@ -90,23 +135,28 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   }, []);
 
   // Hydrate active workspace permissions and member details from server
-  const hydrateWorkspaceDetails = useCallback(async (workspace: BusinessWorkspace) => {
+  const hydrateWorkspaceDetails = useCallback(async (workspace: BusinessWorkspace): Promise<{ member: BusinessMember | null; perms: string[] }> => {
     try {
-      // Ensure the storage key matches this workspace
       persistWorkspaceId(workspace.id);
 
       const res = await api.getCurrentWorkspace();
+      let fetchedMember: BusinessMember | null = null;
+      let fetchedPerms: string[] = [];
+
       if (res && res.data) {
         if (res.data.permissions) {
+          fetchedPerms = res.data.permissions;
           setPermissions(res.data.permissions);
         }
         if (res.data.member) {
+          fetchedMember = res.data.member;
           setCurrentMember(res.data.member);
           setRole(res.data.member.role as BusinessRole);
         } else if (workspace.member_role) {
           setRole(workspace.member_role);
         }
       }
+      return { member: fetchedMember, perms: fetchedPerms };
     } catch (err: any) {
       // If 403 or suspended, clear active workspace state safely
       if (err.response?.status === 403 || err.response?.status === 401) {
@@ -115,26 +165,31 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setRole(null);
         setPermissions([]);
         persistWorkspaceId(null);
+        saveCachedSnapshot(null);
         setError("Workspace access denied or membership suspended.");
       }
+      return { member: null, perms: [] };
     }
   }, [persistWorkspaceId]);
 
-  // Discover user's active workspaces
-  const refreshWorkspaces = useCallback(async (): Promise<BusinessWorkspace[]> => {
+  // Discover user's active workspaces (with optional silent background revalidation mode)
+  const refreshWorkspaces = useCallback(async (isSilent: boolean = false): Promise<BusinessWorkspace[]> => {
     if (!user) {
       setWorkspaces([]);
       setActiveWorkspace(null);
       setCurrentMember(null);
       setRole(null);
       setPermissions([]);
+      saveCachedSnapshot(null);
       setLoading(false);
       setError(null);
       return [];
     }
 
     try {
-      setLoading(true);
+      if (!isSilent) {
+        setLoading(true);
+      }
       setError(null);
 
       const res = await api.listWorkspaces();
@@ -147,6 +202,7 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         setRole(null);
         setPermissions([]);
         persistWorkspaceId(null);
+        saveCachedSnapshot(null);
         setLoading(false);
         return [];
       }
@@ -157,30 +213,57 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
         ? userWorkspaces.find(w => w.id === storedId && w.status === 'ACTIVE' && w.member_status === 'ACTIVE')
         : null;
 
+      let selectedWs: BusinessWorkspace | null = null;
+
       if (storedMatch) {
-        setActiveWorkspace(storedMatch);
-        setRole(storedMatch.member_role || null);
-        await hydrateWorkspaceDetails(storedMatch);
+        selectedWs = storedMatch;
       } else {
         // Fall back to first active workspace
         const firstActive = userWorkspaces.find(w => w.status === 'ACTIVE' && w.member_status === 'ACTIVE');
         if (firstActive) {
-          setActiveWorkspace(firstActive);
-          setRole(firstActive.member_role || null);
-          await hydrateWorkspaceDetails(firstActive);
-        } else {
-          setActiveWorkspace(null);
-          setCurrentMember(null);
-          setRole(null);
-          setPermissions([]);
-          persistWorkspaceId(null);
+          selectedWs = firstActive;
         }
       }
+
+      if (selectedWs) {
+        setActiveWorkspace(selectedWs);
+        setRole(selectedWs.member_role || null);
+        const { member, perms } = await hydrateWorkspaceDetails(selectedWs);
+
+        saveCachedSnapshot({
+          userId: user.id,
+          workspaces: userWorkspaces,
+          activeWorkspace: selectedWs,
+          currentMember: member,
+          role: (member?.role as BusinessRole) || selectedWs.member_role || null,
+          permissions: perms,
+          savedAt: Date.now(),
+        });
+      } else {
+        setActiveWorkspace(null);
+        setCurrentMember(null);
+        setRole(null);
+        setPermissions([]);
+        persistWorkspaceId(null);
+        saveCachedSnapshot(null);
+      }
+
       return userWorkspaces;
     } catch (err: any) {
       const errMsg = err?.response?.data?.error?.message || err?.message || 'Failed to discover workspaces.';
       setError(errMsg);
-      throw err;
+      if (err.response?.status === 401 || err.response?.status === 403) {
+        setActiveWorkspace(null);
+        setCurrentMember(null);
+        setRole(null);
+        setPermissions([]);
+        persistWorkspaceId(null);
+        saveCachedSnapshot(null);
+      }
+      if (!isSilent) {
+        throw err;
+      }
+      return [];
     } finally {
       setLoading(false);
     }
@@ -189,7 +272,29 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
   // Initial hydration when user identity changes
   useEffect(() => {
     if (authLoading) return;
-    refreshWorkspaces().catch(() => {});
+
+    if (!user) {
+      setWorkspaces([]);
+      setActiveWorkspace(null);
+      setCurrentMember(null);
+      setRole(null);
+      setPermissions([]);
+      saveCachedSnapshot(null);
+      setLoading(false);
+      return;
+    }
+
+    const cachedSnapshot = getCachedSnapshot();
+    const canSilentRevalidate = Boolean(
+      cachedSnapshot &&
+      cachedSnapshot.userId === user.id &&
+      cachedSnapshot.activeWorkspace &&
+      cachedSnapshot.activeWorkspace.status === 'ACTIVE' &&
+      cachedSnapshot.activeWorkspace.member_status === 'ACTIVE'
+    );
+
+    // If safe cached context exists for this user, revalidate in background without blocking UI
+    refreshWorkspaces(canSilentRevalidate).catch(() => {});
   }, [user, authLoading, refreshWorkspaces]);
 
   // Select an active workspace
@@ -206,8 +311,18 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setActiveWorkspace(target);
     setRole(target.member_role || null);
     persistWorkspaceId(target.id);
-    await hydrateWorkspaceDetails(target);
-  }, [workspaces, persistWorkspaceId, hydrateWorkspaceDetails]);
+    const { member, perms } = await hydrateWorkspaceDetails(target);
+
+    saveCachedSnapshot({
+      userId: user?.id || null,
+      workspaces,
+      activeWorkspace: target,
+      currentMember: member,
+      role: (member?.role as BusinessRole) || target.member_role || null,
+      permissions: perms,
+      savedAt: Date.now(),
+    });
+  }, [workspaces, user, persistWorkspaceId, hydrateWorkspaceDetails]);
 
   // Create a new workspace and select it atomically
   const createWorkspace = useCallback(async (data: {
@@ -223,13 +338,25 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     createdWorkspace.member_role = 'OWNER';
     createdWorkspace.member_status = 'ACTIVE';
 
-    setWorkspaces(prev => [...prev, createdWorkspace]);
+    const updatedWorkspaces = [...workspaces, createdWorkspace];
+    setWorkspaces(updatedWorkspaces);
     setActiveWorkspace(createdWorkspace);
     setRole('OWNER');
     persistWorkspaceId(createdWorkspace.id);
-    await hydrateWorkspaceDetails(createdWorkspace);
+    const { member, perms } = await hydrateWorkspaceDetails(createdWorkspace);
+
+    saveCachedSnapshot({
+      userId: user?.id || null,
+      workspaces: updatedWorkspaces,
+      activeWorkspace: createdWorkspace,
+      currentMember: member,
+      role: 'OWNER',
+      permissions: perms,
+      savedAt: Date.now(),
+    });
+
     return createdWorkspace;
-  }, [persistWorkspaceId, hydrateWorkspaceDetails]);
+  }, [workspaces, user, persistWorkspaceId, hydrateWorkspaceDetails]);
 
   // Clear workspace context
   const clearWorkspace = useCallback(() => {
@@ -238,6 +365,7 @@ export const BusinessAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     setRole(null);
     setPermissions([]);
     persistWorkspaceId(null);
+    saveCachedSnapshot(null);
   }, [persistWorkspaceId]);
 
   // Permission Evaluation Helpers

@@ -116,16 +116,36 @@ export const ReviewDrawer: React.FC<ReviewDrawerProps> = ({ stagingId, onClose, 
     }
   };
 
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && stagingId) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [stagingId, onClose]);
+
   if (!stagingId || !item) return null;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-zinc-900 border-l border-white/10 shadow-2xl p-6 overflow-y-auto animate-slide-left">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="review-drawer-title"
+      className="fixed inset-y-0 right-0 z-50 w-full max-w-xl bg-zinc-900 border-l border-white/10 shadow-2xl p-6 overflow-y-auto animate-slide-left"
+    >
       <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-6">
         <div className="flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-emerald-400" />
-          <h2 className="text-base font-bold text-white">Review Staged Candidate</h2>
+          <h2 id="review-drawer-title" className="text-base font-bold text-white">Review Staged Candidate</h2>
         </div>
-        <button onClick={onClose} className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5">
+        <button
+          onClick={onClose}
+          aria-label="Close review drawer"
+          className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+        >
           <X className="w-5 h-5" />
         </button>
       </div>

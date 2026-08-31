@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { Upload, Send, X, FileText, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -14,6 +14,17 @@ export const CaptureModal: React.FC<CaptureModalProps> = ({ isOpen, onClose, onS
   const [file, setFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -69,15 +80,21 @@ export const CaptureModal: React.FC<CaptureModalProps> = ({ isOpen, onClose, onS
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-fade-in">
-      <div className="w-full max-w-lg rounded-2xl bg-zinc-900 border border-white/10 shadow-2xl p-6 relative">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="capture-modal-title"
+        className="w-full max-w-lg rounded-2xl bg-zinc-900 border border-white/10 shadow-2xl p-6 relative"
+      >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
+          aria-label="Close capture modal"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
         >
           <X className="w-4 h-4" />
         </button>
 
-        <h2 className="text-lg font-bold text-white mb-4">Capture Business Item</h2>
+        <h2 id="capture-modal-title" className="text-lg font-bold text-white mb-4">Capture Business Item</h2>
 
         <div className="flex gap-2 mb-4 p-1 bg-white/5 rounded-xl border border-white/5">
           <button

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Bot, Sparkles, Send, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { api } from '../../api';
 
@@ -12,6 +12,17 @@ export const BusinessCopilotModal: React.FC<BusinessCopilotModalProps> = ({ isOp
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<any>(null);
+
+  // Close on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -33,7 +44,12 @@ export const BusinessCopilotModal: React.FC<BusinessCopilotModalProps> = ({ isOp
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="copilot-modal-title"
+        className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col max-h-[85vh]"
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-950/40">
           <div className="flex items-center gap-3">
@@ -41,7 +57,7 @@ export const BusinessCopilotModal: React.FC<BusinessCopilotModalProps> = ({ isOp
               <Bot className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-white flex items-center gap-2">
+              <h3 id="copilot-modal-title" className="font-semibold text-white flex items-center gap-2">
                 Business Copilot
                 <span className="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-full border border-emerald-500/20 flex items-center gap-1 font-mono">
                   <Sparkles className="w-3 h-3" /> Grounded Truth
@@ -52,7 +68,8 @@ export const BusinessCopilotModal: React.FC<BusinessCopilotModalProps> = ({ isOp
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors"
+            aria-label="Close Business Copilot"
+            className="text-slate-400 hover:text-white p-2 rounded-lg hover:bg-slate-800 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
           >
             <X className="w-5 h-5" />
           </button>
