@@ -19,6 +19,8 @@ from .location import BusinessLocation
 from .product import BusinessProduct
 from .stock_movement import BusinessStockMovement
 from .task import BusinessTask
+from .purchase_request import BusinessPurchaseRequest
+from .purchase_order import BusinessPurchaseOrder, BusinessPurchaseOrderLine
 
 __all__ = [
     'Workspace',
@@ -41,4 +43,7 @@ __all__ = [
     'BusinessProduct',
     'BusinessStockMovement',
     'BusinessTask',
+    'BusinessPurchaseRequest',
+    'BusinessPurchaseOrder',
+    'BusinessPurchaseOrderLine',
 ]

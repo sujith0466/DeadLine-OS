@@ -30,4 +30,7 @@ from .business import (
     BusinessProduct,
     BusinessStockMovement,
     BusinessTask,
+    BusinessPurchaseRequest,
+    BusinessPurchaseOrder,
+    BusinessPurchaseOrderLine,
 )

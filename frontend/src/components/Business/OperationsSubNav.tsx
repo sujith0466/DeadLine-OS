@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CheckSquare, Package, Inbox, ShieldAlert, RefreshCw } from 'lucide-react';
+import { CheckSquare, Package, ShoppingCart, Inbox, ShieldAlert, RefreshCw } from 'lucide-react';
 
 export const OperationsSubNav: React.FC = () => {
   const location = useLocation();
@@ -17,6 +17,12 @@ export const OperationsSubNav: React.FC = () => {
       label: 'Inventory & Stock',
       href: '/business/inventory',
       icon: Package,
+    },
+    {
+      id: 'procurement',
+      label: 'Procurement & POs',
+      href: '/business/procurement',
+      icon: ShoppingCart,
     },
     {
       id: 'staging',

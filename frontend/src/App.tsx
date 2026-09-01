@@ -38,6 +38,7 @@ const BusinessSettings = React.lazy(() => import('./pages/business/BusinessSetti
 const BusinessHealth = React.lazy(() => import('./pages/business/BusinessHealth').then(m => ({ default: m.BusinessHealth })));
 const BusinessTasks = React.lazy(() => import('./pages/business/BusinessTasks').then(m => ({ default: m.BusinessTasks })));
 const BusinessInventory = React.lazy(() => import('./pages/business/BusinessInventory').then(m => ({ default: m.BusinessInventory })));
+const BusinessProcurement = React.lazy(() => import('./pages/business/BusinessProcurement').then(m => ({ default: m.BusinessProcurement })));
 const Today = React.lazy(() => import('./pages/Today/Today').then(m => ({ default: m.Today })));
 const Planner = React.lazy(() => import('./pages/Planner').then(m => ({ default: m.Planner })));
 const Rescue = React.lazy(() => import('./pages/Rescue').then(m => ({ default: m.Rescue })));
@@ -88,6 +89,7 @@ const AnimatedRoutes = () => {
             <Route path="/business/staging" element={<PageReveal><BusinessStaging /></PageReveal>} />
             <Route path="/business/tasks" element={<PageReveal><BusinessTasks /></PageReveal>} />
             <Route path="/business/inventory" element={<PageReveal><BusinessInventory /></PageReveal>} />
+            <Route path="/business/procurement" element={<PageReveal><BusinessProcurement /></PageReveal>} />
             <Route path="/business/rescue" element={<PageReveal><BusinessRescue /></PageReveal>} />
             <Route path="/business/recurring" element={<PageReveal><BusinessRecurring /></PageReveal>} />
             <Route path="/business/entities" element={<PageReveal><BusinessEntities /></PageReveal>} />

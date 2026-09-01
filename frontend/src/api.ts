@@ -1028,6 +1028,52 @@ export const DeadlineOSApi = {
 
   getLowStock: () =>
     apiClient.get('/business/inventory/low-stock').then(r => r.data),
+
+  // Phase C2.1: Procurement Foundation & Purchase Orders
+  listPurchaseRequests: (params?: any) =>
+    apiClient.get('/business/procurement/requests', { params }).then(r => r.data),
+
+  createPurchaseRequest: (data: any) =>
+    apiClient.post('/business/procurement/requests', data).then(r => r.data),
+
+  getPurchaseRequest: (id: string) =>
+    apiClient.get(`/business/procurement/requests/${id}`).then(r => r.data),
+
+  updatePurchaseRequest: (id: string, data: any) =>
+    apiClient.put(`/business/procurement/requests/${id}`, data).then(r => r.data),
+
+  approvePurchaseRequest: (id: string, data?: any) =>
+    apiClient.post(`/business/procurement/requests/${id}/approve`, data || {}).then(r => r.data),
+
+  rejectPurchaseRequest: (id: string, data?: any) =>
+    apiClient.post(`/business/procurement/requests/${id}/reject`, data || {}).then(r => r.data),
+
+  cancelPurchaseRequest: (id: string, data?: any) =>
+    apiClient.post(`/business/procurement/requests/${id}/cancel`, data || {}).then(r => r.data),
+
+  convertPurchaseRequestToPO: (id: string, data?: any) =>
+    apiClient.post(`/business/procurement/requests/${id}/convert-to-po`, data || {}).then(r => r.data),
+
+  listPurchaseOrders: (params?: any) =>
+    apiClient.get('/business/purchase-orders', { params }).then(r => r.data),
+
+  createPurchaseOrder: (data: any) =>
+    apiClient.post('/business/purchase-orders', data).then(r => r.data),
+
+  getPurchaseOrder: (id: string) =>
+    apiClient.get(`/business/purchase-orders/${id}`).then(r => r.data),
+
+  updatePurchaseOrder: (id: string, data: any) =>
+    apiClient.put(`/business/purchase-orders/${id}`, data).then(r => r.data),
+
+  approvePurchaseOrder: (id: string) =>
+    apiClient.post(`/business/purchase-orders/${id}/approve`).then(r => r.data),
+
+  sendPurchaseOrder: (id: string) =>
+    apiClient.post(`/business/purchase-orders/${id}/send`).then(r => r.data),
+
+  cancelPurchaseOrder: (id: string, data?: any) =>
+    apiClient.post(`/business/purchase-orders/${id}/cancel`, data || {}).then(r => r.data),
 };
 
 export const api = DeadlineOSApi;

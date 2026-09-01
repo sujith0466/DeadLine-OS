@@ -31,6 +31,8 @@ from .task_service import TaskService
 from .location_service import LocationService
 from .product_service import ProductService
 from .inventory_service import InventoryService
+from .purchase_request_service import PurchaseRequestService
+from .purchase_order_service import PurchaseOrderService
 
 __all__ = [
     'AuditService',
@@ -62,4 +64,6 @@ __all__ = [
     'LocationService',
     'ProductService',
     'InventoryService',
+    'PurchaseRequestService',
+    'PurchaseOrderService',
 ]

@@ -49,6 +49,12 @@ ROLE_PERMISSIONS = {
         'locations:read',
         'locations:create',
         'locations:update',
+        # C2 Procurement permissions
+        'procurement:read',
+        'procurement:create',
+        'procurement:update',
+        'procurement:approve',
+        'procurement:manage',
     },
     'ADMIN': {
         'workspace:read',
@@ -83,6 +89,12 @@ ROLE_PERMISSIONS = {
         'locations:read',
         'locations:create',
         'locations:update',
+        # C2 Procurement permissions
+        'procurement:read',
+        'procurement:create',
+        'procurement:update',
+        'procurement:approve',
+        'procurement:manage',
     },
     'MEMBER': {
         'workspace:read',
@@ -109,6 +121,10 @@ ROLE_PERMISSIONS = {
         'locations:read',
         'locations:create',
         'locations:update',
+        # C2 Procurement permissions
+        'procurement:read',
+        'procurement:create',
+        'procurement:update',
     },
     'ACCOUNTANT': {
         'workspace:read',
@@ -121,6 +137,8 @@ ROLE_PERMISSIONS = {
         'tasks:read',
         'inventory:read',
         'locations:read',
+        # C2 Procurement permissions (Read-Only)
+        'procurement:read',
     },
     'VIEWER': {
         'workspace:read',
@@ -131,6 +149,8 @@ ROLE_PERMISSIONS = {
         'tasks:read',
         'inventory:read',
         'locations:read',
+        # C2 Procurement permissions (Read-Only)
+        'procurement:read',
     },
 }
 

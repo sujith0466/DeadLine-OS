@@ -38,6 +38,7 @@ EXPECTED_REVISION_CHAIN = [
     ('i6f7a8b9c0d1', 'h5e6f7a8b9c0'),     # business_os_multi_entity
     ('j7g8h9i0j1k2', 'i6f7a8b9c0d1'),     # business_os_auth_invitations  ← R1 fix
     ('k8h9i0j1k2l3', 'j7g8h9i0j1k2'),     # business_os_operations_c1    ← C1 Operations Foundation
+    ('l9i0j1k2l3m4', 'k8h9i0j1k2l3'),     # business_os_procurement_c2   ← C2.1 Procurement Foundation
 ]
 
 # All Business OS table names that MUST appear in the migration chain
@@ -62,6 +63,9 @@ REQUIRED_BUSINESS_TABLES = [
     'business_products',
     'business_stock_movements',
     'business_tasks',
+    'business_purchase_requests',
+    'business_purchase_orders',
+    'business_purchase_order_lines',
 ]
 
 
@@ -149,8 +153,8 @@ class TestMigrationChainRevisionIds:
                 )
         assert not errors, "Migration chain has broken or incorrect links:\n" + "\n".join(errors)
 
-    def test_head_revision_is_k8h9i0j1k2l3(self):
-        """The current head revision must be k8h9i0j1k2l3 (Phase C1 Operations)."""
+    def test_head_revision_is_l9i0j1k2l3m4(self):
+        """The current head revision must be l9i0j1k2l3m4 (Phase C2.1 Procurement)."""
         migration_files = _load_migration_files()
         # Head = revision whose ID is not referenced as another revision's down_revision
         all_down_revisions = set()
@@ -173,8 +177,8 @@ class TestMigrationChainRevisionIds:
             f"Expected exactly 1 head revision, found {len(heads)}: {heads}. "
             f"Multiple heads indicate a branched migration tree."
         )
-        assert heads[0] == 'k8h9i0j1k2l3', (
-            f"Expected head revision to be 'k8h9i0j1k2l3', got '{heads[0]}'."
+        assert heads[0] == 'l9i0j1k2l3m4', (
+            f"Expected head revision to be 'l9i0j1k2l3m4', got '{heads[0]}'."
         )
 
 

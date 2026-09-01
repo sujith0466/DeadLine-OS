@@ -31,6 +31,8 @@ from .tasks import tasks_bp
 from .products import products_bp
 from .locations import locations_bp
 from .inventory import inventory_bp
+from .procurement import procurement_bp
+from .purchase_orders import purchase_orders_bp
 
 business_bp = Blueprint('business', __name__, url_prefix='/api/business')
 
@@ -61,5 +63,7 @@ business_bp.register_blueprint(tasks_bp)
 business_bp.register_blueprint(products_bp)
 business_bp.register_blueprint(locations_bp)
 business_bp.register_blueprint(inventory_bp)
+business_bp.register_blueprint(procurement_bp)
+business_bp.register_blueprint(purchase_orders_bp)
 
 __all__ = ['business_bp']
