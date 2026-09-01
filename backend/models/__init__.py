@@ -26,4 +26,8 @@ from .business import (
     AutomationExecutionLog,
     BusinessEntity,
     InterEntityTransfer,
+    BusinessLocation,
+    BusinessProduct,
+    BusinessStockMovement,
+    BusinessTask,
 )

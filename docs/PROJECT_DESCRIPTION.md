@@ -394,9 +394,25 @@ The global productivity software market is projected to reach $122.7 Billion by 
 
 ---
 
+## 17.5 Business OS & Operations Foundation (Phase B0–B8 + Phase C1)
+
+DeadlineOS extends its executive capability with a full-fledged commercial **Business OS** operating alongside Personal OS with strict multi-tenant isolation and 5-tier RBAC (`OWNER`, `ADMIN`, `MEMBER`, `ACCOUNTANT`, `VIEWER`):
+
+- **Executive Telemetry & Attention Radar** (`/business/dashboard`): Real-time liquidity, runway, overdue debt, unreviewed staging candidates, and operational stock/task alerts.
+- **Decision Intelligence & Scenario Planning** (`/business/intelligence`): Deterministic cash flow forecasting, 30/60/90-day scenario projections, and explainable decision briefs.
+- **Immutable Financial Ledger** (`/business/invoices`, `/business/transactions`, `/business/partners`): Double-entry ledger with Python `Decimal` arithmetic, multi-currency support, and audit exports.
+- **Operations & Work Allocation (Phase C1)** (`/business/tasks`): Multi-tenant task queue, priority scheduling, facility/SKU linkage, and status state machine.
+- **Inventory & Stock Movements (Phase C1)** (`/business/inventory`, `/business/locations`, `/business/products`): Immutable append-only movement ledger, derived stock valuation, zero-negative-stock protection, and atomic inter-location transfers.
+- **Staging & AI Document Extraction** (`/business/staging`): Document OCR and receipt parsing with structured human review before ledger commit.
+- **Accounts Receivable Rescue** (`/business/rescue`): Overdue aging buckets and collection reminder automation.
+- **Recurring Obligations & Multi-Entity Consolidation** (`/business/recurring`, `/business/entities`, `/business/consolidation`): Automation runners, subsidiary governance, and inter-entity eliminations.
+- **Diagnostics & Forensic Auditing** (`/business/health`, `/business/audit`): 7-subsystem non-mutating health telemetry and tamper-evident audit logs.
+
+---
+
 ## 18. Future Roadmap
 
-The version 1.0.0 release establishes the foundational layer. The next 12-18 months will focus on ecosystem integration and ubiquitous access.
+The version 1.2.0 release establishes both Personal OS and Business Operations Foundation layers. The next 12-18 months will focus on ecosystem integration and ubiquitous access.
 
 1. **Ecosystem Sync:** Two-way synchronization with Google Calendar, Microsoft Outlook, and Apple Calendar.
 2. **Ubiquitous Access:** Cross-platform Mobile Applications (iOS/Android) and progressive web app (PWA) capabilities for offline mode.

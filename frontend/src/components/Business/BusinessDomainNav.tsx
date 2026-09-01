@@ -48,9 +48,11 @@ export const BUSINESS_DOMAINS: DomainItem[] = [
   {
     id: 'operations',
     label: 'Operations',
-    href: '/business/staging',
+    href: '/business/tasks',
     icon: Layers,
     subRoutes: [
+      '/business/tasks',
+      '/business/inventory',
       '/business/staging',
       '/business/rescue',
       '/business/recurring',

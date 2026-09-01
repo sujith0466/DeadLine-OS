@@ -28,6 +28,10 @@ export const BusinessDashboard: React.FC = () => {
     agingSummary,
     priorities,
     recurring,
+    overdueTasksCount,
+    blockedTasksCount,
+    lowStockCount,
+    outOfStockCount,
     errors,
     refresh,
   } = useBusinessDashboard();
@@ -100,6 +104,10 @@ export const BusinessDashboard: React.FC = () => {
             risks={risks}
             overdueCount={agingSummary?.total_overdue_count || 0}
             stagedCount={stagedTotal}
+            overdueTasksCount={overdueTasksCount}
+            blockedTasksCount={blockedTasksCount}
+            lowStockCount={lowStockCount}
+            outOfStockCount={outOfStockCount}
             className="h-full"
           />
         </div>

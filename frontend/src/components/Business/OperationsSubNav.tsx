@@ -1,11 +1,23 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Inbox, ShieldAlert, RefreshCw } from 'lucide-react';
+import { CheckSquare, Package, Inbox, ShieldAlert, RefreshCw } from 'lucide-react';
 
 export const OperationsSubNav: React.FC = () => {
   const location = useLocation();
 
   const navItems = [
+    {
+      id: 'tasks',
+      label: 'Tasks & Allocation',
+      href: '/business/tasks',
+      icon: CheckSquare,
+    },
+    {
+      id: 'inventory',
+      label: 'Inventory & Stock',
+      href: '/business/inventory',
+      icon: Package,
+    },
     {
       id: 'staging',
       label: 'Staging Review Queue',

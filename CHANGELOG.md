@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-09-01
+### Added
+- **Business Operations Foundation (Phase C1)**:
+  - Multi-facility Location Registry (`/business/locations`) with composite unique constraints and location categorization.
+  - SKU & Product Catalog (`/business/products`) with reorder/safety stock thresholds, pricing, and supplier linkage.
+  - Immutable Inventory Ledger (`/business/inventory`) derived dynamically via SQL `SUM(IN) - SUM(OUT)` over append-only stock movements.
+  - Strict Negative Stock Prevention with immediate `HTTP 400 INSUFFICIENT_STOCK` rejection.
+  - Atomic Inter-Location Transfers (`TRANSFER_OUT` + `TRANSFER_IN`) linked by single `transfer_batch_id`.
+  - Operations Task Queue & Work Allocation (`/business/tasks`) with priority state machine and assignee lifecycle.
+  - Staging Review & Commit Gateway for operational inventory adjustments and voice task candidates.
+  - Executive Attention Radar integration on Business Dashboard (`/business/dashboard`) surfacing overdue tasks, blocked tasks, low stock, and out-of-stock items.
+  - Extended 5-Tier RBAC permissions for operational management (`OWNER`, `ADMIN`, `MEMBER`, `ACCOUNTANT`, `VIEWER`).
+
 ## [1.1.0] - 2026-08-31
 ### Added
 - **Business OS (Commercial Enterprise Edition)**:

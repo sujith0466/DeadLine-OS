@@ -27,6 +27,10 @@ from .entities import entities_bp
 from .consolidation import consolidation_bp
 from .intelligence import intelligence_bp
 from .health import health_bp
+from .tasks import tasks_bp
+from .products import products_bp
+from .locations import locations_bp
+from .inventory import inventory_bp
 
 business_bp = Blueprint('business', __name__, url_prefix='/api/business')
 
@@ -53,5 +57,9 @@ business_bp.register_blueprint(entities_bp)
 business_bp.register_blueprint(consolidation_bp)
 business_bp.register_blueprint(intelligence_bp)
 business_bp.register_blueprint(health_bp)
+business_bp.register_blueprint(tasks_bp)
+business_bp.register_blueprint(products_bp)
+business_bp.register_blueprint(locations_bp)
+business_bp.register_blueprint(inventory_bp)
 
 __all__ = ['business_bp']

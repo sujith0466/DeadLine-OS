@@ -1,15 +1,16 @@
 """
-DeadlineOS Business OS — Financial Converter Gateway
-=====================================================
-Bridges human-confirmed StagedExtractions into authoritative Invoices
-or BusinessTransactions.
+DeadlineOS Business OS — Financial & Operational Converter Gateway
+==================================================================
+Bridges human-confirmed StagedExtractions into authoritative Invoices,
+BusinessTransactions, Stock Movements, or Business Tasks.
 """
 
 from database.db import db
 from models.business import StagedExtraction
 from services.business.invoice_service import InvoiceService
 from services.business.transaction_service import TransactionService
-from services.business.audit_service import AuditService
+from services.business.inventory_service import InventoryService
+from services.business.task_service import TaskService
 from utils.errors import APIError
 
 
@@ -19,7 +20,7 @@ class FinancialConverterService:
         workspace_id: str,
         staging_id: str,
         user_id: str,
-        target_domain: str = None,  # INVOICE, TRANSACTION
+        target_domain: str = None,  # INVOICE, TRANSACTION, INVENTORY, TASK
         ip_address: str = None,
         user_agent: str = None
     ) -> dict:
@@ -30,7 +31,18 @@ class FinancialConverterService:
             raise APIError(f"Cannot commit extraction in status '{staged.status}'. Must be CONFIRMED by reviewer first.", code="ITEM_NOT_CONFIRMED", status=400)
 
         norm = staged.normalized_data or {}
-        target = target_domain or ('INVOICE' if staged.candidate_type in ('INVOICE_RECEIVABLE', 'INVOICE_PAYABLE') else 'TRANSACTION')
+
+        # Determine target domain
+        if target_domain:
+            target = target_domain.upper()
+        elif staged.candidate_type in ('INVOICE_RECEIVABLE', 'INVOICE_PAYABLE'):
+            target = 'INVOICE'
+        elif staged.candidate_type == 'INVENTORY_ADJUSTMENT':
+            target = 'INVENTORY'
+        elif staged.candidate_type == 'VOICE_TASK':
+            target = 'TASK'
+        else:
+            target = 'TRANSACTION'
 
         if target == 'INVOICE':
             inv_type = 'RECEIVABLE' if staged.candidate_type == 'INVOICE_RECEIVABLE' else 'PAYABLE'
@@ -51,6 +63,44 @@ class FinancialConverterService:
                 user_agent=user_agent
             )
             return {'target': 'INVOICE', 'entity': inv.serialize()}
+
+        elif target == 'INVENTORY':
+            movement = InventoryService.record_stock_movement(
+                workspace_id=workspace_id,
+                actor_user_id=user_id,
+                data={
+                    'product_id': norm.get('product_id'),
+                    'location_id': norm.get('location_id'),
+                    'movement_type': norm.get('movement_type', 'MANUAL_ADJUSTMENT'),
+                    'direction': norm.get('direction', 'IN'),
+                    'quantity': norm.get('quantity', '1.00'),
+                    'unit_cost': norm.get('unit_cost'),
+                    'reason': norm.get('description') or norm.get('reason') or "Committed from human-confirmed staged extraction"
+                },
+                staged_extraction_id=staged.id,
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+            return {'target': 'INVENTORY', 'entity': movement.serialize()}
+
+        elif target == 'TASK':
+            task = TaskService.create_task(
+                workspace_id=workspace_id,
+                actor_user_id=user_id,
+                data={
+                    'title': norm.get('title') or norm.get('description') or 'Operational Task',
+                    'description': norm.get('description'),
+                    'priority': norm.get('priority', 'MEDIUM'),
+                    'category': norm.get('category', 'GENERAL'),
+                    'assignee_member_id': norm.get('assignee_member_id'),
+                    'due_date': norm.get('due_date'),
+                    'notes': f"Extracted via channel {staged.source_channel}"
+                },
+                ip_address=ip_address,
+                user_agent=user_agent
+            )
+            return {'target': 'TASK', 'entity': task.serialize()}
+
         else:
             tx = TransactionService.record_transaction(
                 workspace_id=workspace_id,

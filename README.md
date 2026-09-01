@@ -205,14 +205,16 @@ DeadlineOS prioritizes perceived and absolute speed:
 
 ---
 
-## 3.5 Business OS (Commercial Enterprise Edition — B0 to B8)
+## 3.5 Business OS (Commercial Enterprise Edition — B0 to B8 + Phase C1)
 
 DeadlineOS includes a fully integrated, enterprise-grade **Business OS** operating alongside Personal OS with strict multi-tenant isolation and 5-tier RBAC:
 
-- **Executive Command & KPIs** (`/business/dashboard`): Real-time liquidity telemetry, burn rate, runway projections, and executive metric cards.
+- **Executive Command & KPIs** (`/business/dashboard`): Real-time liquidity telemetry, burn rate, runway projections, executive attention radar, and metric cards.
 - **Decision Intelligence & Forecasting** (`/business/intelligence`): Deterministic cash flow models, 30/60/90-day scenario planning, and explainable decision briefs.
 - **Financial Ledger & Invoicing** (`/business/invoices`, `/business/transactions`, `/business/partners`): Double-entry ledger with Python `Decimal` arithmetic, multi-currency support, and accountant CSV/PDF exports.
-- **Document Staging & AI Extraction** (`/business/staging`): Intelligent document OCR and receipt parsing with structured review before ledger commit.
+- **Operations & Work Allocation** (`/business/tasks`): Multi-tenant task queue, priority scheduling, facility/SKU linkage, status state machine, and member assignment.
+- **Inventory & Stock Movements** (`/business/inventory`, `/business/locations`, `/business/products`): Immutable append-only movement ledger, derived stock valuation, zero-negative-stock protection, and atomic inter-location transfers.
+- **Document Staging & AI Extraction** (`/business/staging`): Intelligent document OCR and receipt parsing with structured review before ledger or task commit.
 - **Accounts Receivable Rescue** (`/business/rescue`): Overdue aging buckets (1-30, 31-60, 61-90, 90+), automated reminder drafting, and collection workflows.
 - **Recurring Obligations & Automation** (`/business/recurring`): Automated recurring invoice generation and background task dispatchers with idempotent execution logs.
 - **Multi-Entity & Consolidation** (`/business/entities`, `/business/consolidation`): Multi-subsidiary governance, inter-entity transfers, and consolidated multi-workspace financial views.
@@ -222,9 +224,10 @@ DeadlineOS includes a fully integrated, enterprise-grade **Business OS** operati
 ---
 
 ## 13. Roadmap
-- **v1.0**: Personal OS + Business OS (B0–B8 Complete), AI Command Center, Local Intelligence Engine, Multi-Tenant Ledger. *(Completed & Frozen)*
-- **v1.1**: OAuth Google Calendar native syncing. Webhook ingestion API.
-- **v2.0**: Native Mobile Apps (React Native). Multi-tenant organizational teams.
+- **v1.0**: Personal OS (Core Planning, Digital Twin, Multimodal AI, Rescue Center). *(Completed & Frozen)*
+- **v1.1**: Business OS Core (B0–B8 Multi-Tenant Ledger, Financial Forecasting, Consolidation). *(Completed & Frozen)*
+- **v1.2**: Business Operations Foundation (Phase C1: Tasks, Products, Locations, and Inventory Ledger). *(Completed & Frozen)*
+- **v2.0**: Native Mobile Apps (React Native) & Advanced Logistics/Supply Chain Intelligence.
 
 ---
 

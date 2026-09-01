@@ -7,6 +7,10 @@ interface BusinessAttentionPanelProps {
   risks: RiskAlert[];
   overdueCount: number;
   stagedCount: number;
+  overdueTasksCount?: number;
+  blockedTasksCount?: number;
+  lowStockCount?: number;
+  outOfStockCount?: number;
   className?: string;
 }
 
@@ -14,9 +18,29 @@ export const BusinessAttentionPanel: React.FC<BusinessAttentionPanelProps> = ({
   risks,
   overdueCount,
   stagedCount,
+  overdueTasksCount = 0,
+  blockedTasksCount = 0,
+  lowStockCount = 0,
+  outOfStockCount = 0,
   className = '',
 }) => {
-  const hasAlerts = risks.length > 0 || overdueCount > 0 || stagedCount > 0;
+  const hasAlerts =
+    risks.length > 0 ||
+    overdueCount > 0 ||
+    stagedCount > 0 ||
+    overdueTasksCount > 0 ||
+    blockedTasksCount > 0 ||
+    lowStockCount > 0 ||
+    outOfStockCount > 0;
+
+  const totalFlagCount =
+    risks.length +
+    (overdueCount > 0 ? 1 : 0) +
+    (stagedCount > 0 ? 1 : 0) +
+    (overdueTasksCount > 0 ? 1 : 0) +
+    (blockedTasksCount > 0 ? 1 : 0) +
+    (outOfStockCount > 0 ? 1 : 0) +
+    (lowStockCount > 0 && outOfStockCount === 0 ? 1 : 0);
 
   return (
     <div
@@ -39,7 +63,7 @@ export const BusinessAttentionPanel: React.FC<BusinessAttentionPanelProps> = ({
 
         {hasAlerts ? (
           <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-[10px] font-bold text-amber-400">
-            {risks.length + (overdueCount > 0 ? 1 : 0) + (stagedCount > 0 ? 1 : 0)} Flags
+            {totalFlagCount} Flags
           </span>
         ) : (
           <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-bold text-emerald-400 flex items-center gap-1">
@@ -54,7 +78,7 @@ export const BusinessAttentionPanel: React.FC<BusinessAttentionPanelProps> = ({
           <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2 opacity-80" />
           <p className="font-semibold text-slate-200">No Immediate Threats Detected</p>
           <p className="text-[11px] text-slate-500 mt-0.5">
-            Cash runway, debt recovery, and staging pipelines are within healthy operating parameters.
+            Cash runway, debt recovery, operations queue, and stock levels are within healthy operating parameters.
           </p>
         </div>
       ) : (
@@ -118,6 +142,86 @@ export const BusinessAttentionPanel: React.FC<BusinessAttentionPanelProps> = ({
                 className="text-xs font-semibold text-emerald-300 hover:text-emerald-200 flex items-center gap-1"
               >
                 <span>Review</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
+
+          {/* C1: Overdue Business Tasks Alert */}
+          {overdueTasksCount > 0 && (
+            <div className="p-3 rounded-xl bg-rose-500/5 border border-rose-500/20 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                <div>
+                  <span className="font-bold text-slate-200">{overdueTasksCount} Overdue Operational Tasks</span>
+                  <span className="text-[11px] text-slate-400 block">Past due date in Task Queue</span>
+                </div>
+              </div>
+              <Link
+                to="/business/tasks"
+                className="text-xs font-semibold text-rose-300 hover:text-rose-200 flex items-center gap-1"
+              >
+                <span>Tasks</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
+
+          {/* C1: Blocked Tasks Alert */}
+          {blockedTasksCount > 0 && overdueTasksCount === 0 && (
+            <div className="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2.5">
+                <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <div>
+                  <span className="font-bold text-slate-200">{blockedTasksCount} Blocked Operational Tasks</span>
+                  <span className="text-[11px] text-slate-400 block">Action blocked awaiting resolution</span>
+                </div>
+              </div>
+              <Link
+                to="/business/tasks"
+                className="text-xs font-semibold text-amber-300 hover:text-amber-200 flex items-center gap-1"
+              >
+                <span>Tasks</span>
+                <ArrowUpRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          )}
+
+          {/* C1: Out of Stock / Low Stock Alert */}
+          {(outOfStockCount > 0 || lowStockCount > 0) && (
+            <div
+              className={`p-3 rounded-xl border flex items-center justify-between text-xs ${
+                outOfStockCount > 0
+                  ? 'bg-rose-500/5 border-rose-500/20'
+                  : 'bg-amber-500/5 border-amber-500/20'
+              }`}
+            >
+              <div className="flex items-center gap-2.5">
+                {outOfStockCount > 0 ? (
+                  <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                )}
+                <div>
+                  <span className="font-bold text-slate-200">
+                    {outOfStockCount > 0
+                      ? `${outOfStockCount} SKUs Out of Stock`
+                      : `${lowStockCount} SKUs at Low Stock`}
+                  </span>
+                  <span className="text-[11px] text-slate-400 block">
+                    {outOfStockCount > 0
+                      ? `${lowStockCount} additional items below reorder level`
+                      : 'Inventory at or below reorder threshold'}
+                  </span>
+                </div>
+              </div>
+              <Link
+                to="/business/inventory"
+                className={`text-xs font-semibold flex items-center gap-1 ${
+                  outOfStockCount > 0 ? 'text-rose-300 hover:text-rose-200' : 'text-amber-300 hover:text-amber-200'
+                }`}
+              >
+                <span>Stock</span>
                 <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </div>

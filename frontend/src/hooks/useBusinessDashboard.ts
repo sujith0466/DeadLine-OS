@@ -98,6 +98,10 @@ export function useBusinessDashboard() {
   const [agingSummary, setAgingSummary] = useState<AgingSummaryData | null>(null);
   const [priorities, setPriorities] = useState<PriorityReceivable[]>([]);
   const [recurring, setRecurring] = useState<RecurringObligationSummary[]>([]);
+  const [overdueTasksCount, setOverdueTasksCount] = useState<number>(0);
+  const [blockedTasksCount, setBlockedTasksCount] = useState<number>(0);
+  const [lowStockCount, setLowStockCount] = useState<number>(0);
+  const [outOfStockCount, setOutOfStockCount] = useState<number>(0);
 
   // Per-section error state
   const [errors, setErrors] = useState<{
@@ -221,6 +225,33 @@ export function useBusinessDashboard() {
         }
       });
 
+    // 8. Fetch Operations Tasks (C1)
+    const tasksPromise = api.listBusinessTasks({ limit: 100 })
+      .then(res => {
+        if (isMounted.current && Array.isArray(res?.data?.tasks)) {
+          const allTasks = res.data.tasks;
+          const overdue = allTasks.filter((t: any) => t.is_overdue).length;
+          const blocked = allTasks.filter((t: any) => t.status === 'BLOCKED').length;
+          setOverdueTasksCount(overdue);
+          setBlockedTasksCount(blocked);
+        }
+      })
+      .catch(() => {
+        // Non-blocking fallback
+      });
+
+    // 9. Fetch Operations Inventory (C1)
+    const inventoryPromise = api.getInventory({ limit: 1 })
+      .then(res => {
+        if (isMounted.current && res?.data) {
+          setLowStockCount(res.data.low_stock_count || 0);
+          setOutOfStockCount(res.data.out_of_stock_count || 0);
+        }
+      })
+      .catch(() => {
+        // Non-blocking fallback
+      });
+
     await Promise.allSettled([
       cashPromise,
       runwayPromise,
@@ -229,6 +260,8 @@ export function useBusinessDashboard() {
       agingPromise,
       prioritiesPromise,
       recurringPromise,
+      tasksPromise,
+      inventoryPromise,
     ]);
 
     if (isMounted.current) {
@@ -266,6 +299,10 @@ export function useBusinessDashboard() {
     agingSummary,
     priorities,
     recurring,
+    overdueTasksCount,
+    blockedTasksCount,
+    lowStockCount,
+    outOfStockCount,
     errors,
     refresh: () => fetchDashboardData(true),
   };

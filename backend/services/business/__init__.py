@@ -27,6 +27,10 @@ from .automation_runner_service import AutomationRunnerService
 from .entity_service import EntityService
 from .consolidation_service import ConsolidationService
 from .health_service import BusinessHealthService
+from .task_service import TaskService
+from .location_service import LocationService
+from .product_service import ProductService
+from .inventory_service import InventoryService
 
 __all__ = [
     'AuditService',
@@ -54,4 +58,8 @@ __all__ = [
     'EntityService',
     'ConsolidationService',
     'BusinessHealthService',
+    'TaskService',
+    'LocationService',
+    'ProductService',
+    'InventoryService',
 ]

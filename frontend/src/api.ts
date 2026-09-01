@@ -961,6 +961,73 @@ export const DeadlineOSApi = {
 
   getBusinessReadiness: () =>
     apiClient.get('/business/health/readiness').then(r => r.data),
+
+  // Phase C1: Business Operations Foundation (Tasks, Products, Locations, Inventory)
+  listBusinessTasks: (params?: any) =>
+    apiClient.get('/business/tasks', { params }).then(r => r.data),
+
+  createBusinessTask: (data: any) =>
+    apiClient.post('/business/tasks', data).then(r => r.data),
+
+  getBusinessTask: (id: string) =>
+    apiClient.get(`/business/tasks/${id}`).then(r => r.data),
+
+  updateBusinessTask: (id: string, data: any) =>
+    apiClient.put(`/business/tasks/${id}`, data).then(r => r.data),
+
+  assignBusinessTask: (id: string, assignee_member_id: string | null) =>
+    apiClient.post(`/business/tasks/${id}/assign`, { assignee_member_id }).then(r => r.data),
+
+  transitionBusinessTaskStatus: (id: string, status: string, reason?: string) =>
+    apiClient.post(`/business/tasks/${id}/status`, { status, reason }).then(r => r.data),
+
+  deleteBusinessTask: (id: string) =>
+    apiClient.delete(`/business/tasks/${id}`).then(r => r.data),
+
+  listProducts: (params?: any) =>
+    apiClient.get('/business/products', { params }).then(r => r.data),
+
+  createProduct: (data: any) =>
+    apiClient.post('/business/products', data).then(r => r.data),
+
+  getProduct: (id: string) =>
+    apiClient.get(`/business/products/${id}`).then(r => r.data),
+
+  updateProduct: (id: string, data: any) =>
+    apiClient.put(`/business/products/${id}`, data).then(r => r.data),
+
+  archiveProduct: (id: string) =>
+    apiClient.post(`/business/products/${id}/archive`).then(r => r.data),
+
+  deleteProduct: (id: string) =>
+    apiClient.delete(`/business/products/${id}`).then(r => r.data),
+
+  listLocations: (params?: any) =>
+    apiClient.get('/business/locations', { params }).then(r => r.data),
+
+  createLocation: (data: any) =>
+    apiClient.post('/business/locations', data).then(r => r.data),
+
+  getLocation: (id: string) =>
+    apiClient.get(`/business/locations/${id}`).then(r => r.data),
+
+  updateLocation: (id: string, data: any) =>
+    apiClient.put(`/business/locations/${id}`, data).then(r => r.data),
+
+  getInventory: (params?: any) =>
+    apiClient.get('/business/inventory', { params }).then(r => r.data),
+
+  recordStockMovement: (data: any) =>
+    apiClient.post('/business/inventory/movements', data).then(r => r.data),
+
+  transferStock: (data: any) =>
+    apiClient.post('/business/inventory/transfers', data).then(r => r.data),
+
+  listStockMovements: (params?: any) =>
+    apiClient.get('/business/inventory/movements', { params }).then(r => r.data),
+
+  getLowStock: () =>
+    apiClient.get('/business/inventory/low-stock').then(r => r.data),
 };
 
 export const api = DeadlineOSApi;
