@@ -40,6 +40,7 @@ EXPECTED_REVISION_CHAIN = [
     ('k8h9i0j1k2l3', 'j7g8h9i0j1k2'),     # business_os_operations_c1    ← C1 Operations Foundation
     ('l9i0j1k2l3m4', 'k8h9i0j1k2l3'),     # business_os_procurement_c2   ← C2.1 Procurement Foundation
     ('m0j1k2l3m4n5', 'l9i0j1k2l3m4'),     # business_os_goods_receipts_c2_2 ← C2.2 Goods Receiving Foundation
+    ('o2l3m4n5o6p7', 'm0j1k2l3m4n5'),     # business_os_operational_alerts_c2_4 ← C2.4 Automation & Alerting
 ]
 
 # All Business OS table names that MUST appear in the migration chain
@@ -69,6 +70,7 @@ REQUIRED_BUSINESS_TABLES = [
     'business_purchase_order_lines',
     'business_goods_receipts',
     'business_goods_receipt_lines',
+    'business_operational_alerts',
 ]
 
 
@@ -156,8 +158,8 @@ class TestMigrationChainRevisionIds:
                 )
         assert not errors, "Migration chain has broken or incorrect links:\n" + "\n".join(errors)
 
-    def test_head_revision_is_m0j1k2l3m4n5(self):
-        """The current head revision must be m0j1k2l3m4n5 (Phase C2.2 Goods Receiving)."""
+    def test_head_revision_is_o2l3m4n5o6p7(self):
+        """The current head revision must be o2l3m4n5o6p7 (Phase C2.4 Automation & Alerting)."""
         migration_files = _load_migration_files()
         # Head = revision whose ID is not referenced as another revision's down_revision
         all_down_revisions = set()
@@ -178,10 +180,11 @@ class TestMigrationChainRevisionIds:
         heads = [rev for rev in migration_files if rev not in all_down_revisions]
         assert len(heads) == 1, (
             f"Expected exactly 1 head revision, found {len(heads)}: {heads}. "
-            f"Multiple heads indicate a branched migration tree."
+            f"Migration chain must not be branched."
         )
-        assert heads[0] == 'm0j1k2l3m4n5', (
-            f"Expected head revision to be 'm0j1k2l3m4n5', got '{heads[0]}'."
+        assert heads[0] == 'o2l3m4n5o6p7', (
+            f"Expected head revision to be 'o2l3m4n5o6p7' (Phase C2.4 Automation & Alerting), "
+            f"got {heads[0]!r}."
         )
 
 

@@ -1097,6 +1097,28 @@ export const DeadlineOSApi = {
   getReorderSuggestions: () =>
     apiClient.get('/business/intelligence/operations/reorder-suggestions').then(r => r.data),
 
+  // C2.4 Automation & Alerting API
+  listOperationalAlerts: (params?: { status?: string; severity?: string; entity_type?: string; limit?: number; offset?: number }) =>
+    apiClient.get('/business/operations/alerts', { params }).then(r => r.data),
+
+  evaluateOperationalAlerts: () =>
+    apiClient.post('/business/operations/alerts/evaluate').then(r => r.data),
+
+  getOperationalAlert: (alertId: string) =>
+    apiClient.get(`/business/operations/alerts/${alertId}`).then(r => r.data),
+
+  acknowledgeOperationalAlert: (alertId: string) =>
+    apiClient.post(`/business/operations/alerts/${alertId}/acknowledge`).then(r => r.data),
+
+  resolveOperationalAlert: (alertId: string, resolutionNote?: string) =>
+    apiClient.post(`/business/operations/alerts/${alertId}/resolve`, { resolution_note: resolutionNote }).then(r => r.data),
+
+  dismissOperationalAlert: (alertId: string) =>
+    apiClient.post(`/business/operations/alerts/${alertId}/dismiss`).then(r => r.data),
+
+  createTaskFromOperationalAlert: (alertId: string, data?: { assignee_member_id?: string; priority?: string; due_date?: string }) =>
+    apiClient.post(`/business/operations/alerts/${alertId}/create-task`, data || {}).then(r => r.data),
+
 };
 
 export const api = DeadlineOSApi;
@@ -1105,3 +1127,10 @@ export const getOperationalIntelligenceSummary = () => DeadlineOSApi.getOperatio
 export const getInventoryForecast = (windowDays?: number) => DeadlineOSApi.getInventoryForecast(windowDays);
 export const getSupplierIntelligence = () => DeadlineOSApi.getSupplierIntelligence();
 export const getReorderSuggestions = () => DeadlineOSApi.getReorderSuggestions();
+export const listOperationalAlerts = (params?: any) => DeadlineOSApi.listOperationalAlerts(params);
+export const evaluateOperationalAlerts = () => DeadlineOSApi.evaluateOperationalAlerts();
+export const getOperationalAlert = (alertId: string) => DeadlineOSApi.getOperationalAlert(alertId);
+export const acknowledgeOperationalAlert = (alertId: string) => DeadlineOSApi.acknowledgeOperationalAlert(alertId);
+export const resolveOperationalAlert = (alertId: string, resolutionNote?: string) => DeadlineOSApi.resolveOperationalAlert(alertId, resolutionNote);
+export const dismissOperationalAlert = (alertId: string) => DeadlineOSApi.dismissOperationalAlert(alertId);
+export const createTaskFromOperationalAlert = (alertId: string, data?: any) => DeadlineOSApi.createTaskFromOperationalAlert(alertId, data);

@@ -36,3 +36,5 @@ from .business import (
     BusinessGoodsReceipt,
     BusinessGoodsReceiptLine,
 )
+
+from models.business.operational_alert import BusinessOperationalAlert

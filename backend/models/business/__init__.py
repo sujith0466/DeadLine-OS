@@ -50,3 +50,5 @@ __all__ = [
     'BusinessGoodsReceipt',
     'BusinessGoodsReceiptLine',
 ]
+
+from models.business.operational_alert import BusinessOperationalAlert
