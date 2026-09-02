@@ -1166,6 +1166,26 @@ export const DeadlineOSApi = {
   disposeSerial: (serialId: string, reason?: string) =>
     apiClient.post(`/business/serials/${serialId}/dispose`, { reason }).then(r => r.data),
 
+  // Phase C3.4: Landed Cost Allocation Engine
+  createLandedCostVoucher: (data: { purchase_order_id?: string; goods_receipt_id?: string; reference_number?: string; currency?: string; exchange_rate?: number; effective_date?: string; allocation_basis?: 'VALUE' | 'QUANTITY'; notes?: string }) =>
+    apiClient.post('/business/landed-cost', data).then(r => r.data),
+  listLandedCostVouchers: (params?: { status?: string; purchase_order_id?: string; goods_receipt_id?: string; search?: string; limit?: number; offset?: number }) =>
+    apiClient.get('/business/landed-cost', { params }).then(r => r.data),
+  getLandedCostVoucher: (voucherId: string) =>
+    apiClient.get(`/business/landed-cost/${voucherId}`).then(r => r.data),
+  addLandedCostItem: (voucherId: string, data: { cost_category: string; description: string; amount: number | string; currency?: string; exchange_rate?: number | string; external_reference?: string; notes?: string }) =>
+    apiClient.post(`/business/landed-cost/${voucherId}/items`, data).then(r => r.data),
+  removeLandedCostItem: (voucherId: string, itemId: string) =>
+    apiClient.delete(`/business/landed-cost/${voucherId}/items/${itemId}`).then(r => r.data),
+  previewLandedCostAllocation: (voucherId: string, params?: { allocation_basis?: 'VALUE' | 'QUANTITY' }) =>
+    apiClient.get(`/business/landed-cost/${voucherId}/preview`, { params }).then(r => r.data),
+  executeLandedCostAllocation: (voucherId: string, data?: { allocation_basis?: 'VALUE' | 'QUANTITY' }) =>
+    apiClient.post(`/business/landed-cost/${voucherId}/allocate`, data || {}).then(r => r.data),
+  approveLandedCostVoucher: (voucherId: string) =>
+    apiClient.post(`/business/landed-cost/${voucherId}/approve`, {}).then(r => r.data),
+  reverseLandedCostVoucher: (voucherId: string, data: { reason: string }) =>
+    apiClient.post(`/business/landed-cost/${voucherId}/reverse`, data).then(r => r.data),
+
 };
 
 export const api = DeadlineOSApi;
@@ -1201,3 +1221,12 @@ export const getSerialProvenance = (serialId: string) => DeadlineOSApi.getSerial
 export const transitionSerial = (serialId: string, data: any) => DeadlineOSApi.transitionSerial(serialId, data);
 export const quarantineSerial = (serialId: string, reason?: string) => DeadlineOSApi.quarantineSerial(serialId, reason);
 export const disposeSerial = (serialId: string, reason?: string) => DeadlineOSApi.disposeSerial(serialId, reason);
+export const createLandedCostVoucher = (data: any) => DeadlineOSApi.createLandedCostVoucher(data);
+export const listLandedCostVouchers = (params?: any) => DeadlineOSApi.listLandedCostVouchers(params);
+export const getLandedCostVoucher = (voucherId: string) => DeadlineOSApi.getLandedCostVoucher(voucherId);
+export const addLandedCostItem = (voucherId: string, data: any) => DeadlineOSApi.addLandedCostItem(voucherId, data);
+export const removeLandedCostItem = (voucherId: string, itemId: string) => DeadlineOSApi.removeLandedCostItem(voucherId, itemId);
+export const previewLandedCostAllocation = (voucherId: string, params?: any) => DeadlineOSApi.previewLandedCostAllocation(voucherId, params);
+export const executeLandedCostAllocation = (voucherId: string, data?: any) => DeadlineOSApi.executeLandedCostAllocation(voucherId, data);
+export const approveLandedCostVoucher = (voucherId: string) => DeadlineOSApi.approveLandedCostVoucher(voucherId);
+export const reverseLandedCostVoucher = (voucherId: string, data: any) => DeadlineOSApi.reverseLandedCostVoucher(voucherId, data);

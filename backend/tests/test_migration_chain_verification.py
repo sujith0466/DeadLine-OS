@@ -44,6 +44,7 @@ EXPECTED_REVISION_CHAIN = [
     ('p3m4n5o6p7q8', 'o2l3m4n5o6p7'),     # business_os_multi_currency_c3_1 ← C3.1 Multi-Currency Engine
     ('q4r5s6t7u8v9', 'p3m4n5o6p7q8'),     # business_os_batches_c3_2 ← C3.2 Batches & Expiry Lifecycle
     ('r5s6t7u8v9w0', 'q4r5s6t7u8v9'),     # business_os_serials_c3_3 ← C3.3 Serial Numbers & Unit Provenance
+    ('s6t7u8v9w0x1', 'r5s6t7u8v9w0'),     # business_os_landed_cost_c3_4 ← C3.4 Landed Cost Allocation Engine
 ]
 
 # All Business OS table names that MUST appear in the migration chain
@@ -79,6 +80,9 @@ REQUIRED_BUSINESS_TABLES = [
     'business_stock_movement_batches',
     'business_serial_numbers',
     'business_stock_movement_serials',
+    'business_landed_cost_vouchers',
+    'business_landed_cost_voucher_items',
+    'business_landed_cost_allocations',
 ]
 
 
@@ -166,8 +170,8 @@ class TestMigrationChainRevisionIds:
                 )
         assert not errors, "Migration chain has broken or incorrect links:\n" + "\n".join(errors)
 
-    def test_head_revision_is_r5s6t7u8v9w0(self):
-        """The current head revision must be r5s6t7u8v9w0 (Phase C3.3 Serial Numbers & Unit Provenance)."""
+    def test_head_revision_is_s6t7u8v9w0x1(self):
+        """The current head revision must be s6t7u8v9w0x1 (Phase C3.4 Landed Cost Allocation Engine)."""
         migration_files = _load_migration_files()
         # Head = revision whose ID is not referenced as another revision's down_revision
         all_down_revisions = set()

@@ -65,6 +65,11 @@ ROLE_PERMISSIONS = {
         'serial:read',
         'serial:write',
         'serial:quarantine',
+        'landed_cost:read',
+        'landed_cost:write',
+        'landed_cost:allocate',
+        'landed_cost:approve',
+        'landed_cost:reverse',
     },
     'ADMIN': {
         'workspace:read',
@@ -115,6 +120,11 @@ ROLE_PERMISSIONS = {
         'serial:read',
         'serial:write',
         'serial:quarantine',
+        'landed_cost:read',
+        'landed_cost:write',
+        'landed_cost:allocate',
+        'landed_cost:approve',
+        'landed_cost:reverse',
     },
     'MEMBER': {
         'workspace:read',
@@ -152,6 +162,7 @@ ROLE_PERMISSIONS = {
         'batch:write',
         'serial:read',
         'serial:write',
+        'landed_cost:read',
     },
     'ACCOUNTANT': {
         'workspace:read',
@@ -171,6 +182,9 @@ ROLE_PERMISSIONS = {
         'currency:write',
         'batch:read',
         'serial:read',
+        'landed_cost:read',
+        'landed_cost:write',
+        'landed_cost:allocate',
     },
     'VIEWER': {
         'workspace:read',
@@ -187,6 +201,7 @@ ROLE_PERMISSIONS = {
         'currency:read',
         'batch:read',
         'serial:read',
+        'landed_cost:read',
     },
 }
 

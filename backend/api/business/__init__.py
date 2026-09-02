@@ -40,6 +40,7 @@ from .voice_operations import voice_ops_bp
 from .exchange_rates import exchange_rates_bp
 from .batches import batches_bp
 from .serials import serials_bp
+from .landed_cost import landed_cost_bp
 
 business_bp = Blueprint('business', __name__, url_prefix='/api/business')
 
@@ -79,5 +80,6 @@ business_bp.register_blueprint(voice_ops_bp, url_prefix='/operations/voice')
 business_bp.register_blueprint(exchange_rates_bp, url_prefix='/exchange-rates')
 business_bp.register_blueprint(batches_bp, url_prefix='/batches')
 business_bp.register_blueprint(serials_bp, url_prefix='/serials')
+business_bp.register_blueprint(landed_cost_bp, url_prefix='/landed-cost')
 
 __all__ = ['business_bp']
