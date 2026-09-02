@@ -1186,6 +1186,24 @@ export const DeadlineOSApi = {
   reverseLandedCostVoucher: (voucherId: string, data: { reason: string }) =>
     apiClient.post(`/business/landed-cost/${voucherId}/reverse`, data).then(r => r.data),
 
+  // Phase C3.5: Cross-Border Operations Hub & Grounded Copilot
+  getCrossBorderSummary: () =>
+    apiClient.get('/business/cross-border/summary').then(r => r.data),
+  createCrossBorderShipment: (data: any) =>
+    apiClient.post('/business/cross-border/shipments', data).then(r => r.data),
+  listCrossBorderShipments: (params?: any) =>
+    apiClient.get('/business/cross-border/shipments', { params }).then(r => r.data),
+  getCrossBorderShipmentDetail: (shipmentId: string) =>
+    apiClient.get(`/business/cross-border/shipments/${shipmentId}`).then(r => r.data),
+  updateCrossBorderShipmentStatus: (shipmentId: string, data: any) =>
+    apiClient.put(`/business/cross-border/shipments/${shipmentId}/status`, data).then(r => r.data),
+  getCrossBorderTimeline: (params?: any) =>
+    apiClient.get('/business/cross-border/timeline', { params }).then(r => r.data),
+  queryGroundedCopilot: (data: { prompt: string }) =>
+    apiClient.post('/business/cross-border/copilot/query', data).then(r => r.data),
+  proposeCopilotAction: (data: { action_type: string; payload?: any; rationale?: string }) =>
+    apiClient.post('/business/cross-border/copilot/propose', data).then(r => r.data),
+
 };
 
 export const api = DeadlineOSApi;
@@ -1230,3 +1248,11 @@ export const previewLandedCostAllocation = (voucherId: string, params?: any) => 
 export const executeLandedCostAllocation = (voucherId: string, data?: any) => DeadlineOSApi.executeLandedCostAllocation(voucherId, data);
 export const approveLandedCostVoucher = (voucherId: string) => DeadlineOSApi.approveLandedCostVoucher(voucherId);
 export const reverseLandedCostVoucher = (voucherId: string, data: any) => DeadlineOSApi.reverseLandedCostVoucher(voucherId, data);
+export const getCrossBorderSummary = () => DeadlineOSApi.getCrossBorderSummary();
+export const createCrossBorderShipment = (data: any) => DeadlineOSApi.createCrossBorderShipment(data);
+export const listCrossBorderShipments = (params?: any) => DeadlineOSApi.listCrossBorderShipments(params);
+export const getCrossBorderShipmentDetail = (shipmentId: string) => DeadlineOSApi.getCrossBorderShipmentDetail(shipmentId);
+export const updateCrossBorderShipmentStatus = (shipmentId: string, data: any) => DeadlineOSApi.updateCrossBorderShipmentStatus(shipmentId, data);
+export const getCrossBorderTimeline = (params?: any) => DeadlineOSApi.getCrossBorderTimeline(params);
+export const queryGroundedCopilot = (data: { prompt: string }) => DeadlineOSApi.queryGroundedCopilot(data);
+export const proposeCopilotAction = (data: { action_type: string; payload?: any; rationale?: string }) => DeadlineOSApi.proposeCopilotAction(data);

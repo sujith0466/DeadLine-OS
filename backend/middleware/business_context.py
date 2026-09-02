@@ -70,6 +70,11 @@ ROLE_PERMISSIONS = {
         'landed_cost:allocate',
         'landed_cost:approve',
         'landed_cost:reverse',
+        'cross_border:read',
+        'cross_border:write',
+        'cross_border:status',
+        'copilot:query',
+        'copilot:propose',
     },
     'ADMIN': {
         'workspace:read',
@@ -125,6 +130,11 @@ ROLE_PERMISSIONS = {
         'landed_cost:allocate',
         'landed_cost:approve',
         'landed_cost:reverse',
+        'cross_border:read',
+        'cross_border:write',
+        'cross_border:status',
+        'copilot:query',
+        'copilot:propose',
     },
     'MEMBER': {
         'workspace:read',
@@ -163,6 +173,9 @@ ROLE_PERMISSIONS = {
         'serial:read',
         'serial:write',
         'landed_cost:read',
+        'cross_border:read',
+        'copilot:query',
+        'copilot:propose',
     },
     'ACCOUNTANT': {
         'workspace:read',
@@ -185,6 +198,10 @@ ROLE_PERMISSIONS = {
         'landed_cost:read',
         'landed_cost:write',
         'landed_cost:allocate',
+        'cross_border:read',
+        'cross_border:write',
+        'copilot:query',
+        'copilot:propose',
     },
     'VIEWER': {
         'workspace:read',
@@ -202,6 +219,7 @@ ROLE_PERMISSIONS = {
         'batch:read',
         'serial:read',
         'landed_cost:read',
+        'cross_border:read',
     },
 }
 

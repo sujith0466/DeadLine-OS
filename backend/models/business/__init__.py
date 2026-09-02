@@ -57,6 +57,7 @@ __all__ = [
     'BusinessLandedCostVoucher',
     'BusinessLandedCostVoucherItem',
     'BusinessLandedCostAllocation',
+    'BusinessCrossBorderShipment',
 ]
 
 from models.business.operational_alert import BusinessOperationalAlert
@@ -69,3 +70,4 @@ from .landed_cost import (
     BusinessLandedCostVoucherItem,
     BusinessLandedCostAllocation
 )
+from .cross_border import BusinessCrossBorderShipment
