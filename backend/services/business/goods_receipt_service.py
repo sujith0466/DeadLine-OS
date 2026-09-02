@@ -23,6 +23,8 @@ from models.business import (
     AuditEvent
 )
 from utils.errors import APIError
+from services.business.batch_service import BatchService
+from models.business import BusinessStockMovementBatch
 
 
 class GoodsReceiptService:
@@ -148,6 +150,19 @@ class GoodsReceiptService:
             line_value = acc_qty * pol.unit_price
             total_accepted_value += line_value
 
+            exp_d = None
+            if raw_line.get('expiry_date'):
+                try:
+                    exp_d = datetime.strptime(str(raw_line['expiry_date']).split('T')[0], '%Y-%m-%d').date()
+                except Exception:
+                    pass
+            mfg_d = None
+            if raw_line.get('manufacture_date'):
+                try:
+                    mfg_d = datetime.strptime(str(raw_line['manufacture_date']).split('T')[0], '%Y-%m-%d').date()
+                except Exception:
+                    pass
+
             processed_lines.append({
                 'pol': pol,
                 'received_qty': recv_qty,
@@ -155,6 +170,9 @@ class GoodsReceiptService:
                 'rejected_qty': rej_qty,
                 'rejection_reason': rej_reason,
                 'unit_cost': pol.unit_price,
+                'batch_number': (raw_line.get('batch_number') or '').strip() or None,
+                'expiry_date': exp_d,
+                'manufacture_date': mfg_d,
             })
 
         if not processed_lines:
@@ -214,6 +232,28 @@ class GoodsReceiptService:
                 db.session.add(stock_mv)
                 db.session.flush()
                 stock_mv_id = stock_mv.id
+
+                # C3.2 Batch attribution if batch_number provided
+                if p_line.get('batch_number'):
+                    batch = BatchService.get_or_create_batch(
+                        workspace_id=workspace_id,
+                        product_id=pol.product_id,
+                        batch_number=p_line['batch_number'],
+                        actor_user_id=actor_user_id,
+                        supplier_partner_id=po.supplier_partner_id,
+                        goods_receipt_id=grn.id,
+                        manufacture_date=p_line.get('manufacture_date'),
+                        expiry_date=p_line.get('expiry_date'),
+                        notes=f"Auto-created from GRN {grn_number}"
+                    )
+                    sm_batch = BusinessStockMovementBatch(
+                        workspace_id=workspace_id,
+                        stock_movement_id=stock_mv.id,
+                        batch_id=batch.id,
+                        quantity=acc_qty
+                    )
+                    db.session.add(sm_batch)
+                    db.session.flush()
 
             # Create GRN line record
             grn_line = BusinessGoodsReceiptLine(

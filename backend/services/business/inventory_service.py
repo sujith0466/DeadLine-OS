@@ -176,6 +176,20 @@ class InventoryService:
             reason=data.get('reason')
         )
         db.session.add(movement)
+        db.session.flush()
+
+        # C3.2: Batch attributions validation and ledger linking
+        batch_attributions = data.get('batch_attributions') or data.get('batches')
+        if batch_attributions:
+            from services.business.batch_service import BatchService
+            BatchService.validate_and_attribute_movement(
+                workspace_id=workspace_id,
+                movement=movement,
+                attributions=batch_attributions,
+                actor_user_id=actor_user_id,
+                fefo_override_reason=data.get('fefo_override_reason')
+            )
+
         db.session.commit()
 
         AuditService.log_event(

@@ -1136,6 +1136,20 @@ export const DeadlineOSApi = {
   getSupportedCurrencies: () =>
     apiClient.get('/business/exchange-rates/currencies').then(r => r.data),
 
+  // Phase C3.2: Batch, Lot & Expiry Lifecycle
+  createBatch: (data: { product_id: string; batch_number: string; manufacture_date?: string; expiry_date?: string; supplier_partner_id?: string; notes?: string }) =>
+    apiClient.post('/business/batches', data).then(r => r.data),
+  listBatches: (params?: { product_id?: string; status?: string; expiring_soon_days?: number; search?: string; limit?: number; offset?: number }) =>
+    apiClient.get('/business/batches', { params }).then(r => r.data),
+  getBatch: (batchId: string) =>
+    apiClient.get(`/business/batches/${batchId}`).then(r => r.data),
+  quarantineBatch: (batchId: string, reason: string) =>
+    apiClient.post(`/business/batches/${batchId}/quarantine`, { reason }).then(r => r.data),
+  releaseBatchQuarantine: (batchId: string, notes?: string) =>
+    apiClient.post(`/business/batches/${batchId}/release`, { notes }).then(r => r.data),
+  getFefoSuggestions: (params: { product_id: string; requested_quantity?: number | string }) =>
+    apiClient.get('/business/batches/fefo-suggestions', { params }).then(r => r.data),
+
 };
 
 export const api = DeadlineOSApi;
@@ -1158,3 +1172,9 @@ export const recordExchangeRate = (data: any) => DeadlineOSApi.recordExchangeRat
 export const listExchangeRates = (params?: any) => DeadlineOSApi.listExchangeRates(params);
 export const convertCurrency = (data: any) => DeadlineOSApi.convertCurrency(data);
 export const getSupportedCurrencies = () => DeadlineOSApi.getSupportedCurrencies();
+export const createBatch = (data: any) => DeadlineOSApi.createBatch(data);
+export const listBatches = (params?: any) => DeadlineOSApi.listBatches(params);
+export const getBatch = (batchId: string) => DeadlineOSApi.getBatch(batchId);
+export const quarantineBatch = (batchId: string, reason: string) => DeadlineOSApi.quarantineBatch(batchId, reason);
+export const releaseBatchQuarantine = (batchId: string, notes?: string) => DeadlineOSApi.releaseBatchQuarantine(batchId, notes);
+export const getFefoSuggestions = (params: any) => DeadlineOSApi.getFefoSuggestions(params);

@@ -49,8 +49,12 @@ __all__ = [
     'BusinessPurchaseOrderLine',
     'BusinessGoodsReceipt',
     'BusinessGoodsReceiptLine',
+    'BusinessExchangeRate',
+    'BusinessBatch',
+    'BusinessStockMovementBatch',
 ]
 
 from models.business.operational_alert import BusinessOperationalAlert
 
 from .exchange_rate import BusinessExchangeRate
+from .batch import BusinessBatch, BusinessStockMovementBatch
