@@ -42,6 +42,8 @@ class BusinessPurchaseOrder(db.Model):
     tax_amount = db.Column(db.Numeric(15, 2), nullable=False, default=0.00)
     total_amount = db.Column(db.Numeric(15, 2), nullable=False, default=0.00)
     currency = db.Column(db.String(3), nullable=False, default='INR')
+    exchange_rate = db.Column(db.Numeric(18, 6), nullable=False, default=1.000000)
+    base_currency_total = db.Column(db.Numeric(15, 2), nullable=False, default=0.00)
     payment_terms = db.Column(db.String(50), nullable=False, default='NET_30')
     status = db.Column(db.String(30), nullable=False, default='DRAFT')  # DRAFT, APPROVED, SENT_TO_SUPPLIER, ACKNOWLEDGED, PARTIALLY_RECEIVED, FULLY_RECEIVED, CLOSED, CANCELLED
     notes = db.Column(db.Text, nullable=True)
@@ -102,6 +104,8 @@ class BusinessPurchaseOrder(db.Model):
             'tax_amount': str(self.tax_amount),
             'total_amount': str(self.total_amount),
             'currency': self.currency,
+            'exchange_rate': str(self.exchange_rate) if self.exchange_rate is not None else '1.000000',
+            'base_currency_total': str(self.base_currency_total) if self.base_currency_total is not None else '0.00',
             'payment_terms': self.payment_terms,
             'status': self.status,
             'notes': self.notes,

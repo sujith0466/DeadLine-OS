@@ -75,3 +75,5 @@ from services.business.operational_intelligence_service import OperationalIntell
 from services.business.operational_alert_service import OperationalAlertService
 
 from services.business.voice_operations_service import VoiceOperationsService
+
+from .exchange_rate_service import ExchangeRateService

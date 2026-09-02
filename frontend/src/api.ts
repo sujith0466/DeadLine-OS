@@ -1126,6 +1126,16 @@ export const DeadlineOSApi = {
   listVoiceOperationsHistory: (params?: { limit?: number; offset?: number }) =>
     apiClient.get('/business/operations/voice/history', { params }).then(r => r.data),
 
+  // Phase C3.1: Multi-Currency & Exchange Rates
+  recordExchangeRate: (data: { from_currency: string; to_currency: string; rate: number | string; effective_date?: string; rate_source?: string; notes?: string }) =>
+    apiClient.post('/business/exchange-rates', data).then(r => r.data),
+  listExchangeRates: (params?: { from_currency?: string; to_currency?: string; limit?: number }) =>
+    apiClient.get('/business/exchange-rates/history', { params }).then(r => r.data),
+  convertCurrency: (data: { amount: number | string; from_currency: string; to_currency: string; effective_date?: string }) =>
+    apiClient.post('/business/exchange-rates/convert', data).then(r => r.data),
+  getSupportedCurrencies: () =>
+    apiClient.get('/business/exchange-rates/currencies').then(r => r.data),
+
 };
 
 export const api = DeadlineOSApi;
@@ -1143,3 +1153,8 @@ export const dismissOperationalAlert = (alertId: string) => DeadlineOSApi.dismis
 export const createTaskFromOperationalAlert = (alertId: string, data?: any) => DeadlineOSApi.createTaskFromOperationalAlert(alertId, data);
 export const processVoiceOperation = (data: { transcript: string; audio_duration_seconds?: number; context_hints?: any }) => DeadlineOSApi.processVoiceOperation(data);
 export const listVoiceOperationsHistory = (params?: any) => DeadlineOSApi.listVoiceOperationsHistory(params);
+
+export const recordExchangeRate = (data: any) => DeadlineOSApi.recordExchangeRate(data);
+export const listExchangeRates = (params?: any) => DeadlineOSApi.listExchangeRates(params);
+export const convertCurrency = (data: any) => DeadlineOSApi.convertCurrency(data);
+export const getSupportedCurrencies = () => DeadlineOSApi.getSupportedCurrencies();

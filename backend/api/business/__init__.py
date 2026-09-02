@@ -37,6 +37,7 @@ from .goods_receipts import goods_receipts_bp
 from .operational_intelligence import operational_intelligence_bp
 from .alerts import alerts_bp
 from .voice_operations import voice_ops_bp
+from .exchange_rates import exchange_rates_bp
 
 business_bp = Blueprint('business', __name__, url_prefix='/api/business')
 
@@ -73,5 +74,6 @@ business_bp.register_blueprint(goods_receipts_bp, url_prefix='/procurement/goods
 business_bp.register_blueprint(operational_intelligence_bp, url_prefix='/intelligence/operations')
 business_bp.register_blueprint(alerts_bp, url_prefix='/operations/alerts')
 business_bp.register_blueprint(voice_ops_bp, url_prefix='/operations/voice')
+business_bp.register_blueprint(exchange_rates_bp, url_prefix='/exchange-rates')
 
 __all__ = ['business_bp']

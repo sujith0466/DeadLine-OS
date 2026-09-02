@@ -1,3 +1,4 @@
+from services.business.exchange_rate_service import ExchangeRateService
 """
 DeadlineOS Business OS — Purchase Order Service
 ================================================
@@ -11,6 +12,7 @@ from decimal import Decimal
 from sqlalchemy import func
 from database.db import db
 from models.business import (
+    Workspace,
     BusinessPurchaseOrder,
     BusinessPurchaseOrderLine,
     BusinessPurchaseRequest,
@@ -154,6 +156,22 @@ class PurchaseOrderService:
         if initial_status not in ('DRAFT', 'APPROVED'):
             initial_status = 'DRAFT'
 
+        ws = db.session.get(Workspace, workspace_id)
+        base_curr = ws.base_currency if ws else 'INR'
+        po_curr = (data.get('currency') or base_curr).strip().upper()
+        if po_curr != base_curr:
+            if data.get('exchange_rate'):
+                po_fx_rate = Decimal(str(data['exchange_rate'])).quantize(Decimal('0.000001'))
+            else:
+                try:
+                    po_fx_rate = ExchangeRateService.get_exchange_rate(workspace_id, po_curr, base_curr, order_date)
+                except Exception:
+                    po_fx_rate = Decimal('1.000000')
+            base_total = (total_amount * po_fx_rate).quantize(Decimal('0.01'))
+        else:
+            po_fx_rate = Decimal('1.000000')
+            base_total = total_amount
+
         po = BusinessPurchaseOrder(
             workspace_id=workspace_id,
             po_number=po_number,
@@ -164,7 +182,9 @@ class PurchaseOrderService:
             subtotal_amount=subtotal,
             tax_amount=tax_amount,
             total_amount=total_amount,
-            currency=data.get('currency', 'INR').upper(),
+            currency=po_curr,
+            exchange_rate=po_fx_rate,
+            base_currency_total=base_total,
             payment_terms=data.get('payment_terms', 'NET_30'),
             status=initial_status,
             notes=data.get('notes'),

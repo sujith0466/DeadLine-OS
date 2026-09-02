@@ -52,3 +52,5 @@ __all__ = [
 ]
 
 from models.business.operational_alert import BusinessOperationalAlert
+
+from .exchange_rate import BusinessExchangeRate
