@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.0] - 2026-09-02
+### Added
+- **Business Operations Phase C2.3 — Operational Intelligence**:
+  - Deterministic inventory consumption analytics and daily burn rate calculation ($v = \frac{\sum \text{OUT}}{N}$).
+  - Days of Inventory Remaining ($DIR = \frac{\text{Stock}}{v}$) and projected stockout date forecasting with strict FACT vs FORECAST cognitive separation.
+  - Dead stock / slow-moving inventory detection for products with zero OUT movements in $>60$ days.
+  - Deterministic supplier reliability scorecard computing On-Time In-Full (OTIF) %, quality acceptance %, and average lead time actuals from completed Goods Receipts.
+  - Guaranteed `INSUFFICIENT_HISTORY` fallback handling when completed deliveries $< 3$ to prevent score fabrication.
+  - Actionable smart replenishment recommendation engine generating reorder quantities based on safety stock buffers and consumption velocity.
+  - Operational Intelligence REST API endpoints mounted at `/api/business/intelligence/operations/` with `intelligence:read` RBAC protection.
+  - Executive Operations Intelligence tab in frontend Business Intelligence Hub with Stockout Risk Radar, Supplier Scorecard, and Replenishment Center.
+
 ## [1.3.0] - 2026-09-02
 ### Added
 - **Business Operations Phase C2.2 — Goods Receiving / GRN**:

@@ -14,9 +14,14 @@ import {
   ArrowDownRight,
   ShieldAlert,
   ChevronRight,
-  X
+  X,
+  Box,
+  Package,
+  Truck,
+  ShoppingCart,
+  CheckCircle2
 } from 'lucide-react';
-import { api } from '../../api';
+import { api, getOperationalIntelligenceSummary, getInventoryForecast, getSupplierIntelligence, getReorderSuggestions } from '../../api';
 import { useBusinessAuth } from '../../context/BusinessAuthContext';
 import { BusinessPageHeader } from '../../components/Business/BusinessPageHeader';
 import { ExecutiveMetricCard } from '../../components/Business/ExecutiveMetricCard';
@@ -82,7 +87,7 @@ export const BusinessIntelligence: React.FC = () => {
   const { activeWorkspace } = useBusinessAuth();
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState<'brief' | 'forecast' | 'scenarios' | 'trends'>('brief');
+  const [activeTab, setActiveTab] = useState<'brief' | 'forecast' | 'scenarios' | 'trends' | 'operations'>('brief');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,6 +103,15 @@ export const BusinessIntelligence: React.FC = () => {
 
   // Custom scenario modal state
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
+
+  // Operational Intelligence state (C2.3)
+  const [opSubTab, setOpSubTab] = useState<'stockout' | 'suppliers' | 'reorder'>('stockout');
+  const [opSummary, setOpSummary] = useState<any | null>(null);
+  const [opForecasts, setOpForecasts] = useState<any[]>([]);
+  const [opSuppliers, setOpSuppliers] = useState<any[]>([]);
+  const [opReorders, setOpReorders] = useState<any[]>([]);
+  const [opLoading, setOpLoading] = useState(false);
+
   const [customRealization, setCustomRealization] = useState(80);
   const [customDelay, setCustomDelay] = useState(30);
   const [customInflation, setCustomInflation] = useState(115);
@@ -134,6 +148,34 @@ export const BusinessIntelligence: React.FC = () => {
   useEffect(() => {
     loadAllIntelligence();
   }, [loadAllIntelligence]);
+
+  const loadOperationalData = useCallback(async () => {
+    if (!activeWorkspace) return;
+    try {
+      setOpLoading(true);
+      const [sumRes, fcRes, supRes, reRes] = await Promise.all([
+        getOperationalIntelligenceSummary(),
+        getInventoryForecast(30),
+        getSupplierIntelligence(),
+        getReorderSuggestions()
+      ]);
+      setOpSummary(sumRes.data);
+      setOpForecasts(fcRes.data.items || []);
+      setOpSuppliers(supRes.data.suppliers || []);
+      setOpReorders(reRes.data.suggestions || []);
+    } catch (err: any) {
+      console.error('Failed to load operational intelligence:', err);
+    } finally {
+      setOpLoading(false);
+    }
+  }, [activeWorkspace]);
+
+  useEffect(() => {
+    if (activeTab === 'operations') {
+      loadOperationalData();
+    }
+  }, [activeTab, loadOperationalData]);
+
 
   const handleSimulateCustom = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -384,6 +426,17 @@ export const BusinessIntelligence: React.FC = () => {
             }`}
           >
             Scenario Simulator (3 Models)
+          </button>
+          <button
+            onClick={() => setActiveTab('operations')}
+            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+              activeTab === 'operations'
+                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+          >
+            <Box className="w-3.5 h-3.5" />
+            <span>Operational Intelligence ({opSummary?.critical_stockout_count || 0} At-Risk)</span>
           </button>
           <button
             onClick={() => setActiveTab('trends')}
@@ -832,6 +885,328 @@ export const BusinessIntelligence: React.FC = () => {
                 </>
               )}
             </>
+          )}
+        </div>
+      )}
+
+
+      {/* ── 5. OPERATIONAL INTELLIGENCE VIEW (Phase C2.3) ────────────────── */}
+      {activeTab === 'operations' && (
+        <div className="space-y-6">
+          {/* Operations KPI Strip */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400">Total Active SKUs</span>
+                <Package className="w-4 h-4 text-indigo-400" />
+              </div>
+              <p className="mt-2 text-2xl font-bold font-mono text-white">{opSummary?.total_active_skus || 0}</p>
+              <span className="text-[11px] text-slate-500">Tracked inventory catalog</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400">Stock Valuation</span>
+                <DollarSign className="w-4 h-4 text-emerald-400" />
+              </div>
+              <p className="mt-2 text-2xl font-bold font-mono text-emerald-400">
+                <FinancialNumber value={opSummary?.total_inventory_valuation || '0.00'} />
+              </p>
+              <span className="text-[11px] text-slate-500">Authoritative SUM(IN - OUT) * cost</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400">Critical Stockout Risks</span>
+                <AlertTriangle className="w-4 h-4 text-rose-400" />
+              </div>
+              <p className="mt-2 text-2xl font-bold font-mono text-rose-400">{opSummary?.critical_stockout_count || 0}</p>
+              <span className="text-[11px] text-slate-500">Depletion in &le; 7 days</span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-slate-400">Supplier OTIF Rate</span>
+                <Truck className="w-4 h-4 text-purple-400" />
+              </div>
+              <p className="mt-2 text-2xl font-bold font-mono text-purple-400">
+                {opSummary?.average_supplier_otif ? `${opSummary.average_supplier_otif}%` : 'Evaluating'}
+              </p>
+              <span className="text-[11px] text-slate-500">{opSummary?.rated_suppliers_count || 0} of {opSummary?.total_suppliers_count || 0} suppliers qualified</span>
+            </div>
+          </div>
+
+          {/* Sub-tab Navigation */}
+          <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <button
+              onClick={() => setOpSubTab('stockout')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                opSubTab === 'stockout'
+                  ? 'bg-slate-800 text-white border border-slate-700'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Stockout Risk & Consumption Forecast ({opForecasts.length})
+            </button>
+            <button
+              onClick={() => setOpSubTab('suppliers')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                opSubTab === 'suppliers'
+                  ? 'bg-slate-800 text-white border border-slate-700'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Supplier Performance Scorecard ({opSuppliers.length})
+            </button>
+            <button
+              onClick={() => setOpSubTab('reorder')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                opSubTab === 'reorder'
+                  ? 'bg-slate-800 text-white border border-slate-700'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Smart Replenishment Center ({opReorders.length})
+            </button>
+          </div>
+
+          {/* 1. Stockout & Consumption Forecast Table */}
+          {opSubTab === 'stockout' && (
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-indigo-400" />
+                    <span>Deterministic Inventory Runout Projections</span>
+                  </h3>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Burn rate calculated from 30-day append-only OUT movements. Distinguishes verified FACT stock from calculated FORECAST depletion.
+                  </p>
+                </div>
+              </div>
+
+              {opLoading ? (
+                <BusinessLoadingState type="table" rows={4} />
+              ) : opForecasts.length === 0 ? (
+                <BusinessEmptyState
+                  title="No Inventory Forecasts"
+                  description="Add active products and record physical stock movements to generate burn projections."
+                />
+              ) : (
+                <div className="overflow-x-auto rounded-xl border border-slate-800">
+                  <table className="w-full text-left text-xs text-slate-300">
+                    <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                      <tr>
+                        <th className="px-4 py-3">SKU & Product</th>
+                        <th className="px-4 py-3">Factual Stock</th>
+                        <th className="px-4 py-3">On Order</th>
+                        <th className="px-4 py-3">Daily Burn Rate</th>
+                        <th className="px-4 py-3">Days Remaining (DIR)</th>
+                        <th className="px-4 py-3">Projected Stockout</th>
+                        <th className="px-4 py-3">Health Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {opForecasts.map((f) => (
+                        <tr key={f.product_id} className="hover:bg-slate-800/30 transition-colors">
+                          <td className="px-4 py-3">
+                            <div className="font-semibold text-white">{f.name}</div>
+                            <div className="font-mono text-[10px] text-slate-500">{f.sku}</div>
+                          </td>
+                          <td className="px-4 py-3 font-mono font-bold text-white">
+                            {f.factual_stock} {f.unit}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-slate-400">
+                            {f.on_order_quantity} {f.unit}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-indigo-400">
+                            {f.daily_burn_rate} / day
+                          </td>
+                          <td className="px-4 py-3 font-mono font-semibold">
+                            {f.days_of_inventory_remaining !== null ? `${f.days_of_inventory_remaining} days` : '—'}
+                          </td>
+                          <td className="px-4 py-3 font-mono">
+                            {f.projected_stockout_date ? (
+                              <span className="text-amber-400 font-semibold">{f.projected_stockout_date}</span>
+                            ) : (
+                              <span className="text-slate-500">Stable / None</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3">
+                            {f.stock_health === 'OUT_OF_STOCK' && (
+                              <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-bold">
+                                OUT OF STOCK
+                              </span>
+                            )}
+                            {f.stock_health === 'CRITICAL_RISK' && (
+                              <span className="px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] font-semibold">
+                                CRITICAL (&le;7d)
+                              </span>
+                            )}
+                            {f.stock_health === 'LOW_STOCK' && (
+                              <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-semibold">
+                                LOW STOCK
+                              </span>
+                            )}
+                            {f.stock_health === 'DEAD_STOCK' && (
+                              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-semibold">
+                                DEAD STOCK (60d+)
+                              </span>
+                            )}
+                            {f.stock_health === 'HEALTHY' && (
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-semibold">
+                                HEALTHY
+                              </span>
+                            )}
+                            {f.stock_health === 'STABLE_NO_DEMAND' && (
+                              <span className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-[10px]">
+                                STABLE
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 2. Supplier Scorecard */}
+          {opSubTab === 'suppliers' && (
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm space-y-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-purple-400" />
+                  <span>Deterministic Supplier Reliability Matrix</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  On-Time In-Full (OTIF) and Quality Acceptance % derived from completed Goods Receipts. Suppliers with &lt; 3 orders show INSUFFICIENT_HISTORY.
+                </p>
+              </div>
+
+              {opLoading ? (
+                <BusinessLoadingState type="table" rows={3} />
+              ) : opSuppliers.length === 0 ? (
+                <BusinessEmptyState
+                  title="No Suppliers Found"
+                  description="Add commercial partners with type SUPPLIER to track delivery reliability."
+                />
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {opSuppliers.map((s) => (
+                    <div key={s.supplier_id} className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="font-bold text-white text-sm">{s.supplier_name}</div>
+                        {s.status === 'RATED' ? (
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold">
+                            QUALIFIED RATING
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-semibold">
+                            INSUFFICIENT HISTORY (&lt;3 orders)
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-slate-800/60">
+                        <div>
+                          <span className="text-[10px] text-slate-400">OTIF Rate</span>
+                          <p className="font-mono font-bold text-xs text-white">
+                            {s.otif_rate !== null ? `${s.otif_rate}%` : 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400">Quality Acceptance</span>
+                          <p className="font-mono font-bold text-xs text-emerald-400">
+                            {s.quality_acceptance_rate !== null ? `${s.quality_acceptance_rate}%` : 'N/A'}
+                          </p>
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400">Avg Lead Time</span>
+                          <p className="font-mono font-bold text-xs text-indigo-400">
+                            {s.average_lead_time_days !== null ? `${s.average_lead_time_days} days` : 'N/A'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="text-[11px] text-slate-400 flex items-center justify-between pt-2 border-t border-slate-800/40">
+                        <span>Total POs: {s.total_pos_issued} ({s.completed_deliveries_count} received)</span>
+                        <span className="text-slate-500">Rejected Qty: {s.total_rejected_quantity}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 3. Reorder Center */}
+          {opSubTab === 'reorder' && (
+            <div className="p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 backdrop-blur-sm space-y-4">
+              <div>
+                <h3 className="text-base font-bold text-white flex items-center gap-2">
+                  <ShoppingCart className="w-4 h-4 text-emerald-400" />
+                  <span>Actionable Replenishment Recommendations</span>
+                </h3>
+                <p className="text-xs text-slate-400 mt-1">
+                  Automated replenishment proposals calculated from safety stock buffers and 30-day velocity.
+                </p>
+              </div>
+
+              {opLoading ? (
+                <BusinessLoadingState type="table" rows={3} />
+              ) : opReorders.length === 0 ? (
+                <div className="p-8 text-center rounded-xl bg-slate-950/40 border border-slate-800">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-2" />
+                  <h4 className="text-sm font-bold text-white">All Stock Levels Optimal</h4>
+                  <p className="text-xs text-slate-400 mt-1">No products currently breached safety stock or reorder thresholds.</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {opReorders.map((r, i) => (
+                    <div key={i} className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-white text-sm">{r.product_name}</span>
+                          <span className="font-mono text-[10px] text-slate-500">({r.sku})</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            r.urgency === 'HIGH' ? 'bg-rose-500/10 text-rose-400 border border-rose-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                          }`}>
+                            {r.urgency} URGENCY
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-400">{r.reason}</p>
+                        <div className="text-[11px] text-slate-500">
+                          Preferred Supplier: <span className="text-slate-300 font-semibold">{r.preferred_supplier_name || 'Not assigned'}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400">Suggested Order</span>
+                          <div className="font-mono font-bold text-emerald-400 text-sm">
+                            {r.suggested_quantity} {r.unit}
+                          </div>
+                          <span className="text-[10px] text-slate-500">
+                            Est. <FinancialNumber value={r.estimated_total_cost} />
+                          </span>
+                        </div>
+
+                        <button
+                          onClick={() => navigate('/business/procurement')}
+                          className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-all"
+                        >
+                          <span>Create PR</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}

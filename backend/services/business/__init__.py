@@ -69,3 +69,5 @@ __all__ = [
     'PurchaseOrderService',
     'GoodsReceiptService',
 ]
+
+from services.business.operational_intelligence_service import OperationalIntelligenceService

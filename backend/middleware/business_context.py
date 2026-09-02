@@ -56,6 +56,7 @@ ROLE_PERMISSIONS = {
         'procurement:approve',
         'procurement:manage',
         'procurement:receive',
+        'intelligence:read',
     },
     'ADMIN': {
         'workspace:read',
@@ -97,6 +98,7 @@ ROLE_PERMISSIONS = {
         'procurement:approve',
         'procurement:manage',
         'procurement:receive',
+        'intelligence:read',
     },
     'MEMBER': {
         'workspace:read',
@@ -128,6 +130,7 @@ ROLE_PERMISSIONS = {
         'procurement:create',
         'procurement:update',
         'procurement:receive',
+        'intelligence:read',
     },
     'ACCOUNTANT': {
         'workspace:read',
@@ -142,6 +145,7 @@ ROLE_PERMISSIONS = {
         'locations:read',
         # C2 Procurement permissions (Read-Only)
         'procurement:read',
+        'intelligence:read',
     },
     'VIEWER': {
         'workspace:read',
@@ -154,6 +158,7 @@ ROLE_PERMISSIONS = {
         'locations:read',
         # C2 Procurement permissions (Read-Only)
         'procurement:read',
+        'intelligence:read',
     },
 }
 

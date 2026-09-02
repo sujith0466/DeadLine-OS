@@ -1084,6 +1084,24 @@ export const DeadlineOSApi = {
 
   createGoodsReceipt: (data: any) =>
     apiClient.post('/business/procurement/goods-receipts', data).then(r => r.data),
+  // C2.3 Operational Intelligence API
+  getOperationalIntelligenceSummary: () =>
+    apiClient.get('/business/intelligence/operations/summary').then(r => r.data),
+
+  getInventoryForecast: (windowDays: number = 30) =>
+    apiClient.get(`/business/intelligence/operations/inventory-forecast?window_days=${windowDays}`).then(r => r.data),
+
+  getSupplierIntelligence: () =>
+    apiClient.get('/business/intelligence/operations/suppliers').then(r => r.data),
+
+  getReorderSuggestions: () =>
+    apiClient.get('/business/intelligence/operations/reorder-suggestions').then(r => r.data),
+
 };
 
 export const api = DeadlineOSApi;
+
+export const getOperationalIntelligenceSummary = () => DeadlineOSApi.getOperationalIntelligenceSummary();
+export const getInventoryForecast = (windowDays?: number) => DeadlineOSApi.getInventoryForecast(windowDays);
+export const getSupplierIntelligence = () => DeadlineOSApi.getSupplierIntelligence();
+export const getReorderSuggestions = () => DeadlineOSApi.getReorderSuggestions();
