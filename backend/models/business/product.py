@@ -27,6 +27,7 @@ class BusinessProduct(db.Model):
     name = db.Column(db.String(255), nullable=False)
     category = db.Column(db.String(100), nullable=True)
     unit = db.Column(db.String(30), nullable=False, default='UNIT')
+    is_serialized = db.Column(db.Boolean, nullable=False, default=False)
     reorder_level = db.Column(db.Numeric(15, 2), nullable=False, default=0.00)
     safety_stock = db.Column(db.Numeric(15, 2), nullable=False, default=0.00)
     cost_price = db.Column(db.Numeric(15, 2), nullable=False, default=0.00)
@@ -87,6 +88,7 @@ class BusinessProduct(db.Model):
             'currency': self.currency,
             'preferred_supplier_partner_id': self.preferred_supplier_partner_id,
             'supplier_name': self.supplier.name if self.supplier else None,
+            'is_serialized': self.is_serialized,
             'status': self.status,
             'created_by_user_id': self.created_by_user_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,

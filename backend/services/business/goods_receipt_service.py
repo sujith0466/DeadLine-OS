@@ -24,7 +24,8 @@ from models.business import (
 )
 from utils.errors import APIError
 from services.business.batch_service import BatchService
-from models.business import BusinessStockMovementBatch
+from services.business.serial_service import SerialService
+from models.business import BusinessStockMovementBatch, BusinessStockMovementSerial
 
 
 class GoodsReceiptService:
@@ -163,6 +164,34 @@ class GoodsReceiptService:
                 except Exception:
                     pass
 
+            raw_serials = raw_line.get('serial_numbers') or raw_line.get('serials') or []
+            cleaned_serials = [str(s).strip() for s in raw_serials if str(s).strip()]
+            if pol.product.is_serialized and acc_qty > Decimal('0.00') and not cleaned_serials:
+                raise APIError(
+                    f"Line {idx + 1}: Product '{pol.product.sku}' is serialized. Serial numbers must be provided for accepted quantity ({acc_qty}).",
+                    code="SERIALS_REQUIRED",
+                    status=400
+                )
+            if cleaned_serials:
+                if acc_qty % 1 != Decimal('0'):
+                    raise APIError(
+                        f"Line {idx + 1}: Serialized accepted quantity must be an integer, got {acc_qty}.",
+                        code="INVALID_SERIAL_QUANTITY",
+                        status=400
+                    )
+                if len(cleaned_serials) != int(acc_qty):
+                    raise APIError(
+                        f"Line {idx + 1}: Serial count ({len(cleaned_serials)}) must equal accepted quantity ({int(acc_qty)}).",
+                        code="SERIAL_COUNT_MISMATCH",
+                        status=400
+                    )
+                if len(set(cleaned_serials)) != len(cleaned_serials):
+                    raise APIError(
+                        f"Line {idx + 1}: Duplicate serial numbers detected in input payload.",
+                        code="DUPLICATE_SERIAL_IN_PAYLOAD",
+                        status=400
+                    )
+
             processed_lines.append({
                 'pol': pol,
                 'received_qty': recv_qty,
@@ -173,6 +202,7 @@ class GoodsReceiptService:
                 'batch_number': (raw_line.get('batch_number') or '').strip() or None,
                 'expiry_date': exp_d,
                 'manufacture_date': mfg_d,
+                'serial_numbers': cleaned_serials or None,
             })
 
         if not processed_lines:
@@ -253,6 +283,27 @@ class GoodsReceiptService:
                         quantity=acc_qty
                     )
                     db.session.add(sm_batch)
+                    db.session.flush()
+
+                # C3.3 Serial attribution if serial_numbers provided
+                if p_line.get('serial_numbers'):
+                    serials = SerialService.register_or_receive_serials(
+                        workspace_id=workspace_id,
+                        product_id=pol.product_id,
+                        serial_numbers=p_line['serial_numbers'],
+                        actor_user_id=actor_user_id,
+                        location_id=po.destination_location_id,
+                        batch_id=batch.id if (p_line.get('batch_number') and 'batch' in locals()) else None,
+                        goods_receipt_id=grn.id,
+                        notes=f"Auto-received from GRN {grn_number}"
+                    )
+                    for s_obj in serials:
+                        sm_serial = BusinessStockMovementSerial(
+                            workspace_id=workspace_id,
+                            stock_movement_id=stock_mv.id,
+                            serial_id=s_obj.id
+                        )
+                        db.session.add(sm_serial)
                     db.session.flush()
 
             # Create GRN line record

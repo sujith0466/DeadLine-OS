@@ -190,6 +190,19 @@ class InventoryService:
                 fefo_override_reason=data.get('fefo_override_reason')
             )
 
+        # C3.3: Serial attributions validation and ledger linking
+        serial_attributions = data.get('serial_attributions') or data.get('serials') or data.get('serial_numbers')
+        if product.is_serialized or serial_attributions:
+            from services.business.serial_service import SerialService
+            SerialService.validate_and_attribute_movement(
+                workspace_id=workspace_id,
+                movement=movement,
+                product=product,
+                serials=serial_attributions,
+                actor_user_id=actor_user_id,
+                notes=data.get('serial_notes')
+            )
+
         db.session.commit()
 
         AuditService.log_event(

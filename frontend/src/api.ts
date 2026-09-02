@@ -1150,6 +1150,22 @@ export const DeadlineOSApi = {
   getFefoSuggestions: (params: { product_id: string; requested_quantity?: number | string }) =>
     apiClient.get('/business/batches/fefo-suggestions', { params }).then(r => r.data),
 
+  // Phase C3.3: Serial Number Tracking & Unit-Level Provenance
+  registerSerials: (data: { product_id: string; serial_numbers: string[]; location_id?: string; batch_id?: string; goods_receipt_id?: string; notes?: string }) =>
+    apiClient.post('/business/serials', data).then(r => r.data),
+  listSerials: (params?: { product_id?: string; batch_id?: string; status?: string; location_id?: string; search?: string; limit?: number; offset?: number }) =>
+    apiClient.get('/business/serials', { params }).then(r => r.data),
+  getSerial: (serialId: string) =>
+    apiClient.get(`/business/serials/${serialId}`).then(r => r.data),
+  getSerialProvenance: (serialId: string) =>
+    apiClient.get(`/business/serials/${serialId}/provenance`).then(r => r.data),
+  transitionSerial: (serialId: string, data: { target_status: string; reason?: string; location_id?: string; notes?: string }) =>
+    apiClient.post(`/business/serials/${serialId}/transition`, data).then(r => r.data),
+  quarantineSerial: (serialId: string, reason?: string) =>
+    apiClient.post(`/business/serials/${serialId}/quarantine`, { reason }).then(r => r.data),
+  disposeSerial: (serialId: string, reason?: string) =>
+    apiClient.post(`/business/serials/${serialId}/dispose`, { reason }).then(r => r.data),
+
 };
 
 export const api = DeadlineOSApi;
@@ -1178,3 +1194,10 @@ export const getBatch = (batchId: string) => DeadlineOSApi.getBatch(batchId);
 export const quarantineBatch = (batchId: string, reason: string) => DeadlineOSApi.quarantineBatch(batchId, reason);
 export const releaseBatchQuarantine = (batchId: string, notes?: string) => DeadlineOSApi.releaseBatchQuarantine(batchId, notes);
 export const getFefoSuggestions = (params: any) => DeadlineOSApi.getFefoSuggestions(params);
+export const registerSerials = (data: any) => DeadlineOSApi.registerSerials(data);
+export const listSerials = (params?: any) => DeadlineOSApi.listSerials(params);
+export const getSerial = (serialId: string) => DeadlineOSApi.getSerial(serialId);
+export const getSerialProvenance = (serialId: string) => DeadlineOSApi.getSerialProvenance(serialId);
+export const transitionSerial = (serialId: string, data: any) => DeadlineOSApi.transitionSerial(serialId, data);
+export const quarantineSerial = (serialId: string, reason?: string) => DeadlineOSApi.quarantineSerial(serialId, reason);
+export const disposeSerial = (serialId: string, reason?: string) => DeadlineOSApi.disposeSerial(serialId, reason);

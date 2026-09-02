@@ -62,6 +62,9 @@ ROLE_PERMISSIONS = {
         'batch:read',
         'batch:write',
         'batch:quarantine',
+        'serial:read',
+        'serial:write',
+        'serial:quarantine',
     },
     'ADMIN': {
         'workspace:read',
@@ -109,6 +112,9 @@ ROLE_PERMISSIONS = {
         'batch:read',
         'batch:write',
         'batch:quarantine',
+        'serial:read',
+        'serial:write',
+        'serial:quarantine',
     },
     'MEMBER': {
         'workspace:read',
@@ -144,6 +150,8 @@ ROLE_PERMISSIONS = {
         'currency:read',
         'batch:read',
         'batch:write',
+        'serial:read',
+        'serial:write',
     },
     'ACCOUNTANT': {
         'workspace:read',
@@ -162,6 +170,7 @@ ROLE_PERMISSIONS = {
         'currency:read',
         'currency:write',
         'batch:read',
+        'serial:read',
     },
     'VIEWER': {
         'workspace:read',
@@ -177,6 +186,7 @@ ROLE_PERMISSIONS = {
         'intelligence:read',
         'currency:read',
         'batch:read',
+        'serial:read',
     },
 }
 
