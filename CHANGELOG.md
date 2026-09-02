@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-09-02
+### Added
+- **Business Operations Phase C2.5 — Voice-Assisted Business Operations**:
+  - Hands-free voice operations processing engine translating speech-to-text transcripts into operational candidates (stock adjustments, two-sided stock transfers, task allocations, purchase requisitions).
+  - Multi-entity fuzzy & exact resolver against live workspace registers (products, SKUs, locations, partners, members).
+  - Strict Zero-Bypass trust boundary routing spoken commands exclusively into `business_staged_extractions` (`status='NEEDS_REVIEW'`).
+  - Enhanced `FinancialConverterService` domain commit gateway supporting stock adjustments, stock transfers, purchase requests, and business tasks upon human verification.
+  - REST API endpoints mounted at `/api/business/operations/voice` (`POST /process`, `GET /history`).
+  - Voice Command modal and operations dictation interface integrated into Business Staging Hub.
+
 ## [1.5.0] - 2026-09-02
 ### Added
 - **Business Operations Phase C2.4 — Automation & Alerting**:

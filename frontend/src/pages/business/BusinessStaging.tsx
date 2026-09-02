@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   Inbox,
+  Mic,
   Plus,
   Search,
   CheckCircle2,
@@ -31,7 +32,7 @@ export interface StagedExtractionItem {
   id: string;
   workspace_id: string;
   source_channel: string;
-  candidate_type: 'EXPENSE' | 'INVOICE_RECEIVABLE' | 'INVOICE_PAYABLE' | 'PAYMENT_RECORD' | 'NOTE';
+  candidate_type: string;
   status: 'NEEDS_REVIEW' | 'CONFIRMED' | 'REJECTED';
   confidence_score: number;
   normalized_data: {
@@ -63,6 +64,10 @@ export const BusinessStaging: React.FC = () => {
 
   // Modals & Drawers
   const [isCaptureModalOpen, setIsCaptureModalOpen] = useState<boolean>(false);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
+  const [voiceTranscript, setVoiceTranscript] = useState<string>('');
+  const [voiceSubmitting, setVoiceSubmitting] = useState<boolean>(false);
+  const [voiceResult, setVoiceResult] = useState<any>(null);
   const [selectedItem, setSelectedItem] = useState<StagedExtractionItem | null>(null);
   const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState<boolean>(false);
 
@@ -213,6 +218,22 @@ export const BusinessStaging: React.FC = () => {
     }
   };
 
+  // Handle processing voice operation
+  const handleProcessVoiceOperation = async () => {
+    if (!voiceTranscript.trim()) return;
+    setVoiceSubmitting(true);
+    setActionError(null);
+    try {
+      const res = await api.processVoiceOperation({ transcript: voiceTranscript.trim() });
+      setVoiceResult(res?.data?.intent_summary);
+      loadStagingItems();
+    } catch (err: any) {
+      setActionError(err?.response?.data?.error?.message || err?.message || 'Failed to process voice operation.');
+    } finally {
+      setVoiceSubmitting(false);
+    }
+  };
+
   // Handle Commit to Financial Ledger
   const handleCommit = async () => {
     if (!selectedItem) return;
@@ -272,9 +293,21 @@ export const BusinessStaging: React.FC = () => {
         return <span className="px-2 py-0.5 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 text-xs font-semibold">Invoice Payable</span>;
       case 'PAYMENT_RECORD':
         return <span className="px-2 py-0.5 rounded-md bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-semibold">Payment</span>;
+      case 'VOICE_INVENTORY_ADJUSTMENT':
+      case 'INVENTORY_ADJUSTMENT':
+        return <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-semibold">Stock Adjustment</span>;
+      case 'VOICE_STOCK_TRANSFER':
+      case 'STOCK_TRANSFER':
+        return <span className="px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-semibold">Stock Transfer</span>;
+      case 'VOICE_TASK':
+      case 'TASK':
+        return <span className="px-2 py-0.5 rounded-md bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-semibold">Voice Task</span>;
+      case 'VOICE_PURCHASE_REQUEST':
+      case 'PURCHASE_REQUEST':
+        return <span className="px-2 py-0.5 rounded-md bg-teal-500/10 text-teal-400 border border-teal-500/20 text-xs font-semibold">Purchase Request</span>;
       case 'NOTE':
       default:
-        return <span className="px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-400 border border-slate-500/20 text-xs font-semibold">Note</span>;
+        return <span className="px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-400 border border-slate-500/20 text-xs font-semibold">{type || 'Note'}</span>;
     }
   };
 
@@ -399,6 +432,15 @@ export const BusinessStaging: React.FC = () => {
             : undefined
         }
         secondaryActions={[
+          {
+            label: 'Voice Command',
+            icon: Mic,
+            onClick: () => {
+              setVoiceTranscript('');
+              setVoiceResult(null);
+              setIsVoiceModalOpen(true);
+            },
+          },
           {
             label: 'Refresh',
             icon: RefreshCw,
@@ -806,6 +848,97 @@ export const BusinessStaging: React.FC = () => {
           </div>
         )}
       </DetailDrawer>
+
+      {/* Voice Operations Modal */}
+      {isVoiceModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl p-6 relative">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                  <Mic className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-white">Voice-Assisted Operations</h3>
+                  <p className="text-[11px] text-slate-400">Speak or type operational command (Zero-Bypass Staging)</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsVoiceModalOpen(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="py-4 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  Voice Transcription / Command
+                </label>
+                <textarea
+                  value={voiceTranscript}
+                  onChange={(e) => setVoiceTranscript(e.target.value)}
+                  placeholder="e.g. Received 50 units of BRG-00 at Main Warehouse costing 120 each"
+                  rows={4}
+                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-500 resize-none font-mono"
+                />
+              </div>
+
+              {/* Sample Prompts */}
+              <div className="space-y-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">Quick Examples</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "Received 100 units of BRG-00 at Main Storage",
+                    "Transfer 20 units of ORING-CRIT to Depot 1",
+                    "Create urgent task to inspect warehouse damaged pallet",
+                    "Reorder 50 units of Fast-Burn Resistor Pack from Acme"
+                  ].map((ex, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setVoiceTranscript(ex)}
+                      className="px-2 py-1 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 text-[11px] font-medium transition-colors cursor-pointer"
+                    >
+                      {ex}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Extracted result display */}
+              {voiceResult && (
+                <div className="p-3 bg-purple-950/30 border border-purple-800/40 rounded-xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-purple-300">Extracted Intent: {voiceResult.candidate_type}</span>
+                    <span className="text-[11px] font-bold text-emerald-400">{voiceResult.confidence_score}% Confidence</span>
+                  </div>
+                  <pre className="text-[10px] font-mono text-slate-300 bg-slate-950 p-2 rounded-lg overflow-x-auto">
+                    {JSON.stringify(voiceResult.extracted_fields, null, 2)}
+                  </pre>
+                  <p className="text-[11px] text-emerald-400 font-semibold">✓ Staged in NEEDS_REVIEW status awaiting review.</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-800">
+              <button
+                onClick={() => setIsVoiceModalOpen(false)}
+                className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+              <button
+                onClick={handleProcessVoiceOperation}
+                disabled={voiceSubmitting || !voiceTranscript.trim()}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold shadow-lg shadow-purple-500/20 disabled:opacity-50 transition-all cursor-pointer"
+              >
+                {voiceSubmitting ? 'Parsing & Staging...' : 'Stage for Review'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Global Capture Modal */}
       <CaptureModal

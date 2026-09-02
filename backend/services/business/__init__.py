@@ -73,3 +73,5 @@ __all__ = [
 from services.business.operational_intelligence_service import OperationalIntelligenceService
 
 from services.business.operational_alert_service import OperationalAlertService
+
+from services.business.voice_operations_service import VoiceOperationsService

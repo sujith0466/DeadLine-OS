@@ -1119,6 +1119,13 @@ export const DeadlineOSApi = {
   createTaskFromOperationalAlert: (alertId: string, data?: { assignee_member_id?: string; priority?: string; due_date?: string }) =>
     apiClient.post(`/business/operations/alerts/${alertId}/create-task`, data || {}).then(r => r.data),
 
+  // C2.5 Voice-Assisted Business Operations API
+  processVoiceOperation: (data: { transcript: string; audio_duration_seconds?: number; context_hints?: any }) =>
+    apiClient.post('/business/operations/voice/process', data).then(r => r.data),
+
+  listVoiceOperationsHistory: (params?: { limit?: number; offset?: number }) =>
+    apiClient.get('/business/operations/voice/history', { params }).then(r => r.data),
+
 };
 
 export const api = DeadlineOSApi;
@@ -1134,3 +1141,5 @@ export const acknowledgeOperationalAlert = (alertId: string) => DeadlineOSApi.ac
 export const resolveOperationalAlert = (alertId: string, resolutionNote?: string) => DeadlineOSApi.resolveOperationalAlert(alertId, resolutionNote);
 export const dismissOperationalAlert = (alertId: string) => DeadlineOSApi.dismissOperationalAlert(alertId);
 export const createTaskFromOperationalAlert = (alertId: string, data?: any) => DeadlineOSApi.createTaskFromOperationalAlert(alertId, data);
+export const processVoiceOperation = (data: { transcript: string; audio_duration_seconds?: number; context_hints?: any }) => DeadlineOSApi.processVoiceOperation(data);
+export const listVoiceOperationsHistory = (params?: any) => DeadlineOSApi.listVoiceOperationsHistory(params);
