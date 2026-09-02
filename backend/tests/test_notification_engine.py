@@ -58,7 +58,7 @@ def test_notification_engine_idempotent_creation(app, test_user_id):
 
 def test_sync_schedule_slot_notifications(app, test_user_id):
     with app.app_context():
-        slot_start = datetime(2026, 9, 1, 14, 0, tzinfo=timezone.utc)
+        slot_start = datetime.now(timezone.utc) + timedelta(days=2)
         slot = ScheduleSlot(
             id="slot-sync-1",
             user_id=test_user_id,

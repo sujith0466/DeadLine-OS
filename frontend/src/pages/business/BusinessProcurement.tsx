@@ -7,6 +7,10 @@ import {
   CheckCircle2,
   XCircle,
   Send,
+  Truck,
+  PackageCheck,
+  Receipt,
+  FileCheck,
 } from 'lucide-react';
 import { api } from '../../api';
 import { useBusinessAuth } from '../../context/BusinessAuthContext';
@@ -77,13 +81,53 @@ interface PurchaseOrder {
   lines?: PurchaseOrderLine[];
 }
 
+interface GoodsReceiptLine {
+  id: string;
+  goods_receipt_id: string;
+  purchase_order_line_id: string;
+  product_id: string;
+  product_name: string;
+  product_sku: string;
+  product_unit?: string;
+  received_quantity: string;
+  accepted_quantity: string;
+  rejected_quantity: string;
+  rejection_reason?: string;
+  unit_cost: string;
+  stock_movement_id?: string;
+  created_at: string;
+}
+
+interface GoodsReceipt {
+  id: string;
+  grn_number: string;
+  purchase_order_id: string;
+  po_number: string;
+  supplier_partner_id: string;
+  supplier_name: string;
+  destination_location_id: string;
+  destination_location_name: string;
+  receipt_date: string;
+  carrier_name?: string;
+  tracking_number?: string;
+  delivery_note_number?: string;
+  status: string;
+  notes?: string;
+  staged_extraction_id?: string;
+  received_by_user_id?: string;
+  receiver_name?: string;
+  created_at: string;
+  lines?: GoodsReceiptLine[];
+}
+
 export const BusinessProcurement: React.FC = () => {
   const { role } = useBusinessAuth();
-  const [activeTab, setActiveTab] = useState<'orders' | 'requests'>('orders');
+  const [activeTab, setActiveTab] = useState<'orders' | 'requests' | 'grns'>('orders');
 
   // Data states
   const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [requests, setRequests] = useState<PurchaseRequest[]>([]);
+  const [grns, setGrns] = useState<GoodsReceipt[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -99,10 +143,13 @@ export const BusinessProcurement: React.FC = () => {
   // Drawers and Modals
   const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | null>(null);
   const [selectedRequest, setSelectedRequest] = useState<PurchaseRequest | null>(null);
+  const [selectedGrn, setSelectedGrn] = useState<GoodsReceipt | null>(null);
   const [showCreatePRModal, setShowCreatePRModal] = useState(false);
   const [showCreatePOModal, setShowCreatePOModal] = useState(false);
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [convertingRequest, setConvertingRequest] = useState<PurchaseRequest | null>(null);
+  const [showReceiveModal, setShowReceiveModal] = useState(false);
+  const [receivingOrder, setReceivingOrder] = useState<PurchaseOrder | null>(null);
 
   // Forms
   const [prForm, setPrForm] = useState({
@@ -131,15 +178,44 @@ export const BusinessProcurement: React.FC = () => {
     unit_price: '',
   });
 
+  const [receiveForm, setReceiveForm] = useState<{
+    receipt_date: string;
+    carrier_name: string;
+    tracking_number: string;
+    delivery_note_number: string;
+    notes: string;
+    lines: Array<{
+      purchase_order_line_id: string;
+      product_id: string;
+      product_name: string;
+      product_sku: string;
+      ordered_quantity: string;
+      previously_received: string;
+      received_quantity: string;
+      accepted_quantity: string;
+      rejected_quantity: string;
+      rejection_reason: string;
+    }>;
+  }>({
+    receipt_date: new Date().toISOString().split('T')[0],
+    carrier_name: '',
+    tracking_number: '',
+    delivery_note_number: '',
+    notes: '',
+    lines: [],
+  });
+
   const isAdminOrOwner = role === 'OWNER' || role === 'ADMIN';
+  const canReceive = role === 'OWNER' || role === 'ADMIN' || role === 'MEMBER';
 
   const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const [prRes, poRes, prodRes, locRes, suppRes] = await Promise.all([
+      const [prRes, poRes, grnRes, prodRes, locRes, suppRes] = await Promise.all([
         api.listPurchaseRequests(),
         api.listPurchaseOrders(),
+        api.listGoodsReceipts(),
         api.listProducts({ status: 'ACTIVE' }),
         api.listLocations({ status: 'ACTIVE' }),
         api.listCommercialPartners({ type: 'SUPPLIER', status: 'ACTIVE' }),
@@ -147,6 +223,7 @@ export const BusinessProcurement: React.FC = () => {
 
       setRequests(prRes.data?.items || []);
       setOrders(poRes.data?.items || []);
+      setGrns(grnRes.data?.items || []);
       setProducts(prodRes.data?.items || []);
       setLocations(locRes.data?.items || []);
       setSuppliers(suppRes.data?.items || []);
@@ -284,6 +361,68 @@ export const BusinessProcurement: React.FC = () => {
     }
   };
 
+  // Handle Goods Receipt (GRN) Opening
+  const openReceiveModal = (po: PurchaseOrder) => {
+    setReceivingOrder(po);
+    const initialLines = (po.lines || []).map(line => {
+      const remaining = Math.max(0, parseFloat(line.ordered_quantity) - parseFloat(line.received_quantity));
+      return {
+        purchase_order_line_id: line.id,
+        product_id: line.product_id,
+        product_name: line.product_name,
+        product_sku: line.product_sku,
+        ordered_quantity: line.ordered_quantity,
+        previously_received: line.received_quantity,
+        received_quantity: remaining.toString(),
+        accepted_quantity: remaining.toString(),
+        rejected_quantity: '0',
+        rejection_reason: '',
+      };
+    });
+
+    setReceiveForm({
+      receipt_date: new Date().toISOString().split('T')[0],
+      carrier_name: '',
+      tracking_number: '',
+      delivery_note_number: '',
+      notes: '',
+      lines: initialLines,
+    });
+    setShowReceiveModal(true);
+  };
+
+  // Handle Goods Receipt (GRN) Submission
+  const handleCreateGRN = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!receivingOrder) return;
+    try {
+      const payload = {
+        purchase_order_id: receivingOrder.id,
+        receipt_date: receiveForm.receipt_date || undefined,
+        carrier_name: receiveForm.carrier_name || undefined,
+        tracking_number: receiveForm.tracking_number || undefined,
+        delivery_note_number: receiveForm.delivery_note_number || undefined,
+        notes: receiveForm.notes || undefined,
+        lines: receiveForm.lines.map(l => ({
+          purchase_order_line_id: l.purchase_order_line_id,
+          received_quantity: parseFloat(l.received_quantity || '0'),
+          accepted_quantity: parseFloat(l.accepted_quantity || '0'),
+          rejected_quantity: parseFloat(l.rejected_quantity || '0'),
+          rejection_reason: l.rejection_reason || undefined,
+        })),
+      };
+
+      const res = await api.createGoodsReceipt(payload);
+      setShowReceiveModal(false);
+      setReceivingOrder(null);
+      fetchData();
+      setActiveTab('grns');
+      setSelectedGrn(res.data);
+    } catch (err: any) {
+      alert(err?.response?.data?.error?.message || err.message || 'Failed to record goods receipt.');
+    }
+  };
+
   const filteredOrders = useMemo(() => {
     return orders.filter(po => {
       const matchQuery = !searchQuery || po.po_number.toLowerCase().includes(searchQuery.toLowerCase()) || po.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -300,11 +439,19 @@ export const BusinessProcurement: React.FC = () => {
     });
   }, [requests, searchQuery, statusFilter]);
 
-  if (loading && orders.length === 0 && requests.length === 0) {
+  const filteredGrns = useMemo(() => {
+    return grns.filter(grn => {
+      const matchQuery = !searchQuery || grn.grn_number.toLowerCase().includes(searchQuery.toLowerCase()) || grn.po_number?.toLowerCase().includes(searchQuery.toLowerCase()) || grn.supplier_name?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchStatus = !statusFilter || grn.status === statusFilter;
+      return matchQuery && matchStatus;
+    });
+  }, [grns, searchQuery, statusFilter]);
+
+  if (loading && orders.length === 0 && requests.length === 0 && grns.length === 0) {
     return <BusinessLoadingState type="table" rows={6} />;
   }
 
-  if (error && orders.length === 0 && requests.length === 0) {
+  if (error && orders.length === 0 && requests.length === 0 && grns.length === 0) {
     return <BusinessErrorState message={error} onRetry={fetchData} />;
   }
 
@@ -313,8 +460,8 @@ export const BusinessProcurement: React.FC = () => {
       <OperationsSubNav />
 
       <BusinessPageHeader
-        title="Procurement & Purchase Orders"
-        description="Formal supplier purchasing lifecycle, member replenishment requests, and administrative approval gates."
+        title="Procurement & Receiving"
+        description="Formal supplier purchasing lifecycle, goods receipt notes (GRN), and staging-gated Accounts Payable proposals."
         primaryAction={
           isAdminOrOwner
             ? {
@@ -349,6 +496,17 @@ export const BusinessProcurement: React.FC = () => {
             Purchase Orders ({orders.length})
           </button>
           <button
+            onClick={() => { setActiveTab('grns'); setStatusFilter(''); }}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer ${
+              activeTab === 'grns'
+                ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Truck className="w-4 h-4" />
+            Goods Receipts / GRNs ({grns.length})
+          </button>
+          <button
             onClick={() => { setActiveTab('requests'); setStatusFilter(''); }}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition cursor-pointer ${
               activeTab === 'requests'
@@ -367,7 +525,7 @@ export const BusinessProcurement: React.FC = () => {
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
-              placeholder={`Search ${activeTab === 'orders' ? 'POs' : 'PRs'}...`}
+              placeholder={`Search ${activeTab === 'orders' ? 'POs' : activeTab === 'grns' ? 'GRNs' : 'PRs'}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 pr-4 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-emerald-500 w-48"
@@ -379,7 +537,7 @@ export const BusinessProcurement: React.FC = () => {
             className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 focus:outline-none focus:border-emerald-500 cursor-pointer"
           >
             <option value="">All Statuses</option>
-            {activeTab === 'orders' ? (
+            {activeTab === 'orders' && (
               <>
                 <option value="DRAFT">DRAFT</option>
                 <option value="APPROVED">APPROVED</option>
@@ -390,7 +548,14 @@ export const BusinessProcurement: React.FC = () => {
                 <option value="CLOSED">CLOSED</option>
                 <option value="CANCELLED">CANCELLED</option>
               </>
-            ) : (
+            )}
+            {activeTab === 'grns' && (
+              <>
+                <option value="COMPLETED">COMPLETED</option>
+                <option value="CANCELLED">CANCELLED</option>
+              </>
+            )}
+            {activeTab === 'requests' && (
               <>
                 <option value="DRAFT">DRAFT</option>
                 <option value="SUBMITTED">SUBMITTED</option>
@@ -405,7 +570,7 @@ export const BusinessProcurement: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      {activeTab === 'orders' ? (
+      {activeTab === 'orders' && (
         filteredOrders.length === 0 ? (
           <BusinessEmptyState
             title="No Purchase Orders"
@@ -447,21 +612,101 @@ export const BusinessProcurement: React.FC = () => {
                       <td className="px-4 py-3">
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase ${
                           po.status === 'FULLY_RECEIVED' ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' :
+                          po.status === 'PARTIALLY_RECEIVED' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
                           po.status === 'SENT_TO_SUPPLIER' ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' :
                           po.status === 'APPROVED' ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' :
                           po.status === 'DRAFT' ? 'bg-slate-500/20 text-slate-300 border border-slate-500/30' :
                           po.status === 'CANCELLED' ? 'bg-red-500/20 text-red-300 border border-red-500/30' :
-                          'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                          'bg-slate-700/50 text-slate-300'
                         }`}>
                           {po.status.replace(/_/g, ' ')}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center justify-end gap-1.5">
+                          {canReceive && (po.status === 'SENT_TO_SUPPLIER' || po.status === 'APPROVED' || po.status === 'ACKNOWLEDGED' || po.status === 'PARTIALLY_RECEIVED') && (
+                            <button
+                              onClick={() => openReceiveModal(po)}
+                              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center gap-1 cursor-pointer"
+                            >
+                              <Truck className="w-3 h-3" />
+                              Receive
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setSelectedOrder(po)}
+                            className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
+                          >
+                            View
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )
+      )}
+
+      {/* Goods Receipts (GRNs) Tab */}
+      {activeTab === 'grns' && (
+        filteredGrns.length === 0 ? (
+          <BusinessEmptyState
+            title="No Goods Receipts Recorded"
+            description="When physical goods arrive from suppliers against active Purchase Orders, record a GRN to inspect and bridge stock into inventory."
+          />
+        ) : (
+          <div className="bg-slate-900/60 border border-slate-800/80 rounded-2xl overflow-hidden backdrop-blur-md">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-800/50 text-slate-400 uppercase tracking-wider font-semibold border-b border-slate-800">
+                  <tr>
+                    <th className="px-4 py-3">GRN Number</th>
+                    <th className="px-4 py-3">Originating PO</th>
+                    <th className="px-4 py-3">Supplier</th>
+                    <th className="px-4 py-3">Facility</th>
+                    <th className="px-4 py-3">Receipt Date</th>
+                    <th className="px-4 py-3">Carrier / Note #</th>
+                    <th className="px-4 py-3">AP Staging</th>
+                    <th className="px-4 py-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-800/60">
+                  {filteredGrns.map((grn) => (
+                    <tr
+                      key={grn.id}
+                      onClick={() => setSelectedGrn(grn)}
+                      className="hover:bg-white/[0.02] cursor-pointer transition"
+                    >
+                      <td className="px-4 py-3 font-semibold text-emerald-400 flex items-center gap-1.5">
+                        <PackageCheck className="w-3.5 h-3.5 text-emerald-500" />
+                        {grn.grn_number}
+                      </td>
+                      <td className="px-4 py-3 font-medium text-slate-200">{grn.po_number || '—'}</td>
+                      <td className="px-4 py-3 text-slate-300">{grn.supplier_name || '—'}</td>
+                      <td className="px-4 py-3 text-slate-400">{grn.destination_location_name || '—'}</td>
+                      <td className="px-4 py-3 text-slate-400">{grn.receipt_date}</td>
+                      <td className="px-4 py-3 text-slate-400">
+                        {grn.delivery_note_number || grn.carrier_name || '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        {grn.staged_extraction_id ? (
+                          <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 w-fit">
+                            <Receipt className="w-3 h-3" />
+                            AP Staged
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">None</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={() => setSelectedOrder(po)}
+                          onClick={() => setSelectedGrn(grn)}
                           className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 transition cursor-pointer"
                         >
-                          View
+                          View GRN
                         </button>
                       </td>
                     </tr>
@@ -471,7 +716,10 @@ export const BusinessProcurement: React.FC = () => {
             </div>
           </div>
         )
-      ) : (
+      )}
+
+      {/* Purchase Requests Tab */}
+      {activeTab === 'requests' && (
         filteredRequests.length === 0 ? (
           <BusinessEmptyState
             title="No Purchase Requests"
@@ -668,35 +916,143 @@ export const BusinessProcurement: React.FC = () => {
               </div>
             </div>
 
-            {/* Actions for Admin */}
-            {isAdminOrOwner && (
-              <div className="flex flex-wrap gap-2 pt-2">
-                {selectedOrder.status === 'DRAFT' && (
-                  <button
-                    onClick={() => handleApprovePO(selectedOrder.id)}
-                    className="flex-1 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Approve Order
-                  </button>
-                )}
-                {(selectedOrder.status === 'DRAFT' || selectedOrder.status === 'APPROVED') && (
-                  <button
-                    onClick={() => handleSendPO(selectedOrder.id)}
-                    className="flex-1 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center justify-center gap-1.5 cursor-pointer"
-                  >
-                    <Send className="w-4 h-4" />
-                    Send to Supplier
-                  </button>
-                )}
-                {selectedOrder.status !== 'CANCELLED' && selectedOrder.status !== 'FULLY_RECEIVED' && (
-                  <button
-                    onClick={() => handleCancelPO(selectedOrder.id)}
-                    className="py-2 px-4 rounded-xl text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition cursor-pointer"
-                  >
-                    Cancel Order
-                  </button>
-                )}
+            {/* Actions for Receiving / Managing */}
+            <div className="space-y-2 pt-2">
+              {canReceive && (selectedOrder.status === 'SENT_TO_SUPPLIER' || selectedOrder.status === 'APPROVED' || selectedOrder.status === 'ACKNOWLEDGED' || selectedOrder.status === 'PARTIALLY_RECEIVED') && (
+                <button
+                  onClick={() => {
+                    const po = selectedOrder;
+                    setSelectedOrder(null);
+                    openReceiveModal(po);
+                  }}
+                  className="w-full py-2.5 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition flex items-center justify-center gap-1.5 shadow-md cursor-pointer"
+                >
+                  <Truck className="w-4 h-4" />
+                  Receive Goods / Issue GRN
+                </button>
+              )}
+
+              {isAdminOrOwner && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedOrder.status === 'DRAFT' && (
+                    <button
+                      onClick={() => handleApprovePO(selectedOrder.id)}
+                      className="flex-1 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      Approve Order
+                    </button>
+                  )}
+                  {(selectedOrder.status === 'DRAFT' || selectedOrder.status === 'APPROVED') && (
+                    <button
+                      onClick={() => handleSendPO(selectedOrder.id)}
+                      className="flex-1 py-2 rounded-xl text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white transition flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Send className="w-4 h-4" />
+                      Send to Supplier
+                    </button>
+                  )}
+                  {selectedOrder.status !== 'CANCELLED' && selectedOrder.status !== 'FULLY_RECEIVED' && (
+                    <button
+                      onClick={() => handleCancelPO(selectedOrder.id)}
+                      className="py-2 px-4 rounded-xl text-xs font-semibold bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 transition cursor-pointer"
+                    >
+                      Cancel Order
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </DetailDrawer>
+      )}
+
+      {/* GRN Detail Drawer */}
+      {selectedGrn && (
+        <DetailDrawer
+          isOpen={true}
+          onClose={() => setSelectedGrn(null)}
+          title={`Goods Receipt Note: ${selectedGrn.grn_number}`}
+          subtitle={`Delivered against PO: ${selectedGrn.po_number || selectedGrn.purchase_order_id}`}
+        >
+          <div className="space-y-6 text-xs text-slate-300">
+            <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800">
+              <div>
+                <div className="text-slate-500 text-[11px]">Supplier</div>
+                <div className="font-semibold text-slate-200 mt-0.5">{selectedGrn.supplier_name}</div>
+              </div>
+              <div>
+                <div className="text-slate-500 text-[11px]">Receiving Facility</div>
+                <div className="font-semibold text-slate-200 mt-0.5">{selectedGrn.destination_location_name}</div>
+              </div>
+              <div>
+                <div className="text-slate-500 text-[11px]">Receipt Date</div>
+                <div className="font-medium text-slate-300 mt-0.5">{selectedGrn.receipt_date}</div>
+              </div>
+              <div>
+                <div className="text-slate-500 text-[11px]">Receiver (Staff)</div>
+                <div className="font-medium text-slate-300 mt-0.5">{selectedGrn.receiver_name || 'Staff Member'}</div>
+              </div>
+              <div>
+                <div className="text-slate-500 text-[11px]">Carrier / Tracking</div>
+                <div className="font-medium text-slate-300 mt-0.5">{selectedGrn.carrier_name || selectedGrn.tracking_number || 'Direct Delivery'}</div>
+              </div>
+              <div>
+                <div className="text-slate-500 text-[11px]">Delivery Note #</div>
+                <div className="font-medium text-slate-300 mt-0.5">{selectedGrn.delivery_note_number || 'None'}</div>
+              </div>
+            </div>
+
+            {/* AP Staging Status Banner */}
+            <div className="p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3">
+              <Receipt className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="font-semibold text-amber-300">Accounts Payable Staging Candidate</div>
+                <div className="text-slate-300 text-[11px] mt-0.5">
+                  Physical stock has been accepted into inventory. A corresponding Accounts Payable invoice proposal is queued in Staging awaiting review.
+                </div>
+              </div>
+            </div>
+
+            {/* Inspected Line Items */}
+            <div>
+              <div className="font-semibold text-slate-200 mb-2">Delivered & Inspected Lines</div>
+              <div className="rounded-xl border border-slate-800 overflow-hidden">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-800/60 text-slate-400">
+                    <tr>
+                      <th className="px-3 py-2">Item</th>
+                      <th className="px-3 py-2 text-right">Received</th>
+                      <th className="px-3 py-2 text-right text-emerald-400">Accepted</th>
+                      <th className="px-3 py-2 text-right text-red-400">Rejected</th>
+                      <th className="px-3 py-2 text-right">Unit Cost</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60">
+                    {(selectedGrn.lines || []).map((line) => (
+                      <tr key={line.id}>
+                        <td className="px-3 py-2">
+                          <div className="font-medium text-slate-200">{line.product_name}</div>
+                          <div className="text-[10px] text-slate-500 font-mono">{line.product_sku}</div>
+                          {line.rejection_reason && (
+                            <div className="text-[10px] text-red-400 mt-0.5 italic">Reason: {line.rejection_reason}</div>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-right text-slate-300">{line.received_quantity}</td>
+                        <td className="px-3 py-2 text-right text-emerald-400 font-semibold">{line.accepted_quantity}</td>
+                        <td className="px-3 py-2 text-right text-red-400 font-medium">{line.rejected_quantity}</td>
+                        <td className="px-3 py-2 text-right text-slate-300">₹{line.unit_cost}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {selectedGrn.notes && (
+              <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                <div className="text-slate-500 text-[11px]">Receiving Inspection Notes</div>
+                <div className="text-slate-200 mt-1">{selectedGrn.notes}</div>
               </div>
             )}
           </div>
@@ -776,6 +1132,183 @@ export const BusinessProcurement: React.FC = () => {
             )}
           </div>
         </DetailDrawer>
+      )}
+
+      {/* Modal: Create Goods Receipt Note (GRN) */}
+      {showReceiveModal && receivingOrder && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="font-semibold text-slate-100 text-sm flex items-center gap-2">
+                  <Truck className="w-4 h-4 text-emerald-400" />
+                  Receive Goods / Issue GRN
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">PO: {receivingOrder.po_number} · Supplier: {receivingOrder.supplier_name}</p>
+              </div>
+              <button onClick={() => setShowReceiveModal(false)} className="text-slate-500 hover:text-slate-300">✕</button>
+            </div>
+
+            <form onSubmit={handleCreateGRN} className="space-y-4 text-xs">
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-slate-400 mb-1">Receipt Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={receiveForm.receipt_date}
+                    onChange={(e) => setReceiveForm({ ...receiveForm, receipt_date: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Delivery Slip / Note #</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. DN-98421"
+                    value={receiveForm.delivery_note_number}
+                    onChange={(e) => setReceiveForm({ ...receiveForm, delivery_note_number: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-400 mb-1">Carrier / Tracking</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. BlueDart #8492"
+                    value={receiveForm.carrier_name}
+                    onChange={(e) => setReceiveForm({ ...receiveForm, carrier_name: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Line items inspection */}
+              <div className="space-y-3 pt-2 border-t border-slate-800">
+                <span className="font-semibold text-slate-300 block">Item Inspection & Quantities</span>
+
+                {receiveForm.lines.map((line, idx) => (
+                  <div key={line.purchase_order_line_id} className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 space-y-2">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <span className="font-semibold text-slate-200">{line.product_name}</span>
+                        <span className="text-[10px] text-slate-500 font-mono ml-2">{line.product_sku}</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400">
+                        Ordered: <span className="font-medium text-slate-200">{line.ordered_quantity}</span> | Previously Received: <span className="font-medium text-slate-200">{line.previously_received}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-[11px] text-slate-400 mb-1">Total Delivered Qty *</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          required
+                          value={line.received_quantity}
+                          onChange={(e) => {
+                            const updated = [...receiveForm.lines];
+                            const val = e.target.value;
+                            updated[idx].received_quantity = val;
+                            // Default accepted quantity to received quantity
+                            updated[idx].accepted_quantity = val;
+                            updated[idx].rejected_quantity = '0';
+                            setReceiveForm({ ...receiveForm, lines: updated });
+                          }}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-right font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-emerald-400 mb-1">Accepted Qty (Stocked) *</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          required
+                          value={line.accepted_quantity}
+                          onChange={(e) => {
+                            const updated = [...receiveForm.lines];
+                            const accVal = parseFloat(e.target.value || '0');
+                            const recvVal = parseFloat(updated[idx].received_quantity || '0');
+                            updated[idx].accepted_quantity = e.target.value;
+                            updated[idx].rejected_quantity = Math.max(0, recvVal - accVal).toString();
+                            setReceiveForm({ ...receiveForm, lines: updated });
+                          }}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-emerald-500/40 text-emerald-300 text-right font-medium"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] text-red-400 mb-1">Rejected / Damaged Qty</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={line.rejected_quantity}
+                          onChange={(e) => {
+                            const updated = [...receiveForm.lines];
+                            const rejVal = parseFloat(e.target.value || '0');
+                            const recvVal = parseFloat(updated[idx].received_quantity || '0');
+                            updated[idx].rejected_quantity = e.target.value;
+                            updated[idx].accepted_quantity = Math.max(0, recvVal - rejVal).toString();
+                            setReceiveForm({ ...receiveForm, lines: updated });
+                          }}
+                          className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-red-500/40 text-red-300 text-right font-medium"
+                        />
+                      </div>
+                    </div>
+
+                    {parseFloat(line.rejected_quantity || '0') > 0 && (
+                      <div>
+                        <label className="block text-[10px] text-red-400 mb-0.5">Rejection / Damage Reason</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Broken packaging, wrong specifications"
+                          value={line.rejection_reason}
+                          onChange={(e) => {
+                            const updated = [...receiveForm.lines];
+                            updated[idx].rejection_reason = e.target.value;
+                            setReceiveForm({ ...receiveForm, lines: updated });
+                          }}
+                          className="w-full px-2.5 py-1 rounded-lg bg-slate-900 border border-red-500/30 text-slate-200 text-xs"
+                        />
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-slate-400 mb-1">General Receiving Notes</label>
+                <textarea
+                  rows={2}
+                  placeholder="e.g. Inspected at Loading Bay 3; quality seal verified"
+                  value={receiveForm.notes}
+                  onChange={(e) => setReceiveForm({ ...receiveForm, notes: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowReceiveModal(false)}
+                  className="flex-1 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 font-semibold cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 font-semibold shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <FileCheck className="w-4 h-4" />
+                  Complete Receiving & Issue GRN
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Modal: Create Purchase Request */}

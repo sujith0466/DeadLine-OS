@@ -59,7 +59,7 @@ def test_schedule_reminders_creation(app, test_user_id):
 
 def test_task_deadline_reminders(app, test_user_id):
     with app.app_context():
-        dl = datetime(2026, 9, 2, 17, 0, tzinfo=timezone.utc)
+        dl = datetime.now(timezone.utc) + timedelta(days=3)
         task = Task(
             id="task-dl-test",
             user_id=test_user_id,

@@ -33,4 +33,6 @@ from .business import (
     BusinessPurchaseRequest,
     BusinessPurchaseOrder,
     BusinessPurchaseOrderLine,
+    BusinessGoodsReceipt,
+    BusinessGoodsReceiptLine,
 )

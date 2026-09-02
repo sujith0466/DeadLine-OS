@@ -55,6 +55,7 @@ ROLE_PERMISSIONS = {
         'procurement:update',
         'procurement:approve',
         'procurement:manage',
+        'procurement:receive',
     },
     'ADMIN': {
         'workspace:read',
@@ -95,6 +96,7 @@ ROLE_PERMISSIONS = {
         'procurement:update',
         'procurement:approve',
         'procurement:manage',
+        'procurement:receive',
     },
     'MEMBER': {
         'workspace:read',
@@ -125,6 +127,7 @@ ROLE_PERMISSIONS = {
         'procurement:read',
         'procurement:create',
         'procurement:update',
+        'procurement:receive',
     },
     'ACCOUNTANT': {
         'workspace:read',

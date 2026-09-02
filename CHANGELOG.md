@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-09-02
+### Added
+- **Business Operations Phase C2.2 — Goods Receiving / GRN**:
+  - Sequential GRN generator (`GRN-{YYYY}-{SEQUENCE:04d}`) with atomic transaction guarantees.
+  - Multi-line receiving inspection capturing accepted vs rejected quantities, carrier name, delivery note #, and structured rejection reasons.
+  - Partial receiving support with PO lifecycle state tracking (`PARTIALLY_RECEIVED` $\rightarrow$ `FULLY_RECEIVED`).
+  - Immutable Inventory Ledger integration emitting `PURCHASE_RECEIVED` (`IN`) movements exclusively for accepted quantities.
+  - Staging Trust Boundary integration staging `INVOICE_PAYABLE` proposals (`confidence_score=100`, status `NEEDS_REVIEW`) into Accounts Payable queue without direct ledger mutation.
+  - Over-receiving discrepancy detection and forensic audit event logging (`GRN_CREATED`, `GRN_DISCREPANCY_DETECTED`).
+  - Strict 5-tier RBAC enforcement with `procurement:receive` permission and tenant isolation.
+  - Full frontend Goods Receipts / GRNs dashboard, Receiving Modal with real-time math validation, and GRN Detail Drawer.
+
+- **Business Operations Phase C2.1 — Procurement Foundation**:
+  - Purchase Requests (`/business/procurement`) with itemized submission, priority ratings, and approval workflows.
+  - Purchase Orders (`/business/procurement`) with multi-line ordering, supplier binding, and lifecycle progression.
+  - PR $\rightarrow$ PO conversion with automated line copying and audit trails.
+
 ## [1.2.0] - 2026-09-01
 ### Added
 - **Business Operations Foundation (Phase C1)**:

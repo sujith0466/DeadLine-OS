@@ -1074,6 +1074,16 @@ export const DeadlineOSApi = {
 
   cancelPurchaseOrder: (id: string, data?: any) =>
     apiClient.post(`/business/purchase-orders/${id}/cancel`, data || {}).then(r => r.data),
+
+  // C2.2 Goods Receiving (GRN) API
+  listGoodsReceipts: (params?: any) =>
+    apiClient.get('/business/procurement/goods-receipts', { params }).then(r => r.data),
+
+  getGoodsReceipt: (id: string) =>
+    apiClient.get(`/business/procurement/goods-receipts/${id}`).then(r => r.data),
+
+  createGoodsReceipt: (data: any) =>
+    apiClient.post('/business/procurement/goods-receipts', data).then(r => r.data),
 };
 
 export const api = DeadlineOSApi;

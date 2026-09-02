@@ -33,6 +33,7 @@ from .product_service import ProductService
 from .inventory_service import InventoryService
 from .purchase_request_service import PurchaseRequestService
 from .purchase_order_service import PurchaseOrderService
+from .goods_receipt_service import GoodsReceiptService
 
 __all__ = [
     'AuditService',
@@ -66,4 +67,5 @@ __all__ = [
     'InventoryService',
     'PurchaseRequestService',
     'PurchaseOrderService',
+    'GoodsReceiptService',
 ]

@@ -21,6 +21,7 @@ from .stock_movement import BusinessStockMovement
 from .task import BusinessTask
 from .purchase_request import BusinessPurchaseRequest
 from .purchase_order import BusinessPurchaseOrder, BusinessPurchaseOrderLine
+from .goods_receipt import BusinessGoodsReceipt, BusinessGoodsReceiptLine
 
 __all__ = [
     'Workspace',
@@ -46,4 +47,6 @@ __all__ = [
     'BusinessPurchaseRequest',
     'BusinessPurchaseOrder',
     'BusinessPurchaseOrderLine',
+    'BusinessGoodsReceipt',
+    'BusinessGoodsReceiptLine',
 ]
