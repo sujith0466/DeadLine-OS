@@ -73,6 +73,12 @@ ROLE_PERMISSIONS = {
         'cross_border:read',
         'cross_border:write',
         'cross_border:status',
+        # C4 Vision permissions
+        'vision:read',
+        'vision:capture',
+        'vision:review',
+        'vision:manage',
+        # Copilot
         'copilot:query',
         'copilot:propose',
     },
@@ -133,6 +139,12 @@ ROLE_PERMISSIONS = {
         'cross_border:read',
         'cross_border:write',
         'cross_border:status',
+        # C4 Vision permissions
+        'vision:read',
+        'vision:capture',
+        'vision:review',
+        'vision:manage',
+        # Copilot
         'copilot:query',
         'copilot:propose',
     },
@@ -174,6 +186,10 @@ ROLE_PERMISSIONS = {
         'serial:write',
         'landed_cost:read',
         'cross_border:read',
+        # C4 Vision permissions
+        'vision:read',
+        'vision:capture',
+        # Copilot
         'copilot:query',
         'copilot:propose',
     },
@@ -200,6 +216,9 @@ ROLE_PERMISSIONS = {
         'landed_cost:allocate',
         'cross_border:read',
         'cross_border:write',
+        # C4 Vision permissions (Read-Only)
+        'vision:read',
+        # Copilot
         'copilot:query',
         'copilot:propose',
     },
@@ -220,6 +239,8 @@ ROLE_PERMISSIONS = {
         'serial:read',
         'landed_cost:read',
         'cross_border:read',
+        # C4 Vision permissions (Read-Only)
+        'vision:read',
     },
 }
 

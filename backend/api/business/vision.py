@@ -1,0 +1,253 @@
+"""
+DeadlineOS Business OS — Vision & Shelf Monitoring REST API (Phase C4.1)
+=======================================================================
+REST API endpoints for shelf zone topology, planogram targets, secure media
+ingestion, and visual observation records.
+"""
+
+from flask import Blueprint, request, g
+import base64
+from middleware.business_context import require_workspace
+from services.business.shelf_zone_service import ShelfZoneService
+from services.business.vision_ingestion_service import VisionIngestionService
+from utils.errors import APIError
+from utils.responses import success_response, error_response
+
+vision_bp = Blueprint('business_vision', __name__)
+
+
+# ── Shelf Zone Topology ───────────────────────────────────────────────────────
+
+@vision_bp.route('/zones', methods=['POST'])
+@require_workspace('vision:manage')
+def create_shelf_zone():
+    """Creates a new physical shelf zone fixture in a workspace location."""
+    data = request.get_json() or {}
+    try:
+        zone = ShelfZoneService.create_shelf_zone(
+            workspace_id=g.workspace_id,
+            actor_user_id=g.user_id,
+            data=data,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response({
+            'message': f"Shelf zone '{zone.zone_code}' created successfully.",
+            'zone': zone.serialize()
+        }, status_code=201)
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/zones', methods=['GET'])
+@require_workspace('vision:read')
+def list_shelf_zones():
+    """Lists and filters shelf zones in the workspace."""
+    location_id = request.args.get('location_id')
+    status = request.args.get('status')
+    product_id = request.args.get('product_id')
+    limit = min(int(request.args.get('limit', 100)), 200)
+    offset = int(request.args.get('offset', 0))
+
+    try:
+        zones, total = ShelfZoneService.list_shelf_zones(
+            workspace_id=g.workspace_id,
+            location_id=location_id,
+            status=status,
+            product_id=product_id,
+            limit=limit,
+            offset=offset
+        )
+        return success_response({
+            'zones': zones,
+            'total': total,
+            'limit': limit,
+            'offset': offset
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/zones/<zone_id>', methods=['GET'])
+@require_workspace('vision:read')
+def get_shelf_zone(zone_id: str):
+    """Retrieves a single shelf zone by ID."""
+    try:
+        zone = ShelfZoneService.get_shelf_zone_by_id(g.workspace_id, zone_id)
+        return success_response({'zone': zone.serialize()})
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/zones/<zone_id>', methods=['PUT', 'PATCH'])
+@require_workspace('vision:manage')
+def update_shelf_zone(zone_id: str):
+    """Updates an existing shelf zone fixture."""
+    data = request.get_json() or {}
+    try:
+        zone = ShelfZoneService.update_shelf_zone(
+            workspace_id=g.workspace_id,
+            zone_id=zone_id,
+            actor_user_id=g.user_id,
+            data=data,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response({
+            'message': f"Shelf zone '{zone.zone_code}' updated successfully.",
+            'zone': zone.serialize()
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/zones/<zone_id>/deactivate', methods=['POST'])
+@require_workspace('vision:manage')
+def deactivate_shelf_zone(zone_id: str):
+    """Deactivates a shelf zone fixture."""
+    data = request.get_json() or {}
+    reason = data.get('reason')
+    try:
+        zone = ShelfZoneService.deactivate_shelf_zone(
+            workspace_id=g.workspace_id,
+            zone_id=zone_id,
+            actor_user_id=g.user_id,
+            reason=reason,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response({
+            'message': f"Shelf zone '{zone.zone_code}' deactivated.",
+            'zone': zone.serialize()
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+# ── Visual Media Capture & Observation Ingestion ──────────────────────────────
+
+@vision_bp.route('/capture', methods=['POST'])
+@require_workspace('vision:capture')
+def capture_shelf_image():
+    """
+    Ingests a visual shelf capture photo via multipart form-data or JSON base64:
+    - Sanitizes EXIF/GPS metadata
+    - Enforces 15MB limit and dimension caps
+    - Creates IngestionArtifact and BusinessVisualObservation foundation records
+    - Returns signed download URL (15-min TTL)
+    """
+    location_id = None
+    shelf_zone_id = None
+    capture_device = None
+    filename = "shelf_capture.jpg"
+    content_type = None
+    image_bytes = None
+
+    if request.is_json:
+        data = request.get_json() or {}
+        location_id = data.get('location_id')
+        shelf_zone_id = data.get('shelf_zone_id')
+        capture_device = data.get('capture_device')
+        filename = data.get('filename', 'shelf_capture.jpg')
+        content_type = data.get('content_type')
+        b64_content = data.get('image_base64')
+        if not b64_content:
+            return error_response("Field 'image_base64' or multipart file is required.", "MISSING_IMAGE_DATA", 400)
+        try:
+            if ',' in b64_content:
+                b64_content = b64_content.split(',', 1)[1]
+            image_bytes = base64.b64decode(b64_content)
+        except Exception:
+            return error_response("Invalid base64 image encoding.", "INVALID_IMAGE_BASE64", 400)
+    else:
+        # Multipart form-data
+        location_id = request.form.get('location_id')
+        shelf_zone_id = request.form.get('shelf_zone_id')
+        capture_device = request.form.get('capture_device')
+        if 'file' not in request.files:
+            return error_response("No image file provided in form-data ('file').", "MISSING_FILE", 400)
+        uploaded_file = request.files['file']
+        filename = uploaded_file.filename or "shelf_capture.jpg"
+        content_type = uploaded_file.content_type
+        image_bytes = uploaded_file.read()
+
+    if not location_id:
+        return error_response("Field 'location_id' is required.", "MISSING_LOCATION", 400)
+
+    try:
+        res = VisionIngestionService.ingest_shelf_capture(
+            workspace_id=g.workspace_id,
+            location_id=location_id,
+            actor_user_id=g.user_id,
+            image_bytes=image_bytes,
+            filename=filename,
+            content_type=content_type,
+            shelf_zone_id=shelf_zone_id,
+            capture_device=capture_device,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response({
+            'message': "Visual shelf capture ingested successfully.",
+            'observation': res
+        }, status_code=201)
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/observations', methods=['GET'])
+@require_workspace('vision:read')
+def list_observations():
+    """Lists and filters visual observations in the workspace."""
+    location_id = request.args.get('location_id')
+    shelf_zone_id = request.args.get('shelf_zone_id')
+    anomaly_only = request.args.get('anomaly_only', '').lower() in ('true', '1')
+    status = request.args.get('status')
+    limit = min(int(request.args.get('limit', 50)), 100)
+    offset = int(request.args.get('offset', 0))
+
+    try:
+        observations, total = VisionIngestionService.list_observations(
+            workspace_id=g.workspace_id,
+            location_id=location_id,
+            shelf_zone_id=shelf_zone_id,
+            anomaly_only=anomaly_only,
+            status=status,
+            limit=limit,
+            offset=offset
+        )
+        return success_response({
+            'observations': observations,
+            'total': total,
+            'limit': limit,
+            'offset': offset
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/observations/<observation_id>', methods=['GET'])
+@require_workspace('vision:read')
+def get_observation(observation_id: str):
+    """Retrieves visual observation details with time-limited signed image URL."""
+    try:
+        obs = VisionIngestionService.get_observation_by_id(g.workspace_id, observation_id)
+        return success_response({'observation': obs})
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)

@@ -46,6 +46,7 @@ EXPECTED_REVISION_CHAIN = [
     ('r5s6t7u8v9w0', 'q4r5s6t7u8v9'),     # business_os_serials_c3_3 ← C3.3 Serial Numbers & Unit Provenance
     ('s6t7u8v9w0x1', 'r5s6t7u8v9w0'),     # business_os_landed_cost_c3_4 ← C3.4 Landed Cost Allocation Engine
     ('t7u8v9w0x1y2', 's6t7u8v9w0x1'),     # business_os_cross_border_c3_5 ← C3.5 Cross-Border Operations Hub & Copilot
+    ('u8v9w0x1y2z3', 't7u8v9w0x1y2'),     # business_os_computer_vision_c4_1 ← C4.1 Shelf Zones & Visual Observations Foundation
 ]
 
 # All Business OS table names that MUST appear in the migration chain
@@ -85,6 +86,8 @@ REQUIRED_BUSINESS_TABLES = [
     'business_landed_cost_voucher_items',
     'business_landed_cost_allocations',
     'business_cross_border_shipments',
+    'business_shelf_zones',
+    'business_visual_observations',
 ]
 
 
@@ -172,8 +175,8 @@ class TestMigrationChainRevisionIds:
                 )
         assert not errors, "Migration chain has broken or incorrect links:\n" + "\n".join(errors)
 
-    def test_head_revision_is_t7u8v9w0x1y2(self):
-        """The current head revision must be t7u8v9w0x1y2 (Phase C3.5 Cross-Border Hub & Copilot Grounding)."""
+    def test_head_revision_is_u8v9w0x1y2z3(self):
+        """The current head revision must be u8v9w0x1y2z3 (Phase C4.1 Ambient Computer Vision & Shelf Monitoring)."""
         migration_files = _load_migration_files()
         # Head = revision whose ID is not referenced as another revision's down_revision
         all_down_revisions = set()
