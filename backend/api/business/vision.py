@@ -12,6 +12,7 @@ from services.business.shelf_zone_service import ShelfZoneService
 from services.business.vision_ingestion_service import VisionIngestionService
 from services.business.visual_extraction_service import VisualExtractionService
 from services.business.planogram_service import PlanogramService
+from services.business.discrepancy_reconciliation_service import DiscrepancyReconciliationService
 from utils.errors import APIError
 from utils.responses import success_response, error_response
 
@@ -379,3 +380,99 @@ def get_observation_planogram_audit(observation_id: str):
         return error_response(e.message, e.code, e.status)
     except Exception as e:
         return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+# ── Discrepancy Reconciliation & Staged Corrections (Phase C4.3) ──────────────
+
+@vision_bp.route('/observations/<observation_id>/propose-reconciliation', methods=['POST'])
+@require_workspace('vision:review')
+def propose_observation_reconciliation(observation_id: str):
+    """
+    Proposes an inventory reconciliation candidate from an observation with non-zero discrepancy.
+    """
+    data = request.get_json(silent=True) or {}
+    override_reason = data.get('reason')
+    try:
+        staged = DiscrepancyReconciliationService.propose_reconciliation(
+            workspace_id=g.workspace_id,
+            observation_id=observation_id,
+            actor_user_id=g.user_id,
+            override_reason=override_reason,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        if staged is None:
+            return success_response({
+                'message': "No discrepancy detected on observation; no reconciliation candidate created.",
+                'is_noop': True,
+                'staged_extraction': None
+            }, status_code=200)
+
+        return success_response({
+            'message': "Reconciliation candidate proposed successfully.",
+            'is_noop': False,
+            'staged_extraction': staged.serialize()
+        }, status_code=201)
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/observations/<observation_id>/dismiss', methods=['POST'])
+@require_workspace('vision:review')
+def dismiss_observation(observation_id: str):
+    """
+    Dismisses an observation without mutating inventory. If an open staged candidate exists, rejects it.
+    """
+    data = request.get_json(silent=True) or {}
+    reason = data.get('reason')
+    try:
+        obs = DiscrepancyReconciliationService.dismiss_observation(
+            workspace_id=g.workspace_id,
+            observation_id=observation_id,
+            actor_user_id=g.user_id,
+            reason=reason,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response({
+            'message': "Observation dismissed successfully.",
+            'observation': obs.serialize()
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/discrepancies', methods=['GET'])
+@require_workspace('vision:read')
+def list_discrepancies():
+    """
+    Lists pending visual observations with non-zero discrepancies.
+    """
+    location_id = request.args.get('location_id')
+    shelf_zone_id = request.args.get('shelf_zone_id')
+    limit = min(int(request.args.get('limit', 50)), 100)
+    offset = int(request.args.get('offset', 0))
+
+    try:
+        items, total = DiscrepancyReconciliationService.list_pending_discrepancies(
+            workspace_id=g.workspace_id,
+            location_id=location_id,
+            shelf_zone_id=shelf_zone_id,
+            limit=limit,
+            offset=offset
+        )
+        return success_response({
+            'discrepancies': items,
+            'total': total,
+            'limit': limit,
+            'offset': offset
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
