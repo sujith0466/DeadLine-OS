@@ -14,6 +14,8 @@ from services.business.visual_extraction_service import VisualExtractionService
 from services.business.planogram_service import PlanogramService
 from services.business.discrepancy_reconciliation_service import DiscrepancyReconciliationService
 from services.business.visual_restock_service import VisualRestockService
+from services.business.camera_calibration_service import CameraCalibrationService
+from services.business.edge_sync_service import EdgeSyncService
 from utils.errors import APIError
 from utils.responses import success_response, error_response
 
@@ -570,5 +572,217 @@ def get_zone_in_transit_freight(zone_id: str):
         return error_response(e.message, e.code, e.status)
     except Exception as e:
         return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+# ── Camera Devices & Pairing (Phase C4.5) ──────────────────────────────────────
+
+@vision_bp.route('/devices', methods=['POST'])
+@require_workspace('vision:manage')
+def register_camera_device():
+    """Registers a new ambient camera or edge mobile scanner with pairing token generation."""
+    data = request.get_json() or {}
+    location_id = data.get('location_id')
+    if not location_id:
+        return error_response("location_id is required.", "MISSING_LOCATION", 400)
+
+    try:
+        device, raw_token = CameraCalibrationService.register_camera_device(
+            workspace_id=g.workspace_id,
+            location_id=location_id,
+            data=data,
+            actor_user_id=g.user_id,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response({
+            'message': f"Camera device '{device.device_code}' registered successfully.",
+            'device': device.serialize(),
+            'pairing_token': raw_token
+        }, status_code=201)
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/devices', methods=['GET'])
+@require_workspace('vision:read')
+def list_camera_devices():
+    """Lists camera devices in the workspace."""
+    location_id = request.args.get('location_id')
+    status = request.args.get('status')
+    limit = min(int(request.args.get('limit', 100)), 200)
+    offset = int(request.args.get('offset', 0))
+
+    try:
+        devices, total = CameraCalibrationService.list_camera_devices(
+            workspace_id=g.workspace_id,
+            location_id=location_id,
+            status=status,
+            limit=limit,
+            offset=offset
+        )
+        return success_response({
+            'devices': devices,
+            'total': total,
+            'limit': limit,
+            'offset': offset
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/devices/<device_id>', methods=['GET'])
+@require_workspace('vision:read')
+def get_camera_device(device_id: str):
+    """Retrieves a single camera device."""
+    try:
+        device = CameraCalibrationService.get_camera_device(g.workspace_id, device_id)
+        return success_response({'device': device.serialize()})
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/devices/<device_id>', methods=['DELETE'])
+@require_workspace('vision:manage')
+def deactivate_camera_device(device_id: str):
+    """Deactivates a camera device, revoking all sync capabilities."""
+    try:
+        device = CameraCalibrationService.deactivate_camera_device(
+            workspace_id=g.workspace_id,
+            device_id=device_id,
+            actor_user_id=g.user_id,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response({
+            'message': f"Camera device '{device.device_code}' deactivated.",
+            'device': device.serialize()
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+# ── Spatial Camera Calibration (Phase C4.5) ───────────────────────────────────
+
+@vision_bp.route('/calibrations', methods=['POST'])
+@require_workspace('vision:manage')
+def create_or_update_calibration():
+    """Creates or updates a geometric ROI calibration profile for a camera and shelf zone."""
+    data = request.get_json() or {}
+    camera_device_id = data.get('camera_device_id')
+    shelf_zone_id = data.get('shelf_zone_id')
+
+    if not camera_device_id or not shelf_zone_id:
+        return error_response("camera_device_id and shelf_zone_id are required.", "MISSING_REQUIRED_FIELDS", 400)
+
+    try:
+        calib = CameraCalibrationService.create_or_update_calibration(
+            workspace_id=g.workspace_id,
+            camera_device_id=camera_device_id,
+            shelf_zone_id=shelf_zone_id,
+            data=data,
+            actor_user_id=g.user_id,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response({
+            'message': f"Spatial calibration v{calib.calibration_version} saved successfully.",
+            'calibration': calib.serialize()
+        }, status_code=201)
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/calibrations', methods=['GET'])
+@require_workspace('vision:read')
+def list_calibrations():
+    """Lists calibration profiles in the workspace."""
+    camera_device_id = request.args.get('camera_device_id')
+    shelf_zone_id = request.args.get('shelf_zone_id')
+    status = request.args.get('status')
+    limit = min(int(request.args.get('limit', 100)), 200)
+    offset = int(request.args.get('offset', 0))
+
+    try:
+        calibs, total = CameraCalibrationService.list_calibrations(
+            workspace_id=g.workspace_id,
+            camera_device_id=camera_device_id,
+            shelf_zone_id=shelf_zone_id,
+            status=status,
+            limit=limit,
+            offset=offset
+        )
+        return success_response({
+            'calibrations': calibs,
+            'total': total,
+            'limit': limit,
+            'offset': offset
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+# ── Edge Synchronization Gateway (Phase C4.5) ─────────────────────────────────
+
+@vision_bp.route('/edge/sync', methods=['POST'])
+def edge_sync_batch():
+    """
+    Edge bulk synchronization endpoint.
+    Supports either:
+    1. Direct device token authentication via `X-Device-Token` & `X-Device-Id` (or `device_code`), or
+    2. Authenticated user session with `vision:ingest` permission.
+    """
+    payload = request.get_json() or {}
+    ws_id = request.headers.get('X-Workspace-Id') or payload.get('workspace_id')
+
+    device_token = request.headers.get('X-Device-Token') or payload.get('device_token')
+    device_id_or_code = request.headers.get('X-Device-Id') or payload.get('device_id') or payload.get('device_code')
+
+    if not ws_id:
+        return error_response("X-Workspace-Id header or workspace_id is required.", "MISSING_WORKSPACE_ID", 400)
+
+    try:
+        if device_token and device_id_or_code:
+            # Device Token Authentication
+            device = EdgeSyncService.authenticate_device(
+                workspace_id=ws_id,
+                device_id_or_code=device_id_or_code,
+                token=device_token
+            )
+        else:
+            # Fallback to User Session Auth
+            from utils.auth import get_current_user_id
+            user_id = get_current_user_id()
+            if not user_id:
+                return error_response("Device token or user authorization required.", "UNAUTHORIZED", 401)
+            # Find device specified in payload or default to first active device
+            if not device_id_or_code:
+                return error_response("device_id or device_code required in payload.", "MISSING_DEVICE", 400)
+            device = CameraCalibrationService.get_camera_device(ws_id, device_id_or_code)
+
+        res = EdgeSyncService.process_edge_sync_batch(
+            workspace_id=ws_id,
+            device=device,
+            payload=payload,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response(res)
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
 
 

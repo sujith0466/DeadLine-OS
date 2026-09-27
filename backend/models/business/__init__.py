@@ -60,6 +60,8 @@ __all__ = [
     'BusinessCrossBorderShipment',
     'BusinessShelfZone',
     'BusinessVisualObservation',
+    'BusinessCameraDevice',
+    'BusinessCameraCalibration',
 ]
 
 from models.business.operational_alert import BusinessOperationalAlert
@@ -75,3 +77,5 @@ from .landed_cost import (
 from .cross_border import BusinessCrossBorderShipment
 from .shelf_zone import BusinessShelfZone
 from .visual_observation import BusinessVisualObservation
+from .camera_device import BusinessCameraDevice
+from .camera_calibration import BusinessCameraCalibration
