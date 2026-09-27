@@ -10,6 +10,8 @@ import base64
 from middleware.business_context import require_workspace
 from services.business.shelf_zone_service import ShelfZoneService
 from services.business.vision_ingestion_service import VisionIngestionService
+from services.business.visual_extraction_service import VisualExtractionService
+from services.business.planogram_service import PlanogramService
 from utils.errors import APIError
 from utils.responses import success_response, error_response
 
@@ -247,6 +249,132 @@ def get_observation(observation_id: str):
     try:
         obs = VisionIngestionService.get_observation_by_id(g.workspace_id, observation_id)
         return success_response({'observation': obs})
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+# ── Multimodal Extraction & Planogram Auditing (Phase C4.2) ───────────────────
+
+@vision_bp.route('/observations/<observation_id>/extract', methods=['POST'])
+@require_workspace('vision:review')
+def trigger_observation_extraction(observation_id: str):
+    """
+    Triggers multimodal visual inference, SKU matching, and planogram auditing
+    on an existing observation record.
+    """
+    try:
+        service = VisualExtractionService()
+        obs = service.process_observation_extraction(
+            workspace_id=g.workspace_id,
+            observation_id=observation_id,
+            actor_user_id=g.user_id,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response({
+            'message': "Visual extraction and planogram audit completed.",
+            'observation': obs.serialize()
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/extract-direct', methods=['POST'])
+@require_workspace('vision:capture')
+def extract_direct_shelf_capture():
+    """
+    Performs complete ingestion and immediate multimodal visual extraction in a single request.
+    """
+    location_id = None
+    shelf_zone_id = None
+    capture_device = None
+    filename = "shelf_capture.jpg"
+    content_type = None
+    image_bytes = None
+
+    if request.is_json:
+        data = request.get_json() or {}
+        location_id = data.get('location_id')
+        shelf_zone_id = data.get('shelf_zone_id')
+        capture_device = data.get('capture_device')
+        filename = data.get('filename', 'shelf_capture.jpg')
+        content_type = data.get('content_type')
+        b64_content = data.get('image_base64')
+        if not b64_content:
+            return error_response("Field 'image_base64' or multipart file is required.", "MISSING_IMAGE_DATA", 400)
+        try:
+            if ',' in b64_content:
+                b64_content = b64_content.split(',', 1)[1]
+            image_bytes = base64.b64decode(b64_content)
+        except Exception:
+            return error_response("Invalid base64 image encoding.", "INVALID_IMAGE_BASE64", 400)
+    else:
+        location_id = request.form.get('location_id')
+        shelf_zone_id = request.form.get('shelf_zone_id')
+        capture_device = request.form.get('capture_device')
+        if 'file' not in request.files:
+            return error_response("No image file provided in form-data ('file').", "MISSING_FILE", 400)
+        uploaded_file = request.files['file']
+        filename = uploaded_file.filename or "shelf_capture.jpg"
+        content_type = uploaded_file.content_type
+        image_bytes = uploaded_file.read()
+
+    if not location_id:
+        return error_response("Field 'location_id' is required.", "MISSING_LOCATION", 400)
+
+    try:
+        service = VisualExtractionService()
+        obs_dict = service.extract_direct(
+            workspace_id=g.workspace_id,
+            location_id=location_id,
+            actor_user_id=g.user_id,
+            image_bytes=image_bytes,
+            filename=filename,
+            content_type=content_type,
+            shelf_zone_id=shelf_zone_id,
+            capture_device=capture_device,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response({
+            'message': "Direct visual capture and extraction processed.",
+            'observation': obs_dict
+        }, status_code=201)
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/observations/<observation_id>/planogram-audit', methods=['GET'])
+@require_workspace('vision:read')
+def get_observation_planogram_audit(observation_id: str):
+    """
+    Returns real-time planogram audit metrics comparing the observation against shelf zone targets.
+    """
+    try:
+        from models.business.visual_observation import BusinessVisualObservation
+        obs = BusinessVisualObservation.query.filter_by(
+            id=observation_id,
+            workspace_id=g.workspace_id
+        ).first()
+        if not obs:
+            return error_response("Observation not found.", "OBSERVATION_NOT_FOUND", 404)
+
+        audit = PlanogramService.audit_shelf_zone(
+            workspace_id=g.workspace_id,
+            location_id=obs.location_id,
+            shelf_zone=obs.shelf_zone,
+            detected_items=obs.detected_items or [],
+            matched_product_id=obs.matched_product_id,
+            visual_count=obs.visual_count,
+            visual_facings=obs.visual_facings
+        )
+        return success_response({'planogram_audit': audit})
     except APIError as e:
         return error_response(e.message, e.code, e.status)
     except Exception as e:

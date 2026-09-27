@@ -77,3 +77,7 @@ from services.business.operational_alert_service import OperationalAlertService
 from services.business.voice_operations_service import VoiceOperationsService
 
 from .exchange_rate_service import ExchangeRateService
+from .shelf_zone_service import ShelfZoneService
+from .vision_ingestion_service import VisionIngestionService
+from .planogram_service import PlanogramService
+from .visual_extraction_service import VisualExtractionService, VisualSKUMatcher
