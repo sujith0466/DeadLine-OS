@@ -145,6 +145,17 @@ class CopilotService:
 
         critical_risks = len([f for f in forecast_list if f.get('stockout_risk_level') == 'CRITICAL'])
 
+        # ── 8. Visual Restock Intelligence (Phase C4.4) ────────────────────────
+        try:
+            from services.business.visual_restock_service import VisualRestockService
+            active_triggers, _ = VisualRestockService.list_active_restock_triggers(workspace_id, limit=5)
+            visual_restock_intel = {
+                'active_depleted_zones_count': len(active_triggers),
+                'triggers': active_triggers
+            }
+        except Exception:
+            visual_restock_intel = {'active_depleted_zones_count': 0, 'triggers': []}
+
         return {
             'workspace_id': workspace_id,
             'current_date': today.isoformat(),
@@ -194,6 +205,7 @@ class CopilotService:
                 'reorder_suggestions_count': len(reorder_sugg),
                 'top_reorders': reorder_sugg[:3]
             },
+            'visual_restock_intelligence': visual_restock_intel,
             'signals': hub_summary['operational_signals']
         }
 

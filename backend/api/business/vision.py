@@ -13,6 +13,7 @@ from services.business.vision_ingestion_service import VisionIngestionService
 from services.business.visual_extraction_service import VisualExtractionService
 from services.business.planogram_service import PlanogramService
 from services.business.discrepancy_reconciliation_service import DiscrepancyReconciliationService
+from services.business.visual_restock_service import VisualRestockService
 from utils.errors import APIError
 from utils.responses import success_response, error_response
 
@@ -475,4 +476,99 @@ def list_discrepancies():
         return error_response(e.message, e.code, e.status)
     except Exception as e:
         return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+# ── Visual Restock Triggers & Cross-Border Freight (Phase C4.4) ──────────────
+
+@vision_bp.route('/observations/<observation_id>/trigger-restock', methods=['POST'])
+@require_workspace('vision:review')
+def trigger_observation_restock(observation_id: str):
+    """
+    Evaluates visual shelf depletion, checks in-transit freight, and generates a draft PR & operational alert.
+    """
+    data = request.get_json(silent=True) or {}
+    override_qty = None
+    if 'override_quantity' in data and data['override_quantity'] is not None:
+        try:
+            from decimal import Decimal
+            override_qty = Decimal(str(data['override_quantity']))
+        except Exception:
+            override_qty = None
+
+    try:
+        result = VisualRestockService.evaluate_and_trigger_restock(
+            workspace_id=g.workspace_id,
+            observation_id=observation_id,
+            actor_user_id=g.user_id,
+            override_quantity=override_qty,
+            ip_address=request.remote_addr,
+            user_agent=request.headers.get('User-Agent')
+        )
+        return success_response(result, status_code=201 if result.get('is_depleted') and result.get('purchase_request') else 200)
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/restock-triggers', methods=['GET'])
+@require_workspace('vision:read')
+def list_restock_triggers():
+    """
+    Lists depleted shelf zones across workspace locations with shortfall metrics and in-transit correlation.
+    """
+    location_id = request.args.get('location_id')
+    limit = min(int(request.args.get('limit', 50)), 100)
+    offset = int(request.args.get('offset', 0))
+
+    try:
+        items, total = VisualRestockService.list_active_restock_triggers(
+            workspace_id=g.workspace_id,
+            location_id=location_id,
+            limit=limit,
+            offset=offset
+        )
+        return success_response({
+            'restock_triggers': items,
+            'total': total,
+            'limit': limit,
+            'offset': offset
+        })
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
+
+@vision_bp.route('/zones/<zone_id>/in-transit', methods=['GET'])
+@require_workspace('vision:read')
+def get_zone_in_transit_freight(zone_id: str):
+    """
+    Returns active in-transit purchase orders and cross-border freight shipments for a shelf zone's assigned product.
+    """
+    try:
+        zone = ShelfZoneService.get_shelf_zone_by_id(g.workspace_id, zone_id)
+        if not zone.assigned_product_id:
+            return success_response({
+                'zone_id': zone.id,
+                'product_id': None,
+                'in_transit_quantity': '0.00',
+                'active_pos_count': 0,
+                'active_shipments_count': 0,
+                'shipments': []
+            })
+
+        summary = VisualRestockService.get_in_transit_freight_summary(
+            workspace_id=g.workspace_id,
+            product_id=zone.assigned_product_id,
+            location_id=zone.location_id
+        )
+        summary['zone_id'] = zone.id
+        summary['zone_code'] = zone.zone_code
+        return success_response(summary)
+    except APIError as e:
+        return error_response(e.message, e.code, e.status)
+    except Exception as e:
+        return error_response(str(e), "INTERNAL_ERROR", 500)
+
 
